@@ -56,33 +56,27 @@ packages = find_packages(".")
 package_names = packages.keys()
 
 packages_required = [
-                    ]
+    "gevent=1.0.2",
+    "greenlet=0.4.2",
+    "gevent-websocket=0.9.3",
+    "six=1.10.0",
+    "flask=0.10.1",
+    "jinja=22.7.2",
+    "werkzeug=0.9.4",
+    "itsdangerous=0.24",
+    "socketio-client=0.5.3",
+    "flask-sockets=0.1",
+    "pyzmq",
+    "pygments=1.6",
+    "python-dateutil",
+    "flask-oauthlib=0.9.1",
+    "ws4py=0.3.2",
+    "requests=2.2.1",
+    "jsonschema=2.3.0",
+    "netifaces"
+]
 
-deps_required = [
-                ]
-
-if sys.argv[1] != "sdist" and sys.argv[1] != "clean":
-    # print sys.argv
-    # import os
-    # print os.environ
-    have_packages = check_packages(packages_required)
-    have_dependencies = check_dependencies(deps_required)
-
-    if not(have_packages and have_dependencies):
-        print
-        print "Cannot proceed without the packages listed installed"
-        print "The debian packages can be installed together"
-        print "The dependencies must be installed in that order"
-        sys.exit(1)
-
-
-    # Check version of python-requests library...
-    import requests
-    if LooseVersion(requests.__version__) < LooseVersion("0.9.3"): # socketIO_client uses the Response.text property introduced in 0.9.3
-        print
-        print "While you have requests installed - probably the system version"
-        print "you need to have a more recent version installed."
-        sys.exit(1)
+deps_required = []
 
 setup(name = "nmoscommon",
       version = "0.1.0",
@@ -91,9 +85,9 @@ setup(name = "nmoscommon",
       author='Peter Brightell',
       author_email='peter.brightwell@bbc.co.uk',
       license='Apache 2',
-
       packages = package_names,
       package_dir = packages,
+      install_requires = packages_required,
       scripts = [
                 ],
       data_files=[

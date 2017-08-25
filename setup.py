@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
 
-from distutils.core import setup
+from setuptools import setup
 from distutils.version import LooseVersion
 import os
 import sys
@@ -56,23 +56,23 @@ packages = find_packages(".")
 package_names = packages.keys()
 
 packages_required = [
-    "gevent=1.0.2",
-    "greenlet=0.4.2",
-    "gevent-websocket=0.9.3",
-    "six=1.10.0",
-    "flask=0.10.1",
-    "jinja=22.7.2",
-    "werkzeug=0.9.4",
-    "itsdangerous=0.24",
-    "socketio-client=0.5.3",
-    "flask-sockets=0.1",
+    "gevent==1.0.2",
+    "greenlet==0.4.7",
+    "gevent-websocket==0.9.3",
+    "six==1.10.0",
+    "flask==0.10.1",
+    "jinja2==2.7.2",
+    "werkzeug==0.9.4",
+    "itsdangerous==0.24",
+    "socketio-client==0.5.3",
+    "flask-sockets==0.1",
     "pyzmq",
-    "pygments=1.6",
+    "pygments==1.6",
     "python-dateutil",
-    "flask-oauthlib=0.9.1",
-    "ws4py=0.3.2",
-    "requests=2.2.1",
-    "jsonschema=2.3.0",
+    "flask-oauthlib==0.9.1",
+    "ws4py==0.3.2",
+    "requests==2.6",
+    "jsonschema==2.3.0",
     "netifaces"
 ]
 

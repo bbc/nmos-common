@@ -1,10 +1,19 @@
-Source: nmos-common
-Maintainer: Peter Brightwell <peter.brightwell@bbc.co.uk>
-Build-Depends: python-all (>= 2.6.6-3), debhelper (>= 7), dh-python
+Source: nmoscommon
+Maintainer: Peter Brightell <peter.brightwell@bbc.co.uk>
+Section: python
+Priority: optional
+Build-Depends: python-setuptools (>= 0.6b3), python-all (>= 2.6.6-3), debhelper (>= 7)
 Standards-Version: 3.9.1
 
-Package: nmos-common
+
+
+Package: python-nmoscommon
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
-Description: Utility classes and functions for NMOS APIs
- See www.nmos.tv for more details
+Description: nmos python utilities
+ .
+ Implementation of the nmos python utilities
+ .
+
+
+

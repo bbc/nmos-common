@@ -41,6 +41,7 @@ class Facade(object):
         self.pid             = os.getpid()
         self.resources       = {}
         self.timeline        = {}
+        self.controls        = {}
         self.href            = None
         self.proxy_path      = None
         self.lock            = Lock() # Protect access to IPC socket
@@ -68,6 +69,7 @@ class Facade(object):
                 else:
                     self.logger.writeInfo("Service registration failed: {}".format(self.debug_message(s)))
         except Exception as e:
+            self.logger.writeError("Exception when registering service: {}".format(str(e)))
             self.ipc = None
 
     def unregister_service(self):
@@ -80,6 +82,7 @@ class Facade(object):
                 self.ipc.srv_unregister(self.srv_type, self.pid)
                 self.srv_registered = False
         except Exception as e:
+            self.logger.writeError("Exception when unregistering service: {}".format(str(e)))
             self.ipc = None
 
     def heartbeat_service(self):
@@ -100,6 +103,7 @@ class Facade(object):
                 self.logger.writeInfo("Reregistering all services")
                 self.reregister_all()
         except Exception as e:
+            self.logger.writeError("Exception when heartbeating service: {}".format(str(e)))
             self.ipc = None
 
     # ONLY call this directly from within heartbeat_service!
@@ -112,7 +116,7 @@ class Facade(object):
         if not self.srv_registered:
             return
 
-        # TODO: the following blocks are so similar...
+        # TODO(clyntp): the following blocks are so similar...
 
         # re-register resources
         for type in self.resources:
@@ -129,6 +133,7 @@ class Facade(object):
                                 resource.pop('pipeline_id')
                         self.ipc.res_register(self.srv_type, self.pid, type, key, resource)
                 except Exception as e:
+                    self.logger.writeError("Exception when re-registering resource: {}".format(str(e)))
                     self.ipc = None
                     gevent.sleep(0)
                     return
@@ -140,6 +145,20 @@ class Facade(object):
                     with self.lock:
                         self.ipc.timeline_register(self.srv_type, self.pid, type, key, self.timeline[type][key])
                 except Exception as e:
+                    self.logger.writeError("Exception when re-registering timeline: {}".format(str(e)))
+                    self.ipc = None
+                    gevent.sleep(0)
+                    return
+
+                # re-register controls
+        for device_id in self.controls:
+            for control_href in self.controls[device_id]:
+                control_data = self.controls[device_id][control_href]
+                try:
+                    with self.lock:
+                        self.ipc.control_register(self.srv_type, self.pid, device_id, control_data)
+                except Exception as e:
+                    self.logger.writeError("Exception when re-registering control: {}".format(str(e)))
                     self.ipc = None
                     gevent.sleep(0)
                     return
@@ -160,6 +179,7 @@ class Facade(object):
             with self.lock:
                 return self.ipc.invoke_named(method, self.srv_type, self.pid, *args, **kwargs)
         except Exception as e:
+            self.logger.writeError("Exception when calling IPC method: {}".format(str(e)))
             self.ipc = None
             self.reregister = True
 
@@ -203,6 +223,17 @@ class Facade(object):
             if key in self.timeline[type]:
                 del self.timeline[type][key]
         self._call_ipc_method("timeline_unregister", type, key)
+
+    def addControl(self, device_id, control_data):
+        if device_id not in self.controls:
+            self.controls[device_id] = {}
+        self.controls[device_id][control_data["href"]] = control_data
+        self._call_ipc_method("control_register", device_id, control_data)
+
+    def delControl(self, device_id, control_data):
+        if device_id in self.controls:
+            self.controls[device_id].pop(control_data["href"], None)
+        self._call_ipc_method("control_unregister", device_id, control_data)
 
     def get_node_self(self, api_version="v1.1"):
         return self._call_ipc_method("self_get", api_version)

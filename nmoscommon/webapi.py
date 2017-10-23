@@ -43,8 +43,19 @@ except ImportError:
     from urllib import request as http
     from urllib.parse import urlparse
 
+HOST = None
+itt = 0
 
-HOST = getLocalIP()
+# Sometimes interfaces don't come up in time
+# during boot, wait until we find an IP or fail
+# after 5 seconds
+while not HOST and itt < 5:
+    try:
+        HOST = getLocalIP()
+    except:
+        gevent.sleep(1)
+        itt = itt + 1
+        raise OSError("Could not find an interface for webapi")
 
 class LinkingHTMLFormatter(HtmlFormatter):
     def wrap(self, source, outfile):

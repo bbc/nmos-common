@@ -45,5 +45,6 @@ def getLocalIP():
                 return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
             except IndexError:
                 # Not an IPv4 interface, skip over
+                pass
     # Could not find an interface
     return None

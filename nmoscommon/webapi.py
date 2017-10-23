@@ -15,6 +15,7 @@
 import uuid
 import json
 import traceback
+import time
 
 from flask import Flask, Response, request, abort, jsonify
 from flask_sockets import Sockets
@@ -53,9 +54,9 @@ while not HOST and itt < 5:
     try:
         HOST = getLocalIP()
     except:
-        gevent.sleep(1)
+        time.sleep(1)
         itt = itt + 1
-        raise OSError("Could not find an interface for webapi")
+raise OSError("Could not find an interface for webapi")
 
 class LinkingHTMLFormatter(HtmlFormatter):
     def wrap(self, source, outfile):

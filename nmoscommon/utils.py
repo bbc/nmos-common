@@ -46,5 +46,7 @@ def getLocalIP():
             except IndexError:
                 # Not an IPv4 interface, skip over
                 pass
+            except KeyError:
+                pass
     # Could not find an interface
     return None

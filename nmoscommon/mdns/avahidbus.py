@@ -167,12 +167,14 @@ class MDNSEngine(object):
                                                                                         avahi.PROTO_UNSPEC, regtype, "local", dbus.UInt32(0))),
                                       avahi.DBUS_INTERFACE_SERVICE_BROWSER)
             sbrowser.connect_to_signal("ItemNew", _browse_callback(callback))
+            sbrowser.connect_to_signal("ItemRemove", _remove_callback(callback))
         else:
             sbrowser = dbus.Interface(self.bus.get_object(avahi.DBUS_NAME,
                                                           self.server.ServiceBrowserNew(avahi.IF_UNSPEC,
                                                                                         avahi.PROTO_UNSPEC, regtype, domain, dbus.UInt32(0))),
                                       avahi.DBUS_INTERFACE_SERVICE_BROWSER)
             sbrowser.connect_to_signal("ItemNew", _browse_callback(callback))
+            sbrowser.connect_to_signal("ItemRemove", _remove_callback(callback))
 
 
 

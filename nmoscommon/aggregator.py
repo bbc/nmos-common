@@ -26,15 +26,11 @@ from nmoscommon.mdnsbridge import IppmDNSBridge
 from nmoscommon import nmoscommonconfig
 from nmoscommon import config as _config
 
-AGGREGATOR_APIVERSION = _config.get('nodefacade', {}).get('NODE_REGVERSION', 'v1.1')
+AGGREGATOR_APIVERSION = _config.get('nodefacade', {}).get('NODE_REGVERSION', 'v1.2')
 AGGREGATOR_APINAMESPACE = "x-nmos"
 AGGREGATOR_APINAME = "registration"
 
 REGISTRATION_MDNSTYPE = "nmos-registration"
-
-# A map of translations for types of resource whose exposed registry
-# name differs from the posted "type" attribute.
-TYPE_TRANSLATIONS = {'flowsegment': 'flows'}
 
 class NoAggregator(Exception):
     def __init__(self, mdns_updater = None):
@@ -72,9 +68,6 @@ class Aggregator(object):
             'registered': False,
             'entities': {
                 'resource': {
-                },
-                'timeline': {
-                    'flow': {}
                 }
             }
         }
@@ -159,7 +152,7 @@ class Aggregator(object):
                                 del self._registered["entities"][namespace][res_type][res_key]
 
                     elif queue_item["method"] == "DELETE":
-                        translated_type = TYPE_TRANSLATIONS.get(res_type, res_type + 's')
+                        translated_type = res_type + 's'
                         try:
                             self._SEND("DELETE", "/{}/{}/{}".format(namespace, translated_type, res_key))
                         except InvalidRequest as e:
@@ -185,7 +178,7 @@ class Aggregator(object):
     def unregister(self, res_type, key):
         self.unregister_from("resource", res_type, key)
 
-    # General register method for 'resource' and 'timeline' types
+    # General register method for 'resource' types
     def register_into(self, namespace, res_type, key, **kwargs):
         data = kwargs
         send_obj = {"type": res_type, "data": data}
@@ -201,7 +194,7 @@ class Aggregator(object):
             self._registered["entities"][namespace][res_type][key] = send_obj
         self._queue_request("POST", namespace, res_type, key)
 
-    # General unregister method for 'resource' and 'timeline' types
+    # General unregister method for 'resource' types
     def unregister_from(self, namespace, res_type, key):
         if namespace == "resource" and res_type == "node":
             # Handle special Node type
@@ -257,11 +250,12 @@ class Aggregator(object):
                 self._mdns_updater.P2P_disable()
         except Exception as e:
             self.logger.writeWarning("Error re-registering Node: {}".format(e))
+            self.aggregator == "" # Fallback to prevent us getting stuck if the Reg API issues a 4XX error incorrectly
             return
 
         # Re-register items that must be ordered
         # Re-register things we have in the local cache.
-        # "namespace" is e.g. "resource", or "timeline".
+        # "namespace" is e.g. "resource"
         # "entities" are the things associated under that namespace.
         for res_type in self.registration_order:
             for namespace, entities in self._registered["entities"].items():
@@ -272,7 +266,7 @@ class Aggregator(object):
 
         # Re-register everything else
         # Re-register things we have in the local cache.
-        # "namespace" is e.g. "resource", or "timeline".
+        # "namespace" is e.g. "resource"
         # "entities" are the things associated under that namespace.
         for namespace, entities in self._registered["entities"].items():
             for res_type in entities:

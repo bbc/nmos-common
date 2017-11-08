@@ -37,10 +37,9 @@ class Facade(object):
         self.reregister      = False # Flag whether resources are correctly registered
         self.address         = address
         self.srv_type        = srv_type.lower()
-        self.srv_type_urn    = "urn:x-nmos-opensourceprivatenamespace:service:" + self.srv_type
+        self.srv_type_urn    = "urn:x-ipstudio:service:" + self.srv_type
         self.pid             = os.getpid()
         self.resources       = {}
-        self.timeline        = {}
         self.controls        = {}
         self.href            = None
         self.proxy_path      = None
@@ -138,19 +137,7 @@ class Facade(object):
                     gevent.sleep(0)
                     return
 
-        # re-register timeline items
-        for type in self.timeline:
-            for key in self.timeline[type]:
-                try:
-                    with self.lock:
-                        self.ipc.timeline_register(self.srv_type, self.pid, type, key, self.timeline[type][key])
-                except Exception as e:
-                    self.logger.writeError("Exception when re-registering timeline: {}".format(str(e)))
-                    self.ipc = None
-                    gevent.sleep(0)
-                    return
-
-                # re-register controls
+        # re-register controls
         for device_id in self.controls:
             for control_href in self.controls[device_id]:
                 control_data = self.controls[device_id][control_href]
@@ -205,24 +192,6 @@ class Facade(object):
             if key in self.resources[type]:
                 del self.resources[type][key]
         self._call_ipc_method("res_unregister", type, key)
-
-    def addTimeline(self, type, key, value):
-        if type not in self.timeline:
-            self.timeline[type] = {}
-        self.timeline[type][key] = value
-        self._call_ipc_method("timeline_register", type, key, value)
-
-    def updateTimeline(self, type, key, value):
-        if type not in self.timeline:
-            self.timeline[type] = {}
-        self.timeline[type][key] = value
-        self._call_ipc_method("timeline_update", type, key, value)
-
-    def delTimeline(self, type, key):
-        if type in self.timeline:
-            if key in self.timeline[type]:
-                del self.timeline[type][key]
-        self._call_ipc_method("timeline_unregister", type, key)
 
     def addControl(self, device_id, control_data):
         if device_id not in self.controls:

@@ -15,6 +15,13 @@
 import calendar
 import time
 import re
+from datetime import datetime
+from dateutil import tz
+try:
+    import pyipputils.ipptimestamp
+    IPP_UTILS = True
+except ImportError:
+    IPP_UTILS = False
 
 __all__ = ["TsValueError", "TimeOffset", "Timestamp"]
 
@@ -239,12 +246,12 @@ class TimeOffset(object):
                 use_rounding = self.ROUND_DOWN
             elif use_rounding == self.ROUND_DOWN:
                 use_rounding = self.ROUND_UP
-        if use_rounding == self.ROUND_DOWN:
-            rnd_off = TimeOffset(0, 1)
-        elif use_rounding == self.ROUND_NEAREST:
+        if use_rounding == self.ROUND_NEAREST:
             rnd_off = TimeOffset.get_interval_fraction(rate_num, rate_den, 2)
-        else:
+        elif use_rounding == self.ROUND_UP:
             rnd_off = TimeOffset.get_interval_fraction(rate_num, rate_den, 1) - TimeOffset(0, 1)
+        else:
+            rnd_off = TimeOffset()
         if rnd_off.sign > 0:
             abs_off += rnd_off
 
@@ -291,7 +298,8 @@ class TimeOffset(object):
     def normalise(self, rate_num, rate_den=1, rounding=ROUND_NEAREST):
         return self.from_count(self.to_count(rate_num, rate_den, rounding), rate_num, rate_den)
 
-    def compare(self, other):
+    def compare(self, other_in):
+        other = self._cast_arg(other_in)
         if self.sign != other.sign:
             return self.sign
         elif self.sec < other.sec:
@@ -329,23 +337,30 @@ class TimeOffset(object):
     def __ge__(self, other):
         return self.compare(other) >= 0
 
-    def __add__(self, other):
+    def __add__(self, other_in):
+        other = self._cast_arg(other_in)
         toff = TimeOffset(self.sec, self.ns, self.sign)
         toff += other
-        return toff
+        return self.__class__(toff.sec, toff.ns, toff.sign)
 
-    def __sub__(self, other):
+    def __sub__(self, other_in):
+        other = self._cast_arg(other_in)
         toff = TimeOffset(self.sec, self.ns, self.sign)
         toff -= other
-        return toff
+        if isinstance(other, Timestamp) and isinstance(self, Timestamp):
+            return toff
+        else:
+            return self.__class__(toff.sec, toff.ns, toff.sign)
 
-    def __iadd__(self, other):
+    def __iadd__(self, other_in):
+        other = self._cast_arg(other_in)
         sec = self.sign*self.sec + other.sign*other.sec
         ns = self.sign*self.ns + other.sign*other.ns
         self._complete_iadd_or_isub(sec, ns)
         return self
 
-    def __isub__(self, other):
+    def __isub__(self, other_in):
+        other = self._cast_arg(other_in)
         sec = self.sign*self.sec - other.sign*other.sec
         ns = self.sign*self.ns - other.sign*other.ns
         self._complete_iadd_or_isub(sec, ns)
@@ -354,17 +369,17 @@ class TimeOffset(object):
     def __mul__(self, anint):
         toff = TimeOffset(self.sec, self.ns, self.sign)
         toff *= anint
-        return toff
+        return self.__class__(toff.sec, toff.ns, toff.sign)
 
     def __rmul__(self, anint):
         toff = TimeOffset(self.sec, self.ns, self.sign)
         toff *= anint
-        return toff
+        return self.__class__(toff.sec, toff.ns, toff.sign)
 
     def __div__(self, anint):
         toff = TimeOffset(self.sec, self.ns, self.sign)
         toff /= anint
-        return toff
+        return self.__class__(toff.sec, toff.ns, toff.sign)
 
     def __imul__(self, anint):
         abs_anint = abs(anint)
@@ -429,6 +444,14 @@ class TimeOffset(object):
 
         return sec_frac
 
+    def _cast_arg(self, other):
+        if isinstance(other, int) or isinstance(other, long):
+            return TimeOffset(other)
+        elif isinstance(other, float):
+            return TimeOffset.from_sec_frac(str(other))
+        else:
+            return other
+
     def _make_valid(self):
         if self.sign >= 0 or (self.sec == 0 and self.ns == 0):
             self.sign = 1
@@ -449,12 +472,29 @@ class Timestamp(TimeOffset):
         super(Timestamp, self).__init__(sec, ns, sign)
 
     @classmethod
+    def get_time(cls):
+        if IPP_UTILS:
+            (sign, sec, ns) = pyipputils.ipptimestamp.ipp_ts_gettime()
+            return cls(sign=sign, sec=sec, ns=ns)
+        else:
+            raise ImportError("ipp-utils library not found - please install ipp-utils (internal BBC R&D library)")
+
+    @classmethod
     def from_tai_sec_frac(cls, ts_str):
         return cls.from_sec_frac(ts_str)
 
     @classmethod
     def from_tai_sec_nsec(cls, ts_str):
         return cls.from_sec_nsec(ts_str)
+
+    @classmethod
+    def from_datetime(cls, dt):
+        minTs = datetime.fromtimestamp(0, tz.gettz('UTC'))
+        utcdt = dt.astimezone(tz.gettz('UTC'))
+        seconds = int((utcdt - minTs).total_seconds())
+        nanoseconds = utcdt.microsecond * 1000
+
+        return cls.from_utc(seconds, nanoseconds, False)
 
     @classmethod
     def from_iso8601_utc(cls, iso8601utc):
@@ -495,6 +535,8 @@ class Timestamp(TimeOffset):
             return cls.from_smpte_timelabel(ts_str)
         elif 'T' in ts_str:
             return cls.from_iso8601_utc(ts_str)
+        elif ts_str.strip() == 'now':
+            return cls.get_time()
         else:
             return super(Timestamp, cls).from_str(ts_str)
 
@@ -525,6 +567,13 @@ class Timestamp(TimeOffset):
 
     def to_tai_sec_frac(self, fixed_size=False):
         return self.to_sec_frac(fixed_size=fixed_size)
+
+    def to_datetime(self):
+        sec, nsec, leap = self.to_utc()
+        dt = datetime.fromtimestamp(sec, tz.gettz('UTC'))
+        dt = dt.replace(microsecond=int(round(nsec/1000)))
+
+        return dt
 
     def to_utc(self):
         """ Convert to UTC.

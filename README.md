@@ -20,7 +20,7 @@ This package includes:
 
 ## Installing with Python
 
-Install Python and Pip, following the relevent guides for your operating system, then:
+Install Python and Pip, following the relevant guides for your operating system, then:
 
 ```
 pip install setuptools
@@ -32,13 +32,19 @@ sudo python setup.py install
 Debian packaging files are provided for internal BBC R&D use.
 These packages depend on packages only available from BBC R&D internal mirrors, and will not build in other environments. For use outside the BBC please use python installation method.
 
+## Time
+
+This library contains the Timestamp class, which may be used to get the current TAI time. The system will provide the time in UTC. As TAI does not account for leap seconds it maintains an offset from UTC that changes every time a leap second occurs[1][1]. The class contains a table of leap seconds, which is up to date as of the end of 2017. Users of this library should ensure this table is up to date by checking with (the IERS)[https://www.iers.org] who are responsible for the scheduling of leap seconds and publish decisions in their Bulletin C.
+
+[1]: https://www.timeanddate.com/time/international-atomic-time.html
+
 ## Interaction with ipppython
 
-When this library is used on a system where the BBC R&D internal ipppython is installed the following libraries will automatically revert to using their ipppython equivilants to ensure correct behaviour in house. These are:
+When this library is used on a system where the BBC R&D internal ipppython is installed the following libraries will automatically revert to using their ipppython equivalents to ensure correct behaviour in house. These are:
 
 * logger.py
   Uses ipppython IppLogger class instead so that underlying C logging libraries are still used in order to maintain a single log file for all of IP Studio.
 * ptptime.py
-  Will use ipppython to derive the time, so that time can be derived from a more precise PTP time source if present rather than using system time. Gracefully degrades to using system time converted to the TAI epoch otherwise.
+  This class has been deprecated in nmos-common - timestamp should be used instead
 * timestamp.py
-  The get_time() method can only be used if ipppython is present.
+  The Timestamp.get_time method will use ipppython if it is available to try and derive a accurate time from a PTP clock if available. If not it falls back to using the system time in pure Python which will be less accurate in most cases.

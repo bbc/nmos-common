@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# DEPRECATED - This class is deprecated - please use timestamp.py
+
 import ctypes, os, time
 from subprocess import check_output
 from timestamp import Timestamp
@@ -32,17 +34,14 @@ class timespec(ctypes.Structure):
 def FD_TO_CLOCKID(fd):
     return ctypes.c_int((((~(fd)) << 3) | CLOCKFD))
 
+# This method is depricated, use Timestamp.get_time()
 def ptp_data():
-    t = timespec()
-    utc_time = time.time()
-    _ts = Timestamp.from_utc(int(utc_time), int((utc_time % 1) * 1e9))
-    nanosec = _ts.to_nanosec()
-    t.tv_sec = int(nanosec * 1e-9)
-    t.tv_nsec = int(nanosec - (t.tv_sec * 1e9))
+    ts = Timestamp.get_time()
+    t.tv_sec = int(ts.to_nanosec())
+    t.tv_nsec = int(ts.to_nanosec() - (t.tv_sec * 1e9))
     return t
 
-# Use internal BBC R&D ipp-python library to get time from
-# a PTP clock if it is available
+# This method is depricated, use Timestamp.get_time()
 if IPP_PYTHON:
     ptp_data = ipppython.ptptime.ptp_data
     FD_TO_CLOCKID = ipppython.ptptime.FD_TO_CLOCKID

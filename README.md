@@ -31,3 +31,14 @@ sudo python setup.py install
 
 Debian packaging files are provided for internal BBC R&D use.
 These packages depend on packages only available from BBC R&D internal mirrors, and will not build in other environments. For use outside the BBC please use python installation method.
+
+## Interaction with ipppython
+
+When this library is used on a system where the BBC R&D internal ipppython is installed the following libraries will automatically revert to using their ipppython equivilants to ensure correct behaviour in house. These are:
+
+* logger.py
+  Uses ipppython IppLogger class instead so that underlying C logging libraries are still used in order to maintain a single log file for all of IP Studio.
+* ptptime.py
+  Will use ipppython to derive the time, so that time can be derived from a more precise PTP time source if present rather than using system time. Gracefully degrades to using system time converted to the TAI epoch otherwise.
+* timestamp.py
+  The get_time() method can only be used if ipppython is present.

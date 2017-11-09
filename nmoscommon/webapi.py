@@ -44,6 +44,66 @@ except ImportError:
     from urllib import request as http
     from urllib.parse import urlparse
 
+from nmoscommon.nmoscommonconfig import config
+
+class MediaType(object):
+    def __init__(self, mr):
+        comps = [ x.strip() for x in mr.split(';') ]
+        (self.type, self.subtype) = comps.pop(0).split('/')
+        self.priority = 1.0
+        self.options = []
+        self.accept_index = 0
+        for c in comps:
+            if c[0] == 'q':
+                tmp = [ x.strip() for x in c.split('=') ]
+                if tmp[0] == "q":
+                    self.priority = float(tmp[1])
+                    continue
+            self.options.append(c)
+
+    def __str__(self):
+        return "%s/%s;%s" % (self.type, self.subtype, ';'.join(self.options + [ 'q=%g' % self.priority, ]))
+
+    def __repr__(self):
+        return "MediaType(\"{}\")".format(self.__str__())
+
+    def matches(self, t):
+        if not isinstance(t, MediaType):
+            t = MediaType(t)
+        if t.type == self.type or self.type == '*':
+            if t.subtype == self.subtype or self.subtype == '*':
+                return True
+        return False
+
+def AcceptStringParser(accept_string):
+    return [MediaType(x.strip()) for x in accept_string.split(',')]
+
+def AcceptableType(mt, accept_string):
+    if not isinstance(mt, MediaType):
+        mt = MediaType(mt)
+    for idx, t in enumerate(AcceptStringParser(accept_string)):
+        if t.matches(mt):
+            t.accept_index = idx
+            return t
+    return None
+
+def MostAcceptableType(type_strings, accept_string):
+    """First parameter is a list of media type strings, the second is an HTTP Accept header string. Return
+    value is a string which corresponds to the most acceptable type out of the list provided."""
+    def __cmp(a,b):
+        if a is None and b is None:
+            return 0
+        elif a is None:
+            return 1
+        elif b is None:
+            return -1
+        elif a.priority == b.priority:
+            return cmp(a.accept_index, b.accept_index)
+        else:
+            return -cmp(a.priority, b.priority)
+
+    return sorted([ (mt, AcceptableType(MediaType(mt), accept_string)) for mt in type_strings ], cmp=lambda a,b :__cmp(a[1], b[1]))[0][0]
+
 HOST = None
 itt = 0
 
@@ -68,17 +128,21 @@ class LinkingHTMLFormatter(HtmlFormatter):
         for i, t in source:
             m = re.match(r'(.*)&quot;([a-zA-Z0-9_.\-~]+)/&quot;(.+)', t)
             if m:
-                t = m.group(1) + '&quot;<a href="' + m.group(2) + '/">' + m.group(2) + '/</a>&quot;' + m.group(3) + "<br>"
+                t = m.group(1) + '&quot;<a href="./' + m.group(2) + '/">' + m.group(2) + '/</a>&quot;' + m.group(3) + "<br>"
 
             yield i, t
 
 def htmlify(r, mimetype, status=200):
 
     # if the request was proxied via the nodefacade, use the original host in response.
-    # additional external proxies could cause an issue here...
+    # additional external proxies could cause an issue here, so we can override the hostname
+    # in the config to an externally-defined one if there are multiple reverse proxies
     path = request.headers.get('X-Forwarded-Path', request.path)
-    host = request.headers.get('X-Forwarded-Host', request.host)
-    scheme = request.headers.get('X-Forwarded-Proto', urlparse(request.url).scheme)
+    host = config.get('node_hostname', request.headers.get('X-Forwarded-Host', request.host))
+    if config.get('https_mode', 'disabled') == 'enabled':
+        scheme = 'https'
+    else:
+        scheme = request.headers.get('X-Forwarded-Proto', urlparse(request.url).scheme)
     base_url = "{}://{}".format(scheme, host)
 
     title = '<a href="' + base_url + '/">' + base_url + '</a>'
@@ -299,8 +363,8 @@ def errorhandler(*args,**kwargs):
 def on_json(path):
     def annotate_function(func):
         @wraps(func)
-        def inner_func(self, ws, message):
-            return func(self, ws, json.loads(message))
+        def inner_func(self, ws, message, **kwds):
+            return func(self, ws, json.loads(message), **kwds)
         inner_func.sockets_on = path
         return inner_func
     return annotate_function
@@ -325,7 +389,7 @@ def wrap_val_in_grain(pval):
                 "sync_timestamp": "0:0",
                 "creation_timestamp": "0:0",
                 "event_payload": {
-                    "type": "urn:x-nmos-opensourceprivatenamespace:format:event.param.change",
+                    "type": "urn:x-ipstudio:format:event.param.change",
                     "topic": "",
                     "data": [
                         {
@@ -337,7 +401,7 @@ def wrap_val_in_grain(pval):
                 },
                 "flow_instance_id": "00000000-0000-0000-0000-000000000000"
                 },
-            "@_ns": "urn:x-nmos-opensourceprivatenamespace:ns:0.1"
+            "@_ns": "urn:x-ipstudio:ns:0.1"
             }
     egrain["grain"]["event_payload"]["data"][0]["post"] = pval
     return json.dumps(egrain)
@@ -619,7 +683,7 @@ class WebAPI(object):
 
     def handle_sock(self, func, socks):
         @wraps(func)
-        def inner_func(ws):
+        def inner_func(ws, **kwds):
             sock_uuid = uuid.uuid4()
             socks[sock_uuid] = ws
             print "Opening Websocket {} at path /, Receiving ...".format(sock_uuid)
@@ -630,7 +694,7 @@ class WebAPI(object):
                     message = None
 
                 if message is not None:
-                    func(ws, message)
+                    func(ws, message, **kwds)
                     continue
                 else:
                     print "Websocket {} closed".format(sock_uuid)

@@ -26,7 +26,7 @@ from nmoscommon.logger import Logger
 from nmoscommon import nmoscommonconfig
 from nmoscommon import config as _config
 
-QUERY_APIVERSION = _config.get('nodefacade', {}).get('NODE_REGVERSION', 'v1.1')
+QUERY_APIVERSION = _config.get('nodefacade', {}).get('NODE_REGVERSION', 'v1.2')
 QUERY_APINAMESPACE = "x-nmos"
 QUERY_APINAME = "query"
 QUERY_MDNSTYPE = "nmos-query"
@@ -71,7 +71,7 @@ class QueryService(object):
         # Shouldn't get this far, but don't return None
         raise QueryNotFoundError("Could not find a query service (should be unreachable!)")
 
-    def get_services(self, service_urn):
+    def get_services(self, service_urn, node_id=None):
         """
         Look for nodes which contain a particular service type.
         Returns a list of found service objects, or an empty list on not-found.
@@ -83,7 +83,14 @@ class QueryService(object):
             return []
 
         nodes = response.json()
-        services = itertools.chain.from_iterable([n.get('services', []) for n in nodes])
+
+        services = []
+
+        if node_id == None:
+            services = itertools.chain.from_iterable([n.get('services', []) for n in nodes])
+        else:
+            services = itertools.chain.from_iterable([n.get('services', []) for n in nodes if n["id"] == node_id])
+
         return [s for s in services if s.get('type', 'unknown') == service_urn]
 
     def subscribe_topic(self, topic, on_event, on_open=None):
@@ -138,15 +145,17 @@ class QueryService(object):
 
 if __name__ == '__main__':
     from nmoscommon.mdnsbridge import IppmDNSBridge
+    from pprint import pprint
 
     qs = QueryService(IppmDNSBridge())
 
-    print qs.get_services("urn:x-nmos-opensourceprivatenamespace:service:status/v1.0")
-    print qs.get_services("urn:x-nmos-opensourceprivatenamespace:service:storedflowquery/v2.0")
-    print qs.get_services("urn:x-nmos-opensourceprivatenamespace:service:fake/v1.0")
+    print qs.get_services("urn:x-ipstudio:service:status/v1.0")
+    print qs.get_services("urn:x-ipstudio:service:storedflowquery/v2.0")
+    print qs.get_services("urn:x-ipstudio:service:fake/v1.0")
 
     def callback(data):
-        print "\n----\n", data
+        print "\n----\n",
+        pprint(data)
 
     def on_open():
         print "ONOPEN"

@@ -15,6 +15,11 @@
 import ctypes, os, time
 from subprocess import check_output
 from timestamp import Timestamp
+try:
+    import ipppython.ptptime
+    IPP_PYTHON = True
+except ImportError:
+    IPP_PYTHON = False
 
 __all__ = ["ptp_time"]
 
@@ -30,11 +35,17 @@ def FD_TO_CLOCKID(fd):
 def ptp_data():
     t = timespec()
     utc_time = time.time()
-    _ts = Timestamp(int(utc_time), int((utc_time % 1) * 1e9))
+    _ts = Timestamp.from_utc(int(utc_time), int((utc_time % 1) * 1e9))
     nanosec = _ts.to_nanosec()
     t.tv_sec = int(nanosec * 1e-9)
     t.tv_nsec = int(nanosec - (t.tv_sec * 1e9))
     return t
+
+# Use internal BBC R&D ipp-python library to get time from
+# a PTP clock if it is available
+if IPP_PYTHON:
+    ptp_data = ipppython.ptptime.ptp_data
+    FD_TO_CLOCKID = ipppython.ptptime.FD_TO_CLOCKID
 
 def ptp_time():
     t = ptp_data()

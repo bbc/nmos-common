@@ -87,7 +87,8 @@ packages_required = [
     "ws4py==0.3.2",
     "requests==2.6",
     "jsonschema==2.3.0",
-    "netifaces"
+    "netifaces",
+    "websocket-client==0.18.0"
 ]
 
 deps_required = []

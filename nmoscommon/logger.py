@@ -14,6 +14,14 @@
 
 import logging
 import sys
+
+# Check to see if BBC R&D internal logger is present
+try:
+    from ipppython.ipplogger import IppLogger
+    IPP_LOGGER = True
+except ImportError:
+    IPP_LOGGER = False
+
 from logging import FileHandler
 
 __all__ = [ "Logger" ]
@@ -59,3 +67,7 @@ class Logger:
 
     def writeDebug(self, message):
         self.log.debug(message)
+
+# Use BBC R&D logger in preference to this one
+if IPP_LOGGER:
+    Logger = IppLogger

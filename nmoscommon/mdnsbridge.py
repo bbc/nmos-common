@@ -29,7 +29,7 @@ class IppmDNSBridge(object):
         self.config.update(_config)
 
     def _checkLocalQueryServiceExists(self):
-        url = "http://127.0.0.1/x-nmos/query/v1.0/";
+        url = "http://127.0.0.1/x-nmos/query/v1.0/"
         try:
             # Request to localhost:18870/ - if it succeeds, the service exists AND is running AND is accessible
             r = requests.get(url, timeout=0.5)
@@ -69,7 +69,7 @@ class IppmDNSBridge(object):
         for service in self.services[srv_type]:
             if priority >= 100:
                 if service["priority"] == priority:
-                    return self._createHref(service["address"], service["port"])
+                    return self._createHref(service)
             else:
                 if service["priority"] < current_priority:
                     current_priority = service["priority"]
@@ -86,20 +86,22 @@ class IppmDNSBridge(object):
         random.seed()
         index = random.randint(0, len(valid_services)-1)
         service = valid_services[index]
-        href = self._createHref(service["address"], service["port"])
+        href = self._createHref(service)
         self.services[srv_type].remove(service)
         return href
 
-    def _createHref(self, address, port):
-        formatted_address = address
-        if ":" in formatted_address:
-            formatted_address = "[" + formatted_address + "]"
-        return "http://" + formatted_address + ":" + str(port)
+    def _createHref(self, service):
+        proto = service['txt'].get('api_proto', 'http')
+        address = service['address']
+        port = service['port']
+        if ":" in address:
+            address = "[" + address + "]"
+        return '{}://{}:{}'.format(proto, address, port)
 
     def _updateServices(self, srv_type):
-        req_url = "http://127.0.0.1/x-nmos-opensourceprivatenamespace/mdnsbridge/v1.0/" + srv_type + "/";
+        req_url = "http://127.0.0.1/x-ipstudio/mdnsbridge/v1.0/" + srv_type + "/"
         try:
-            # Request to localhost/x-nmos-opensourceprivatenamespace/mdnsbridge/v1.0/<type>/
+            # Request to localhost/x-ipstudio/mdnsbridge/v1.0/<type>/
             r = requests.get(req_url, timeout=0.5, proxies={'http': ''})
             if r is not None and r.status_code == 200:
                 # If any results, put them in self.services

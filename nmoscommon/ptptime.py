@@ -40,7 +40,7 @@ def ptp_data():
     ts = Timestamp.get_time()
     t.tv_sec = int(ts.to_nanosec())
     t.tv_nsec = int(ts.to_nanosec() - (t.tv_sec * 1e9))
-    return
+    return t
 
 # This method is depricated, use Timestamp.get_time()
 if IPP_PYTHON:

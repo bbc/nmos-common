@@ -38,7 +38,7 @@ def FD_TO_CLOCKID(fd):
 def ptp_data():
     t = timespec()
     ts = Timestamp.get_time()
-    t.tv_sec = int(ts.to_nanosec() * 1e9)
+    t.tv_sec = int(ts.to_nanosec() * 1e-9)
     t.tv_nsec = int(ts.to_nanosec() - (t.tv_sec * 1e9))
     return t
 

@@ -21,12 +21,11 @@ class PTPTest(unittest.TestCase):
         """
         # In order to get this to work, we force ptp_detail to raise an exception
         # when accessing clock_gettime later.
-        # We also get the current ptp/sysclock offset and ensure that is applied.
+        # The TAI/UTC time offset should already be included
         def throw(*args):
             raise Exception()
 
         ptp_sec, _ = ptptime.ptp_detail()
-        sec_offset = ptp_sec - int(time.time())
         ptptime.clock_gettime = throw
         fallback_sec, _ = ptptime.ptp_detail()
-        self.assertEqual(ptp_sec, fallback_sec - sec_offset)
+        self.assertEqual(ptp_sec, fallback_sec)

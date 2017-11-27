@@ -25,6 +25,7 @@ from nmoscommon.mdnsbridge import IppmDNSBridge
 
 from nmoscommon import nmoscommonconfig
 from nmoscommon import config as _config
+import traceback
 
 AGGREGATOR_APIVERSION = _config.get('nodefacade', {}).get('NODE_REGVERSION', 'v1.2')
 AGGREGATOR_APINAMESPACE = "x-nmos"
@@ -140,7 +141,7 @@ class Aggregator(object):
                                     self._mdns_updater.P2P_disable()
 
                             except Exception as ex:
-                                self.logger.writeWarning("Error registering Node: {}".format(ex))
+                                self.logger.writeWarning("Error registering Node: %r" % (traceback.format_exc(),))
 
                         elif res_key in self._registered["entities"][namespace][res_type]:
                             data = self._registered["entities"][namespace][res_type][res_key]
@@ -338,20 +339,6 @@ class Aggregator(object):
 
         raise TooManyRetries(self._mdns_updater)
 
-if __name__ == "__main__":
-    from uuid import uuid4
-
-    agg = Aggregator()
-    ID = str(uuid4())
-
-    agg.register("node", ID, id=ID, label="A Test Service", href="http://127.0.0.1:12345/", services=[], caps={}, version="0:0", hostname="apiTest")
-    try:
-        while True:
-            time.sleep(1)
-    except:
-        agg.unregister("node", ID)
-        agg.stop()
-
 class MDNSUpdater:
     def __init__(self, mdns_engine, mdns_type, mdns_name , mappings, port, logger, p2p_enable=False, p2p_cut_in_count=5, txt_recs=None):
         self.mdns = mdns_engine
@@ -414,3 +401,17 @@ class MDNSUpdater:
             self.mdns.update(self.mdns_name, self.mdns_type, self.txt_rec_base)
         else:
             self._reset_P2P_enable_count()
+
+if __name__ == "__main__": #pragma: no cover
+    from uuid import uuid4
+
+    agg = Aggregator()
+    ID = str(uuid4())
+
+    agg.register("node", ID, id=ID, label="A Test Service", href="http://127.0.0.1:12345/", services=[], caps={}, version="0:0", hostname="apiTest")
+    try:
+        while True:
+            time.sleep(1)
+    except:
+        agg.unregister("node", ID)
+        agg.stop()

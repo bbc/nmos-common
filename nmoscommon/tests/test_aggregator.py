@@ -318,3 +318,315 @@ class TestAggregator(unittest.TestCase):
                 SEND.assert_has_calls(expected_calls)
                 a._mdns_updater.P2P_disable.assert_called_with()
                 sleep.assert_not_called()
+
+    def test_process_queue_processes_queue_when_running_and_aborts_on_exception_in_node_register(self):
+        DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
+        DUMMYKEY = "dummykey"
+        DUMMYPARAMKEY = "dummyparamkey"
+        DUMMYPARAMVAL = "dummyparamval"
+
+        a = Aggregator(mdns_updater=mock.MagicMock())
+        a._registered["registered"] = True
+        a._registered["node"] = { "type" : "node", "data" : { "id" : DUMMYNODEID } }
+        if "entities" not in a._registered:
+            a._registered["entities"] = {}
+        if "resource" not in a._registered["entities"]:
+            a._registered["entities"]["resource"] = {}
+        if "dummy" not in a._registered["entities"]["resource"]:
+            a._registered["entities"]["resource"]["dummy"] = {}
+        a._registered["entities"]["resource"]["dummy"][DUMMYKEY] = { DUMMYPARAMKEY : DUMMYPARAMVAL }
+
+        queue = [
+            { "method": "POST", "namespace": "resource", "res_type": "node", "key": DUMMYNODEID },
+            ]
+
+        a._reg_queue.empty.side_effect = lambda : (len(queue) == 0)
+        a._reg_queue.get.side_effect = lambda : queue.pop(0)
+
+        expected_calls = [
+            mock.call('POST', '/resource', a._registered["node"]),
+            ]
+
+        def killloop(*args, **kwargs):
+            a._running = False
+
+        with mock.patch('gevent.sleep', side_effect=killloop) as sleep:
+            with mock.patch.object(a, '_SEND', side_effect=Exception) as SEND:
+                a._process_queue()
+
+                SEND.assert_has_calls(expected_calls)
+                a._mdns_updater.P2P_disable.assert_not_called()
+
+    def test_process_queue_processes_queue_when_running_and_aborts_on_exception_in_general_register(self):
+        DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
+        DUMMYKEY = "dummykey"
+        DUMMYPARAMKEY = "dummyparamkey"
+        DUMMYPARAMVAL = "dummyparamval"
+
+        a = Aggregator(mdns_updater=mock.MagicMock())
+        a._registered["registered"] = True
+        a._registered["node"] = { "type" : "node", "data" : { "id" : DUMMYNODEID } }
+        if "entities" not in a._registered:
+            a._registered["entities"] = {}
+        if "resource" not in a._registered["entities"]:
+            a._registered["entities"]["resource"] = {}
+        if "dummy" not in a._registered["entities"]["resource"]:
+            a._registered["entities"]["resource"]["dummy"] = {}
+        a._registered["entities"]["resource"]["dummy"][DUMMYKEY] = { DUMMYPARAMKEY : DUMMYPARAMVAL }
+
+        queue = [
+            { "method": "POST", "namespace": "resource", "res_type": "dummy", "key": DUMMYKEY },
+            ]
+
+        a._reg_queue.empty.side_effect = lambda : (len(queue) == 0)
+        a._reg_queue.get.side_effect = lambda : queue.pop(0)
+
+        expected_calls = [
+            mock.call('POST', '/resource', a._registered["entities"]["resource"]["dummy"][DUMMYKEY]),
+            ]
+
+        def killloop(*args, **kwargs):
+            a._running = False
+
+        with mock.patch('gevent.sleep', side_effect=killloop) as sleep:
+            with mock.patch.object(a, '_SEND', side_effect=InvalidRequest) as SEND:
+                a._process_queue()
+
+                SEND.assert_has_calls(expected_calls)
+                a._mdns_updater.P2P_disable.assert_not_called()
+                self.assertNotIn(DUMMYKEY, a._registered["entities"]["resource"]["dummy"])
+
+    def test_process_queue_processes_queue_when_running_and_aborts_on_exception_in_general_unregister(self):
+        DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
+        DUMMYKEY = "dummykey"
+        DUMMYPARAMKEY = "dummyparamkey"
+        DUMMYPARAMVAL = "dummyparamval"
+
+        a = Aggregator(mdns_updater=mock.MagicMock())
+        a._registered["registered"] = True
+        a._registered["node"] = { "type" : "node", "data" : { "id" : DUMMYNODEID } }
+        if "entities" not in a._registered:
+            a._registered["entities"] = {}
+        if "resource" not in a._registered["entities"]:
+            a._registered["entities"]["resource"] = {}
+        if "dummy" not in a._registered["entities"]["resource"]:
+            a._registered["entities"]["resource"]["dummy"] = {}
+        a._registered["entities"]["resource"]["dummy"][DUMMYKEY] = { DUMMYPARAMKEY : DUMMYPARAMVAL }
+
+        queue = [
+            { "method": "DELETE", "namespace": "resource", "res_type": "dummy", "key": DUMMYKEY }
+            ]
+
+        a._reg_queue.empty.side_effect = lambda : (len(queue) == 0)
+        a._reg_queue.get.side_effect = lambda : queue.pop(0)
+
+        expected_calls = [
+            mock.call('DELETE', '/resource/dummys/' + DUMMYKEY),
+            ]
+
+        def killloop(*args, **kwargs):
+            a._running = False
+
+        with mock.patch('gevent.sleep', side_effect=killloop) as sleep:
+            with mock.patch.object(a, '_SEND', side_effect=InvalidRequest) as SEND:
+                a._process_queue()
+
+                SEND.assert_has_calls(expected_calls)
+                a._mdns_updater.P2P_disable.assert_not_called()
+
+    def test_process_queue_processes_queue_when_running_and_ignores_unknown_methods(self):
+        DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
+        DUMMYKEY = "dummykey"
+        DUMMYPARAMKEY = "dummyparamkey"
+        DUMMYPARAMVAL = "dummyparamval"
+
+        a = Aggregator(mdns_updater=mock.MagicMock())
+        a._registered["registered"] = True
+        a._registered["node"] = { "type" : "node", "data" : { "id" : DUMMYNODEID } }
+        if "entities" not in a._registered:
+            a._registered["entities"] = {}
+        if "resource" not in a._registered["entities"]:
+            a._registered["entities"]["resource"] = {}
+        if "dummy" not in a._registered["entities"]["resource"]:
+            a._registered["entities"]["resource"]["dummy"] = {}
+        a._registered["entities"]["resource"]["dummy"][DUMMYKEY] = { DUMMYPARAMKEY : DUMMYPARAMVAL }
+
+        queue = [
+            { "method": "DANCE", "namespace": "resource", "res_type": "dummy", "key": DUMMYKEY }
+            ]
+
+        a._reg_queue.empty.side_effect = lambda : (len(queue) == 0)
+        a._reg_queue.get.side_effect = lambda : queue.pop(0)
+
+        def killloop(*args, **kwargs):
+            a._running = False
+
+        with mock.patch('gevent.sleep', side_effect=killloop) as sleep:
+            with mock.patch.object(a, '_SEND', side_effect=InvalidRequest) as SEND:
+                a._process_queue()
+
+                SEND.assert_not_called()
+                a._mdns_updater.P2P_disable.assert_not_called()
+
+    def test_process_queue_handles_exception_in_unqueueing(self):
+        DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
+        DUMMYKEY = "dummykey"
+        DUMMYPARAMKEY = "dummyparamkey"
+        DUMMYPARAMVAL = "dummyparamval"
+
+        a = Aggregator(mdns_updater=mock.MagicMock())
+        a._registered["registered"] = True
+
+        a._reg_queue.empty.return_value = False
+        a._reg_queue.get.side_effect = Exception
+
+        def killloop(*args, **kwargs):
+            a._running = False
+
+        with mock.patch('gevent.sleep', side_effect=killloop) as sleep:
+            with mock.patch.object(a, '_SEND') as SEND:
+                a._process_queue()
+
+                SEND.assert_not_called()
+                a._mdns_updater.P2P_disable.assert_called_with()
+                self.assertFalse(a._registered["registered"])
+
+
+
+
+    # In order to test the _process_reregister method we define some extra infrastructure
+
+    # These are the steps that the method passes through before completing, it is possible for it to fail early
+    REREGISTER_START       = 0
+    REREGISTER_DELETE      = 1
+    REREGISTER_INC_PTP     = 2
+    REREGISTER_QUEUE_DRAIN = 3
+    REREGISTER_NODE        = 4
+    REREGISTER_RESOURCES   = 5
+    REREGISTER_COMPLETE    = 6
+
+    def assert_reregister_runs_correctly(self, _send=None, to_point=REREGISTER_COMPLETE, with_prerun=None):
+        """This method is used to assert that the _process_reregister method runs to the specified point. The other parameters
+        allow the test conditions to be varied.
+        _send is a side-effect which will be applied whenever the _SEND method is called.
+        with_prerun can be set to a callable which takes the aggregator object as a single parameter and is called just before
+        a._process_reregister is.
+        """
+        DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
+        DUMMYKEY = "dummykey"
+        DUMMYPARAMKEY = "dummyparamkey"
+        DUMMYPARAMVAL = "dummyparamval"
+        DUMMYFLOW = "dummyflow"
+        DUMMYDEVICE = "dummydevice"
+
+        a = Aggregator(mdns_updater=mock.MagicMock())
+        a._running = True
+        a._registered["registered"] = True
+        a._registered["node"] = { "type" : "node", "data" : { "id" : DUMMYNODEID } }
+        if "entities" not in a._registered:
+            a._registered["entities"] = {}
+        if "resource" not in a._registered["entities"]:
+            a._registered["entities"]["resource"] = {}
+        if "dummy" not in a._registered["entities"]["resource"]:
+            a._registered["entities"]["resource"]["dummy"] = {}
+        if "device" not in a._registered["entities"]["resource"]:
+            a._registered["entities"]["resource"]["device"] = {}
+        if "flow" not in a._registered["entities"]["resource"]:
+            a._registered["entities"]["resource"]["flow"] = {}
+        a._registered["entities"]["resource"]["dummy"][DUMMYKEY]     = { DUMMYPARAMKEY : DUMMYPARAMVAL }
+        a._registered["entities"]["resource"]["device"][DUMMYDEVICE] = { DUMMYPARAMKEY : DUMMYPARAMVAL }
+        a._registered["entities"]["resource"]["flow"][DUMMYFLOW]     = { DUMMYPARAMKEY : DUMMYPARAMVAL }
+
+        queue = starting_queue = [
+            { "method": "POST",   "namespace": "resource", "res_type": "dummy", "key": DUMMYKEY },
+            { "method": "DELETE", "namespace": "resource", "res_type": "dummy", "key": DUMMYKEY }
+            ]
+
+        a._reg_queue.empty.side_effect = lambda : (len(queue) == 0)
+        def _get(block=True):
+            if len(queue) == 0:
+                raise gevent.queue.Queue.Empty
+            return queue.pop(0)
+        a._reg_queue.get.side_effect = _get
+
+        expected_send_calls = []
+        if to_point >= self.REREGISTER_DELETE:
+            expected_send_calls += [
+                mock.call("DELETE", "/resource/nodes/" + a._registered["node"]["data"]["id"]),
+                ]
+        if to_point >= self.REREGISTER_NODE:
+            expected_send_calls += [
+                mock.call('POST', '/resource', a._registered["node"]),
+                ]
+        if to_point > self.REREGISTER_NODE:
+            expected_send_calls += [
+                mock.call('POST', '/health/nodes/' + DUMMYNODEID)
+            ]
+
+        expected_put_calls = []
+        if to_point >= self.REREGISTER_RESOURCES:
+            # The reregistration of the other resources should be queued for the next run loop, and arranged in order
+            expected_put_calls = (
+                sum([
+                    [ mock.call({ "method": "POST",   "namespace": "resource", "res_type": res_type, "key": key }) for key in a._registered["entities"]["resource"][res_type] ]
+                    for res_type in a.registration_order if res_type in a._registered["entities"]["resource"]
+                    ], []) +
+                sum([
+                    [ mock.call({ "method": "POST",   "namespace": "resource", "res_type": res_type, "key": key }) for key in a._registered["entities"]["resource"][res_type] ]
+                    for res_type in a._registered["entities"]["resource"] if res_type not in a.registration_order
+                    ], [])
+                )
+
+        with mock.patch.object(a, '_SEND', side_effect=_send) as SEND:
+            if with_prerun is not None:
+                with_prerun(a)
+            a._process_reregister()
+
+            self.assertItemsEqual(SEND.mock_calls, expected_send_calls)
+            if to_point >= self.REREGISTER_INC_PTP:
+                a._mdns_updater.inc_P2P_enable_count.assert_called_with()
+            else:
+                a._mdns_updater.inc_P2P_enable_count.assert_not_called()
+            if to_point >= self.REREGISTER_QUEUE_DRAIN:
+                self.assertListEqual(queue, [])
+            else:
+                self.assertListEqual(queue, starting_queue)
+            if to_point > self.REREGISTER_NODE:
+                a._mdns_updater.P2P_disable.assert_called_with()
+            else:
+                a._mdns_updater.P2P_disable.assert_not_called()
+            self.assertListEqual(a._reg_queue.put.mock_calls, expected_put_calls)
+
+    def test_process_reregister(self):
+        self.assert_reregister_runs_correctly()
+
+    def test_process_reregister_bails_if_node_not_registered(self):
+        def _prerun(a):
+            a._registered["registered"] = False
+            a._registered["node"] = None
+
+        self.assert_reregister_runs_correctly(to_point=self.REREGISTER_START, with_prerun=_prerun)
+
+    def test_process_reregister_continues_when_delete_fails(self):
+        def _send(method, path, data=None):
+            if method == "DELETE":
+                raise InvalidRequest(status_code=404)
+            else:
+                return
+        self.assert_reregister_runs_correctly(_send=_send)
+
+    def test_process_reregister_bails_if_delete_throws_unknown_exception(self):
+        def _send(method, path, data=None):
+            if method == "DELETE":
+                raise Exception
+            else:
+                return
+        self.assert_reregister_runs_correctly(_send=_send, to_point=self.REREGISTER_DELETE)
+
+    def test_process_reregister_bails_if_first_post_throws_unknown_exception(self):
+        def _send(method, path, data=None):
+            if method == "POST":
+                raise Exception
+            else:
+                return
+        self.assert_reregister_runs_correctly(_send=_send, to_point=self.REREGISTER_NODE)

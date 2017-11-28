@@ -4,6 +4,154 @@ from nmoscommon.aggregator import *
 import nmoscommon.logger
 from nmoscommon import nmoscommonconfig
 
+class TestMDNSUpdater(unittest.TestCase):
+    def test_init(self):
+        mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
+        mdnstype = "_nmos-node._tcp"
+        txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
+        mdnsname = "node_dummy_for_testing"
+        port = 12345
+        mdnsengine = mock.MagicMock()
+        logger = mock.MagicMock()
+
+        UUT = MDNSUpdater(mdnsengine, mdnstype, mdnsname, mappings, port, logger, txt_recs=txt_recs)
+        self.assertEqual(UUT.mdns_type, mdnstype)
+        self.assertEqual(UUT.mdns_name, mdnsname)
+        self.assertEqual(UUT.mappings, mappings)
+        self.assertEqual(UUT.port, port)
+        self.assertEqual(UUT.txt_rec_base, txt_recs)
+        self.assertEqual(UUT.logger, logger)
+
+        for key in mappings.itervalues():
+            self.assertIn(key, UUT.service_versions)
+            self.assertEqual(UUT.service_versions[key], 0)
+
+        UUT.mdns.register.assert_called_once_with(mdnsname, mdnstype, port, txt_recs)
+
+    def test_p2p_enable(self):
+        mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
+        mdnstype = "_nmos-node._tcp"
+        txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
+        mdnsname = "node_dummy_for_testing"
+        port = 12345
+        mdnsengine = mock.MagicMock()
+        logger = mock.MagicMock()
+
+        UUT = MDNSUpdater(mdnsengine, mdnstype, mdnsname, mappings, port, logger, txt_recs=txt_recs)
+        UUT.P2P_enable()
+
+        self.assertTrue(UUT.p2p_enable)
+        txt_recs.update(UUT.service_versions)
+        UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
+
+    def test_inc_P2P_enable_count(self):
+        mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
+        mdnstype = "_nmos-node._tcp"
+        txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
+        mdnsname = "node_dummy_for_testing"
+        port = 12345
+        mdnsengine = mock.MagicMock()
+        logger = mock.MagicMock()
+
+        UUT = MDNSUpdater(mdnsengine, mdnstype, mdnsname, mappings, port, logger, txt_recs=txt_recs)
+
+        for i in range(0,UUT.p2p_cut_in_count-1):
+            UUT.inc_P2P_enable_count()
+
+            self.assertFalse(UUT.p2p_enable)
+            UUT.mdns.update.assert_not_called()
+
+        UUT.inc_P2P_enable_count()
+        self.assertTrue(UUT.p2p_enable)
+        txt_recs.update(UUT.service_versions)
+        UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
+
+    def test_P2P_disable_when_enabled(self):
+        mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
+        mdnstype = "_nmos-node._tcp"
+        txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
+        mdnsname = "node_dummy_for_testing"
+        port = 12345
+        mdnsengine = mock.MagicMock()
+        logger = mock.MagicMock()
+
+        UUT = MDNSUpdater(mdnsengine, mdnstype, mdnsname, mappings, port, logger, txt_recs=txt_recs)
+        UUT.P2P_enable()
+        UUT.mdns.update.reset_mock()
+        UUT.P2P_disable()
+
+        self.assertFalse(UUT.p2p_enable)
+        UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
+
+    def test_P2P_disable_resets_enable_count(self):
+        mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
+        mdnstype = "_nmos-node._tcp"
+        txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
+        mdnsname = "node_dummy_for_testing"
+        port = 12345
+        mdnsengine = mock.MagicMock()
+        logger = mock.MagicMock()
+
+        UUT = MDNSUpdater(mdnsengine, mdnstype, mdnsname, mappings, port, logger, txt_recs=txt_recs)
+
+        for i in range(0,UUT.p2p_cut_in_count-1):
+            UUT.inc_P2P_enable_count()
+
+            self.assertFalse(UUT.p2p_enable)
+            UUT.mdns.update.assert_not_called()
+
+        UUT.P2P_disable()
+
+        for i in range(0,UUT.p2p_cut_in_count-1):
+            UUT.inc_P2P_enable_count()
+
+            self.assertFalse(UUT.p2p_enable)
+            UUT.mdns.update.assert_not_called()
+
+        UUT.inc_P2P_enable_count()
+        self.assertTrue(UUT.p2p_enable)
+        txt_recs.update(UUT.service_versions)
+        UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
+
+    def test_update_mdns_does_nothing_when_not_enabled(self):
+        mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
+        mdnstype = "_nmos-node._tcp"
+        txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
+        mdnsname = "node_dummy_for_testing"
+        port = 12345
+        mdnsengine = mock.MagicMock()
+        logger = mock.MagicMock()
+
+        UUT = MDNSUpdater(mdnsengine, mdnstype, mdnsname, mappings, port, logger, txt_recs=txt_recs)
+
+        UUT.update_mdns("device", "register")
+        self.assertEqual(UUT.service_versions[mappings["device"]], 0)
+        UUT.mdns.update.assert_not_called()
+
+    def test_update_mdns(self):
+        mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
+        mdnstype = "_nmos-node._tcp"
+        txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
+        mdnsname = "node_dummy_for_testing"
+        port = 12345
+        mdnsengine = mock.MagicMock()
+        logger = mock.MagicMock()
+
+        UUT = MDNSUpdater(mdnsengine, mdnstype, mdnsname, mappings, port, logger, txt_recs=txt_recs)
+        UUT.P2P_enable()
+
+        for i in range(1,256):
+            UUT.mdns.update.reset_mock()
+            UUT.update_mdns("device", "register")
+            self.assertEqual(UUT.service_versions[mappings["device"]], i)
+            txt_recs.update(UUT.service_versions)
+            UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
+
+        UUT.mdns.update.reset_mock()
+        UUT.update_mdns("device", "register")
+        self.assertEqual(UUT.service_versions[mappings["device"]], 0)
+        txt_recs.update(UUT.service_versions)
+        UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
 class TestAggregator(unittest.TestCase):
     def setUp(self):

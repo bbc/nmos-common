@@ -20,12 +20,16 @@ import gevent
 import traceback
 import json
 import stat
+import warnings
 
-class RemoteExcepton(Exception):
+class RemoteException(Exception):
     pass
 
 class LocalException(Exception):
     pass
+
+# Included for backward compatibility with previous typo'ed version
+RemoteExcepton = RemoteException
 
 class Host(object):
     """This class provides a server which can make a set of ipc commands available at a well known address.
@@ -138,7 +142,7 @@ class Proxy(object):
             r = json.loads(self.socket.recv())
             gevent.sleep(0)
             if 'exc' in r:
-                raise RemoteExcepton(r['exc'])
+                raise RemoteException(r['exc'])
             if 'ret' in r:
                 return r['ret']
         except:
@@ -151,8 +155,10 @@ class Proxy(object):
         return _invoke
 
 
-class Socket(object):
+# This is deprecated
+class Socket(object): # pragma: no cover
     def __init__(self, name=None, rmethods=None):
+        warnings.warn("The Socket Class is Deprecated and will be removed in future", DeprecationWarning, stacklevel=1)
         if rmethods == None:
             rmethods = []
         if name is None:
@@ -236,7 +242,7 @@ def main():
 
     if len(sys.argv) > 2:
         p = Proxy(address)
-        print getattr(p, sys.argv[2])(*(sys.argv[3:]))
+        print json.dumps(getattr(p, sys.argv[2])(*(sys.argv[3:])))
     else:
         h = Host(address)
         @h.ipcmethod("hello")

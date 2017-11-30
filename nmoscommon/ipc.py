@@ -54,6 +54,7 @@ class Host(object):
         self.methods = {}
 
         self.methods['getmethods'] = self.getmethods
+        self.greenlet = None
 
     def start(self):
         if self._stop:
@@ -245,5 +246,5 @@ def main():
         h._stop = False
         h._run()
 
-if __name__ == "__main__":
+if __name__ == "__main__": #pragma: no cover
     main()

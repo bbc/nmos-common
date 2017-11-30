@@ -15,6 +15,7 @@
 import unittest
 import mock
 from nmoscommon.ipc import *
+from StringIO import StringIO
 
 class TestHost(unittest.TestCase):
     def setUp(self):
@@ -331,3 +332,152 @@ class TestHost(unittest.TestCase):
         for m in methods:
             UUT.ipcmethod()(m)
         self.assertEqual(UUT.getmethods(), dict([ (m.__name__, m.__doc__ if m.__doc__ is not None else "") for m in methods ] + [ ("getmethods", UUT.getmethods.__doc__) ]))
+
+class TestProxy(unittest.TestCase):
+    def setUp(self):
+        paths = ['nmoscommon.ipc.zmq',
+                 'os.path.exists', ]
+        patchers = { name : mock.patch(name) for name in paths }
+        self.mocks = { name : patcher.start() for (name, patcher) in patchers.iteritems() }
+        for (name, patcher) in patchers.iteritems():
+            self.addCleanup(patcher.stop)
+        self.zmq = self.mocks['nmoscommon.ipc.zmq']
+
+    def test_init(self):
+        self.mocks['os.path.exists'].return_value = True
+
+        address = "ipc://dummy.test"
+        UUT = Proxy(address)
+
+        self.assertEqual(UUT.timeout, 100)
+
+        self.zmq.Context.instance.assert_called_once_with()
+
+        if address[:6] == "ipc://":
+            self.mocks['os.path.exists'].assert_called_with(address[6:])
+
+        self.zmq.Context.instance.return_value.socket.assert_called_once_with(self.zmq.REQ)
+        self.zmq.Context.instance.return_value.socket.return_value.connect.assert_called_once_with(address)
+        self.assertItemsEqual(self.zmq.Context.instance.return_value.socket.return_value.setsockopt.mock_calls,
+                              [ mock.call(self.zmq.LINGER, 0),
+                                mock.call(self.zmq.SNDTIMEO, 0),
+                                mock.call(self.zmq.RCVTIMEO, 0) ])
+
+    def test_fails_when_ipc_socket_nonexistant(self):
+        self.mocks['os.path.exists'].return_value = False
+
+        address = "ipc://dummy.test"
+        with self.assertRaises(RuntimeError):
+            UUT = Proxy(address)
+
+        if address[:6] == "ipc://":
+            self.mocks['os.path.exists'].assert_called_with(address[6:])
+
+        self.zmq.Context.instance.return_value.socket.assert_not_called()
+
+    def test_remote_call(self):
+        self.mocks['os.path.exists'].return_value = True
+
+        address = "ipc://dummy.test"
+        UUT = Proxy(address)
+
+        method_name = "testmethodname"
+        args = [ "foo", "bar", "baz" ]
+        kwargs = { "boop" : "togethertogether" }
+        EXPECTED_RETURN_VALUE = "ejybrvjysdlfhlyguerhli;njk7893ykj"
+
+        self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = [ 1, Exception ]
+        self.zmq.Context.instance.return_value.socket.return_value.recv.side_effect = [ json.dumps({ 'ret' : EXPECTED_RETURN_VALUE }), Exception ]
+
+        with mock.patch('gevent.sleep') as sleep:
+            try:
+                r = getattr(UUT, method_name)(*args, **kwargs)
+            except:
+                self.fail(msg="Call to %s failed with unexpected exception: %s" % (method_name, traceback.format_exc(),))
+
+            self.assertEqual(r, EXPECTED_RETURN_VALUE)
+
+    def test_remote_call_raises_when_socket_unconnected(self):
+        self.mocks['os.path.exists'].return_value = True
+
+        address = "ipc://dummy.test"
+        UUT = Proxy(address)
+
+        method_name = "testmethodname"
+        args = [ "foo", "bar", "baz" ]
+        kwargs = { "boop" : "togethertogether" }
+        EXPECTED_RETURN_VALUE = "ejybrvjysdlfhlyguerhli;njk7893ykj"
+
+        self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = [ 0, Exception ]
+        self.zmq.Context.instance.return_value.socket.return_value.recv.side_effect = Exception
+
+        with mock.patch('gevent.sleep') as sleep:
+            with self.assertRaises(LocalException):
+                r = getattr(UUT, method_name)(*args, **kwargs)
+
+    def test_remote_call_passes_through_remote_exception(self):
+        self.mocks['os.path.exists'].return_value = True
+
+        address = "ipc://dummy.test"
+        UUT = Proxy(address)
+
+        method_name = "testmethodname"
+        args = [ "foo", "bar", "baz" ]
+        kwargs = { "boop" : "togethertogether" }
+        EXPECTED_EXCEPTION_MESSAGE = "ejybrvjysdlfhlyguerhli;njk7893ykj"
+
+        self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = [ 1, Exception ]
+        self.zmq.Context.instance.return_value.socket.return_value.recv.side_effect = [ json.dumps({ 'exc' : EXPECTED_EXCEPTION_MESSAGE }), Exception ]
+
+        with mock.patch('gevent.sleep') as sleep:
+            with self.assertRaises(RemoteException) as cm:
+                r = getattr(UUT, method_name)(*args, **kwargs)
+            self.assertEqual(cm.exception.args, ( EXPECTED_EXCEPTION_MESSAGE, ))
+
+class TestMain(unittest.TestCase):
+    def setUp(self):
+        paths = ['nmoscommon.ipc.zmq',
+                 'os.path.exists',
+                 'os.chmod']
+        patchers = { name : mock.patch(name) for name in paths }
+        self.mocks = { name : patcher.start() for (name, patcher) in patchers.iteritems() }
+        for (name, patcher) in patchers.iteritems():
+            self.addCleanup(patcher.stop)
+        self.zmq = self.mocks['nmoscommon.ipc.zmq']
+        self.mocks['os.path.exists'].return_value = True
+
+    @mock.patch('sys.argv', [ "ipc", "ipc://tmp.test", "test_func", "foo", "bar", "baz" ])
+    def test_main(self):
+        EXPECTED_RETURN_VALUES = []
+
+        def set_retval(string):
+            d = json.loads(string)
+            EXPECTED_RETURN_VALUES.append(d)
+
+        def get_retval():
+            return json.dumps({ 'ret' : EXPECTED_RETURN_VALUES[0] })
+
+        self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = [ 1, Exception ]
+        self.zmq.Context.instance.return_value.socket.return_value.send.side_effect = set_retval
+        self.zmq.Context.instance.return_value.socket.return_value.recv.side_effect = get_retval
+
+        with mock.patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            main()
+
+        self.assertEqual(json.loads(mock_stdout.getvalue().strip()),
+                         { 'function' : 'test_func',
+                           'args' : [ 'foo', 'bar', 'baz' ],
+                           'kwargs' : {} })
+
+    @mock.patch('sys.argv', [ "ipc", "ipc://tmp.test", ])        
+    def test_main_host(self):
+        self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = [ 1, Exception ]
+        self.zmq.Context.instance.return_value.socket.return_value.recv.side_effect = [ json.dumps({ 'function' : 'hello',
+                                                                                                     'args' : [],
+                                                                                                     'kwargs' : { 'name' : 'TestScript' } }),
+                                                                                        Exception ]
+
+        with self.assertRaises(Exception):
+            main()
+
+        self.zmq.Context.instance.return_value.socket.return_value.send.assert_called_once_with(json.dumps({ 'ret' : "Hello, TestScript" }))

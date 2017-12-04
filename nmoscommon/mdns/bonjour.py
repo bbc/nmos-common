@@ -26,144 +26,7 @@ timeout = 5
 resolved = []
 queried = []
 
-__all__ = ["browse_for_services",
-           "register_service",
-           "MDNSEngine"]
-
-def query_record_callback(port):
-    def _inner(sdRef, flags, interfaceIndex, errorCode, fullname,
-               rrtype, rrclass, rdata, ttl):
-        global queried, service_address
-        print "Query record callback"
-        if errorCode == pybonjour.kDNSServiceErr_NoError:
-            print "service_address = ({},{})".format(socket.inet_ntoa(rdata), port)
-            service_address = (socket.inet_ntoa(rdata), port)
-            queried.append(True)
-
-    return _inner
-
-def resolve_callback(sdRef, flags, interfaceIndex, errorCode, fullname,
-                     hosttarget, port, txtRecord):
-    global queried, resolved
-
-    if errorCode != pybonjour.kDNSServiceErr_NoError:
-        return
-
-    query_sdRef = pybonjour.DNSServiceQueryRecord(interfaceIndex = interfaceIndex, fullname = hosttarget, rrtype = pybonjour.kDNSServiceType_A, callBack = query_record_callback(port))
-    print "Service {} Resolved; Querying".format(hosttarget)
-
-    while service_address is None and not queried:
-        ready = select.select([query_sdRef], [], [], 5)
-        if query_sdRef not in ready[0]:
-            print 'Query record timed out'
-            break
-        pybonjour.DNSServiceProcessResult(query_sdRef)
-    else:
-        queried.pop()
-    query_sdRef.close()
-    resolved.append(True)
-
-
-def browse_callback(sdRef, flags, interfaceIndex, errorCode, serviceName,
-                    regtype, replyDomain):
-    if errorCode != pybonjour.kDNSServiceErr_NoError:
-        return
-
-    if not (flags & pybonjour.kDNSServiceFlagsAdd):
-        print 'Service removed'
-        return
-
-    print 'Service added; resolving'
-
-    resolve_sdRef = pybonjour.DNSServiceResolve(0,
-                                                interfaceIndex,
-                                                serviceName,
-                                                regtype,
-                                                replyDomain,
-                                                resolve_callback)
-
-    try:
-        while service_address is None and not resolved:
-            ready = select.select([resolve_sdRef], [], [], timeout)
-            if resolve_sdRef not in ready[0]:
-                print 'Resolve timed out'
-                break
-            pybonjour.DNSServiceProcessResult(resolve_sdRef)
-        else:
-            resolved.pop()
-    finally:
-        resolve_sdRef.close()
-
-
-def browse_for_services(regtype):
-    global service_address
-    browse_sdRef = pybonjour.DNSServiceBrowse(regtype=regtype,
-                                              callBack=browse_callback)
-
-    try:
-        try:
-            while service_address is None:
-                ready = select.select([browse_sdRef], [], [])
-                if browse_sdRef in ready[0]:
-                    pybonjour.DNSServiceProcessResult(browse_sdRef)
-        except KeyboardInterrupt:
-            pass
-    finally:
-        browse_sdRef.close()
-    return service_address
-
-def callback_on_services(regtype, callback):
-    global service_address
-    service_address = None
-    def _inner():
-        global service_address
-        browse_sdRef = pybonjour.DNSServiceBrowse(regtype=regtype,
-                                                  callBack=browse_callback)
-
-        try:
-            while True:
-                try:
-                    ready = select.select([browse_sdRef], [], [])
-                    if browse_sdRef in ready[0]:
-                        pybonjour.DNSServiceProcessResult(browse_sdRef)
-                    if service_address is not None:
-                        callback(service_address)
-                        service_address = None
-                except KeyboardInterrupt:
-                    pass
-        finally:
-            browse_sdRef.close()
-        return service_address
-
-    t = gevent.spawn(_inner)
-
-def register_callback(sdRef, flags, errorCode, name, regtype, domain):
-    if errorCode == pybonjour.kDNSServiceErr_NoError:
-        print 'Registered service:'
-        print '  name    =', name
-        print '  regtype =', regtype
-        print '  domain  =', domain
-
-
-def register_service(name, regtype, port):
-    sdRef = pybonjour.DNSServiceRegister(name=name,
-                                         regtype=regtype,
-                                         port=port,
-                                         callBack=register_callback)
-
-    def register_main_loop():
-        try:
-            try:
-                while True:
-                    ready = select.select([sdRef], [], [])
-                    if sdRef in ready[0]:
-                        pybonjour.DNSServiceProcessResult(sdRef)
-            except KeyboardInterrupt:
-                pass
-        finally:
-            sdRef.close()
-
-    t = gevent.spawn(register_main_loop)
+__all__ = ["MDNSEngine"]
 
 class MDNSEngine(object):
     def __init__(self):
@@ -207,8 +70,10 @@ class MDNSEngine(object):
                 time.sleep(0.1)
 
     def register(self, name, regtype, port, txtRecord=None, callback=None):
+        def dummy_register_callback(*args, **kwargs):
+            pass
         if callback is None:
-            callback = register_callback
+            callback = dummy_register_callback
         if txtRecord is None:
             txtRecord = {}
         if not isinstance(txtRecord, pybonjour.TXTRecord):

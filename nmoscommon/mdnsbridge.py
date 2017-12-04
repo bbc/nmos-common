@@ -109,6 +109,6 @@ class IppmDNSBridge(object):
         except Exception as e:
             self.logger.writeWarning("Exception updating services: {}".format(e))
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     bridge = IppmDNSBridge()
     print bridge.getHref("nmos-registration")

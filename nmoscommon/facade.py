@@ -30,7 +30,7 @@ FAC_OTHERERROR = 5
 class Facade(object):
     """This class serves as a proxy for the Facade running on the same machine if it exists. If no facade exists
     on this machine then it will do nothing, but calls will still function without throwing any exceptions."""
-    def __init__(self, srv_type, address="ipc:///tmp/nmos-nodefacade",logger=None):
+    def __init__(self, srv_type, address="ipc:///tmp/ips-nodefacade",logger=None):
         self.logger          = Logger("facade_proxy", logger)
         self.ipc             = None
         self.srv_registered  = False # Flag whether service is registered

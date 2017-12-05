@@ -1,7 +1,58 @@
 import unittest
-from nmoscommon.timestamp import Timestamp, TimeOffset
+import nmoscommon
+import mock
 
-class TestTimestamp(unittest.TestCase):
+from datetime import datetime
+from dateutil import tz
+
+orig_import = __import__
+
+mock_imports = {}
+
+def import_mock(magic_name, allow):
+    def __inner(name, *args):
+        if name == magic_name:
+            if allow:
+                if name not in mock_imports:
+                    mock_imports[name] = mock.MagicMock(name=name)
+                return mock_imports[name]
+            else:
+                raise ImportError
+        else:
+            return orig_import(name, *args)
+    return __inner
+
+with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
+    import nmoscommon.timestamp
+
+from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
+
+class TestTimestampImport(unittest.TestCase):
+    def test_import_with_ipp(self):
+        with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",True)):
+            reload(nmoscommon.timestamp)
+            from nmoscommon.timestamp import IPP_UTILS, Timestamp
+            self.assertTrue(IPP_UTILS)
+
+            mock_imports["pyipputils.ipptimestamp"].ipptimestamp.ipp_ts_gettime.return_value = (1, 23, 17)
+            self.assertEqual(Timestamp.get_time(), Timestamp(23, 17))
+
+    def test_import_without_ipp(self):
+        with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
+            reload(nmoscommon.timestamp)
+            from nmoscommon.timestamp import IPP_UTILS
+            self.assertFalse(IPP_UTILS)
+
+class TestTimeOffset(unittest.TestCase):
+    def test_from_timeoffset(self):
+        tests_ts = [
+            (TimeOffset.from_timeoffset(TimeOffset(0, 0)), TimeOffset(0, 0)),
+            (TimeOffset.from_timeoffset(TimeOffset(1001, 0)), TimeOffset(1001, 0)),
+            (TimeOffset.from_timeoffset(TimeOffset(1001, 1001)), TimeOffset(1001, 1001)),
+            ]
+
+        for t in tests_ts:
+            self.assertEqual(t[0], t[1])
 
     def test_normalise(self):
         tests_ts = [
@@ -46,6 +97,48 @@ class TestTimestamp(unittest.TestCase):
         for t in tests_ts:
             self.assertEqual(t[0], t[1])
 
+        bad_params = [ (0, 1, 1),
+                       (50, 0, 1),
+                       (50, 1, 0) ]
+
+        for params in bad_params:
+            with self.assertRaises(TsValueError):
+                TimeOffset.get_interval_fraction(*params)
+
+    def test_from_sec_frac(self):
+        tests_ts = [
+            (TimeOffset.from_sec_frac("1.000000001"), TimeOffset(1, 1)),
+            (TimeOffset.from_sec_frac("-1.000000001"), TimeOffset(1, 1, sign=-1)),
+            (TimeOffset.from_sec_frac("1.000001POTATO"), TimeOffset(1, 1000)),
+            (TimeOffset.from_sec_frac("1"), TimeOffset(1, 0)),
+        ]
+
+        for t in tests_ts:
+            self.assertEqual(t[0], t[1])
+
+        bad_params = [ ("0.0.1",),
+                        ]
+
+        for params in bad_params:
+            with self.assertRaises(TsValueError):
+                TimeOffset.from_sec_frac(*params)
+
+    def test_from_sec_nsec(self):
+        tests_ts = [
+            (TimeOffset.from_sec_nsec("1:1"), TimeOffset(1, 1)),
+            (TimeOffset.from_sec_nsec("-1:1"), TimeOffset(1, 1, sign=-1)),
+            (TimeOffset.from_sec_nsec("1"), TimeOffset(1, 0)),
+        ]
+
+        for t in tests_ts:
+            self.assertEqual(t[0], t[1])
+
+        bad_params = [ ("0:0:1",), ]
+
+        for params in bad_params:
+            with self.assertRaises(TsValueError):
+                TimeOffset.from_sec_nsec(*params)
+
     def test_from_count(self):
         tests_ts = [
             (TimeOffset.from_count(1, 50, 1), TimeOffset(0, 20000000)),
@@ -54,6 +147,54 @@ class TestTimestamp(unittest.TestCase):
         ]
 
         for t in tests_ts:
+            self.assertEqual(t[0], t[1])
+
+        bad_params = [ (1, 0, 1),
+                       (1, 1, 0) ]
+
+        for params in bad_params:
+            with self.assertRaises(TsValueError):
+                TimeOffset.from_count(*params)
+
+    def test_from_millisec(self):
+        tests_ts = [
+            (TimeOffset.from_millisec(1), TimeOffset(0, 1000000)),
+            (TimeOffset.from_millisec(1000), TimeOffset(1, 0)),
+            (TimeOffset.from_millisec(-1), TimeOffset(0, 1000000, -1))
+        ]
+
+        for t in tests_ts:
+            self.assertEqual(t[0], t[1])
+
+    def test_from_microsec(self):
+        tests_ts = [
+            (TimeOffset.from_microsec(1), TimeOffset(0, 1000)),
+            (TimeOffset.from_microsec(1000000), TimeOffset(1, 0)),
+            (TimeOffset.from_microsec(-1), TimeOffset(0, 1000, -1))
+        ]
+
+        for t in tests_ts:
+            self.assertEqual(t[0], t[1])
+
+    def test_from_nanosec(self):
+        tests_ts = [
+            (TimeOffset.from_nanosec(1), TimeOffset(0, 1)),
+            (TimeOffset.from_nanosec(1000000000), TimeOffset(1, 0)),
+            (TimeOffset.from_nanosec(-1), TimeOffset(0, 1, -1))
+        ]
+
+        for t in tests_ts:
+            self.assertEqual(t[0], t[1])
+
+    def test_set_value(self):
+        tests_ts = [
+            (TimeOffset(0,0), TimeOffset(0, 1), (0,1)),
+            (TimeOffset(0,0), TimeOffset(1, 0), (1,0)),
+            (TimeOffset(0,0), TimeOffset(0, 1,-1), (0,1,-1))
+        ]
+            
+        for t in tests_ts:
+            t[0].set_value(*t[2])
             self.assertEqual(t[0], t[1])
 
     def test_to_count(self):
@@ -66,11 +207,52 @@ class TestTimestamp(unittest.TestCase):
             (TimeOffset(100, 30000001).to_count(50, 1), 100 * 50 + 2),  # above .5 frame
             (TimeOffset(100, 9999999).to_count(50, 1), 100 * 50),       # below negative .5 frame
             (TimeOffset(100, 10000000).to_count(50, 1), 100 * 50 + 1),  # at negative .5 frame
-            (TimeOffset(100, 10000001).to_count(50, 1), 100 * 50 + 1)   # above negative .5 frame
+            (TimeOffset(100, 10000001).to_count(50, 1), 100 * 50 + 1),  # above negative .5 frame
+            (TimeOffset(100, 29999999).to_count(50, 1, TimeOffset.ROUND_UP), 100 * 50 + 2),  # below .5 frame, round up
+            (TimeOffset(100, 30000000).to_count(50, 1, TimeOffset.ROUND_DOWN), 100 * 50 + 1),  # at .5 frame, round down
+            (TimeOffset(100, 30000001).to_count(50, 1, TimeOffset.ROUND_DOWN), 100 * 50 + 1),  # above .5 frame, round down
+            (TimeOffset(100, 29999999, -1).to_count(50, 1, TimeOffset.ROUND_DOWN), -100 * 50 - 2),  # below .5 frame, round up
+            (TimeOffset(100, 30000000, -1).to_count(50, 1, TimeOffset.ROUND_UP), -100 * 50 - 1),  # at .5 frame, round down
+            (TimeOffset(100, 30000001, -1).to_count(50, 1, TimeOffset.ROUND_UP), -100 * 50 - 1),  # above .5 frame, round down
         ]
 
         for t in tests_ts:
             self.assertEqual(t[0], t[1])
+
+        bad_params = [ (1, 0),
+                       (0, 1) ]
+
+        for params in bad_params:
+            with self.assertRaises(TsValueError):
+                TimeOffset(0,0).to_count(*params)
+
+    def test_to_microsec(self):
+        tests_ts = [
+            (TimeOffset(0, 1000).to_microsec(), 1),
+            (TimeOffset(1, 1000000).to_microsec(), 1001000),
+            (TimeOffset(1, 1000000, -1).to_microsec(), -1001000),
+            (TimeOffset(100, 1499).to_microsec(), 100 * 1000000 + 1),  # below .5 us
+            (TimeOffset(100, 1500).to_microsec(), 100 * 1000000 + 2),  # at .5 us
+            (TimeOffset(100, 1501).to_microsec(), 100 * 1000000 + 2),  # above .5 us
+            (TimeOffset(100, 1499).to_microsec(TimeOffset.ROUND_UP), 100 * 1000000 + 2),  # below .5 us, round up
+            (TimeOffset(100, 1500).to_microsec(TimeOffset.ROUND_UP), 100 * 1000000 + 2),  # at .5 us, round up
+            (TimeOffset(100, 1501).to_microsec(TimeOffset.ROUND_UP), 100 * 1000000 + 2),  # above .5 us, round up
+            (TimeOffset(100, 1499).to_microsec(TimeOffset.ROUND_DOWN), 100 * 1000000 + 1),  # below .5 us, round down
+            (TimeOffset(100, 1500).to_microsec(TimeOffset.ROUND_DOWN), 100 * 1000000 + 1),  # at .5 us, round down
+            (TimeOffset(100, 1501).to_microsec(TimeOffset.ROUND_DOWN), 100 * 1000000 + 1),  # above .5 us, round down
+            (TimeOffset(100, 1499, -1).to_microsec(TimeOffset.ROUND_DOWN), -100 * 1000000 - 2),  # below .5 us, round down
+            (TimeOffset(100, 1500, -1).to_microsec(TimeOffset.ROUND_DOWN), -100 * 1000000 - 2),  # at .5 us, round down
+            (TimeOffset(100, 1501, -1).to_microsec(TimeOffset.ROUND_DOWN), -100 * 1000000 - 2),  # above .5 us, round down
+            (TimeOffset(100, 1499, -1).to_microsec(TimeOffset.ROUND_UP), -100 * 1000000 - 1),  # below .5 us, round up
+            (TimeOffset(100, 1500, -1).to_microsec(TimeOffset.ROUND_UP), -100 * 1000000 - 1),  # at .5 us, round up
+            (TimeOffset(100, 1501, -1).to_microsec(TimeOffset.ROUND_UP), -100 * 1000000 - 1),  # above .5 us, round up
+        ]
+
+        n = 0
+        for t in tests_ts:
+            self.assertEqual(t[0], t[1], msg="failed on check %d, %d != %d" % (n, t[0], t[1]))
+            n += 1
+
 
     def test_abs(self):
         tests_ts = [
@@ -80,6 +262,53 @@ class TestTimestamp(unittest.TestCase):
 
         for t in tests_ts:
             self.assertEqual(t[0], t[1])
+
+    def test_average(self):
+        toff1 = TimeOffset(11, 976)
+        toff2 = TimeOffset(21, 51)
+        toff_avg = (toff1 * 49 + toff2) / 50
+        avg = int((toff1.to_nanosec() * 49 + toff2.to_nanosec()) / 50)
+        self.assertEqual(avg, toff_avg.to_nanosec())
+
+    def test_cast(self):
+        tests_ts = [
+            (TimeOffset(10, 1) + 1, TimeOffset(11, 1)),
+            (TimeOffset(10, 1) - 1, TimeOffset(9, 1)),
+            (TimeOffset(10, 1) + 1.5, TimeOffset(11, 500000001)),
+            (TimeOffset(10, 1) - 1.5, TimeOffset(8, 500000001)),
+            (TimeOffset(8, 500000000) == 8.5, True),
+            (TimeOffset(8, 500000000) > 8, True),
+            (TimeOffset(8, 500000000) < 8.6, True),
+            (TimeOffset(8, 500000000) != 8.6, True),
+        ]
+
+        for t in tests_ts:
+            self.assertEqual(t[0], t[1])
+
+    def test_repr(self):
+        tests_ts = [
+            (repr(TimeOffset(10, 1)), "10:1"),
+            (repr(TimeOffset(10, 1, -1)), "-10:1"),
+        ]
+
+        for t in tests_ts:
+            self.assertEqual(t[0], t[1])
+
+class TestTimestamp(unittest.TestCase):
+
+    def test_get_time_pythonic(self):
+        self.assertFalse(IPP_UTILS)
+
+        test_ts = [
+            (1512489451.0, Timestamp(1512489451 + 37,0)),
+            (1512489451.1, Timestamp(1512489451 + 37,100000000))
+            ]
+
+        for t in test_ts:
+            with mock.patch("time.time") as time:
+                time.return_value=t[0]
+                gottime = Timestamp.get_time()
+                self.assertEqual(gottime, t[1], msg="Times not equal, expected: %r, got %r" % (t[1], gottime))
 
     def test_iaddsub(self):
         ts = Timestamp(10, 0)
@@ -98,6 +327,15 @@ class TestTimestamp(unittest.TestCase):
         toff = TimeOffset(10, 0)
         toff -= TimeOffset(0, 1)
         self.assertEqual(toff, TimeOffset(9, 999999999))
+        toff = TimeOffset(10, 500000000)
+        toff += TimeOffset(0, 500000000)
+        self.assertEqual(toff, TimeOffset(11, 0))
+        toff = TimeOffset(10, 500000000, -1)
+        toff -= TimeOffset(0, 500000000)
+        self.assertEqual(toff, TimeOffset(11, 0, -1))
+        toff = TimeOffset(10, 0, -1)
+        toff += TimeOffset(0, 500000000)
+        self.assertEqual(toff, TimeOffset(9, 500000000, -1))
 
     def test_addsub(self):
         tests_ts = [
@@ -123,6 +361,7 @@ class TestTimestamp(unittest.TestCase):
             (TimeOffset(10, 10)*(-10), TimeOffset(100, 100, -1)),
             (TimeOffset(10, 10, -1)*10, TimeOffset(100, 100, -1)),
             (TimeOffset(100, 100)/10, TimeOffset(10, 10)),
+            (TimeOffset(100, 100)/-10, TimeOffset(10, 10, -1)),
             (TimeOffset(100, 100, -1)/10, TimeOffset(10, 10, -1)),
             (TimeOffset(281474976710654, 0)/281474976710655, TimeOffset(0, 999999999)),
             (Timestamp(100, 100)/10, Timestamp(10, 10)),
@@ -136,13 +375,6 @@ class TestTimestamp(unittest.TestCase):
             self.assertEqual(isinstance(t[0], Timestamp), isinstance(t[1], Timestamp),
                              "Failed on itteration {}, {}, {}".format(count, type(t[0]),type(t[1])))
             count = count + 1
-
-    def test_average(self):
-        toff1 = TimeOffset(11, 976)
-        toff2 = TimeOffset(21, 51)
-        toff_avg = (toff1 * 49 + toff2) / 50
-        avg = int((toff1.to_nanosec() * 49 + toff2.to_nanosec()) / 50)
-        self.assertEqual(avg, toff_avg.to_nanosec())
 
     def test_compare(self):
         tests_ts = [
@@ -158,21 +390,7 @@ class TestTimestamp(unittest.TestCase):
             (Timestamp(2, 0) > 1, True),
             (Timestamp(2, 0) < 3, True),
             (TimeOffset(2, 0) < 3, True),
-        ]
-
-        for t in tests_ts:
-            self.assertEqual(t[0], t[1])
-
-    def test_cast(self):
-        tests_ts = [
-            (TimeOffset(10, 1) + 1, TimeOffset(11, 1)),
-            (TimeOffset(10, 1) - 1, TimeOffset(9, 1)),
-            (TimeOffset(10, 1) + 1.5, TimeOffset(11, 500000001)),
-            (TimeOffset(10, 1) - 1.5, TimeOffset(8, 500000001)),
-            (TimeOffset(8, 500000000) == 8.5, True),
-            (TimeOffset(8, 500000000) > 8, True),
-            (TimeOffset(8, 500000000) < 8.6, True),
-            (TimeOffset(8, 500000000) != 8.6, True),
+            (TimeOffset(1,0,1) < TimeOffset(1,0,-1), False)
         ]
 
         for t in tests_ts:
@@ -283,6 +501,16 @@ class TestTimestamp(unittest.TestCase):
             ts = Timestamp.from_iso8601_utc(t[1])
             self.assertEqual(ts, t[0])
 
+        bad_params = [
+            ("2012-07-01Y00:00:00.000000001Z",),
+            ("2012-07~01T00:00:00.000000001Z",),
+            ("2012-07-01T00:00:00.0000.0001Z",),
+            ]
+
+        for p in bad_params:
+            with self.assertRaises(TsValueError):
+                Timestamp.from_iso8601_utc(*p)
+
     def test_smpte_timelabel(self):
         tests = [
             ("2015-01-23T12:34:56F00 30000/1001 UTC-05:00 TAI-35", 30000, 1001, -5*60*60),
@@ -306,3 +534,78 @@ class TestTimestamp(unittest.TestCase):
         for t in tests:
             ts = Timestamp.from_smpte_timelabel(t[0])
             self.assertEqual(t[0], ts.to_smpte_timelabel(t[1], t[2], t[3]))
+
+        bad_params = [
+            ("potato",),
+            ("the quick brown fox jumps over the lazy dog",),
+            ("",),
+            ('\u3069\u3082\u3042\u308a\u304c\u3068\u3046\u3001\u30df\u30b9\u30bf\u30fc\u30fb\u30ed\u30dc\u30c8\u30fc',),
+            ("About half nine on tuesday",),
+            ("0315-13~35T25:63:60F56 50000/1002 UTC-25:35 TAY-2",),
+            ]
+        for p in bad_params:
+            with self.assertRaises(TsValueError):
+                Timestamp.from_smpte_timelabel(*p)
+
+        bad_params = [
+            (0,1),
+            (1,0),
+            ]
+        for p in bad_params:
+            with self.assertRaises(TsValueError):
+                Timestamp(0,0).to_smpte_timelabel(*p)
+
+        with mock.patch("time.timezone", 0):
+            with mock.patch("time.localtime") as localtime:
+                localtime.tm_isdst = 1
+                ts = Timestamp.from_smpte_timelabel("2015-07-01T00:59:59F00 30000/1001 UTC+01:00 TAI-35")
+                self.assertEqual("2015-07-01T00:59:59F00 30000/1001 UTC+01:00 TAI-35", ts.to_smpte_timelabel(30000, 1001))
+
+
+    def test_from_datetime(self):
+        tests = [
+            (datetime(1970, 1, 1, 0, 0, 0, 0, tz.gettz('UTC')), Timestamp(0,0)),
+            (datetime(1983, 3, 29, 15, 45, 0, 0, tz.gettz('UTC')), Timestamp(417800721,0)),
+            (datetime(2017, 12, 5, 16, 33, 12, 196, tz.gettz('UTC')), Timestamp(1512491629,196000)),
+        ]
+
+        for t in tests:
+            self.assertEqual(Timestamp.from_datetime(t[0]), t[1])
+
+    def test_to_datetime(self):
+        tests = [
+            (datetime(1970, 1, 1, 0, 0, 0, 0, tz.gettz('UTC')), Timestamp(0,0)),
+            (datetime(1983, 3, 29, 15, 45, 0, 0, tz.gettz('UTC')), Timestamp(417800721,0)),
+            (datetime(2017, 12, 5, 16, 33, 12, 196, tz.gettz('UTC')), Timestamp(1512491629,196000)),
+        ]
+
+        for t in tests:
+            self.assertEqual(t[0], t[1].to_datetime())
+
+    def test_from_str(self):
+        tests = [
+            ("2015-01-23T12:34:56F00 30000/1001 UTC-05:00 TAI-35", Timestamp(1422034531,17100000)),
+            ("2015-01-23T12:34:56.0Z", Timestamp(1422016531,0)),
+            ("now", Timestamp(0,0)),
+        ]
+
+        for t in tests:
+            with mock.patch("time.time", return_value=0.0):
+                self.assertEqual(Timestamp.from_str(t[0]), t[1])
+
+    def test_get_leap_seconds(self):
+        tests = [
+            (Timestamp(63072008,999999999), 0),
+            (Timestamp(63072009,0), 10),
+            (Timestamp(78796809,999999999), 10),
+            (Timestamp(78796810,0), 11),
+            (Timestamp(94694410,999999999), 11),
+            (Timestamp(94694411,0), 12),
+            (Timestamp(417800721,0), 21),
+            (Timestamp(773020827,999999999), 28),
+            (Timestamp(773020828,0), 29),
+            (Timestamp(1512491629,0), 37),
+        ]
+
+        for t in tests:
+            self.assertEqual(t[0].get_leap_seconds(), t[1])

@@ -480,11 +480,8 @@ class Timestamp(TimeOffset):
             # Fall back to system time if IPP Utils not found
             # No PTP so not as accurate
             utc_time = time.time()
-            _ts = Timestamp.from_utc(int(utc_time), int((utc_time % 1) * 1e9))
-            nanosec = _ts.to_nanosec()
-            sec = int(nanosec * 1e-9)
-            ns = int(nanosec - (sec * 10e9))
-            return cls(sec=sec, ns=ns)
+            return cls.from_utc(int(utc_time), int(utc_time*1000000000) - int(utc_time)*1000000000)
+
 
     @classmethod
     def from_tai_sec_frac(cls, ts_str):
@@ -663,7 +660,7 @@ class Timestamp(TimeOffset):
             self.ns = MAX_NANOSEC - 1
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     import sys
 
     arg = sys.argv[1]

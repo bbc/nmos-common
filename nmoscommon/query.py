@@ -69,7 +69,7 @@ class QueryService(object):
                 self.logger.writeInfo("Trying query at: {}".format(self._query_url))
 
         # Shouldn't get this far, but don't return None
-        raise QueryNotFoundError("Could not find a query service (should be unreachable!)")
+        raise QueryNotFoundError("Could not find a query service (should be unreachable!)") # pragma: no cover
 
     def get_services(self, service_urn, node_id=None):
         """
@@ -101,10 +101,11 @@ class QueryService(object):
         If `on_open` is given, it will be called when the websocket is opened.
         """
         query_url = self.mdns_bridge.getHref(QUERY_MDNSTYPE, self.priority)
-        query_url = query_url + "/" + QUERY_APINAMESPACE + "/" + QUERY_APINAME + "/" + self.apiversion
 
         if query_url == "":
             raise BadSubscriptionError("Could not get query service from mDNS bridge")
+
+        query_url = query_url + "/" + QUERY_APINAMESPACE + "/" + QUERY_APINAME + "/" + self.apiversion
 
         resource_path = "/" + topic.strip("/")
         params = {"max_update_rate_ms": 100, "persist": False, "resource_path": resource_path, "params": {}}
@@ -143,7 +144,7 @@ class QueryService(object):
 
         sock.run_forever()
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     from nmoscommon.mdnsbridge import IppmDNSBridge
     from pprint import pprint
 

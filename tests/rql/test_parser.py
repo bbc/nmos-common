@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..parser import parse
+from nmoscommon.rql.parser import parse
 from .fixtures import query_pairs
 
 

@@ -43,7 +43,7 @@ class PTPTest(unittest.TestCase):
             self.assertTrue(isinstance(rv[1], int))
 
     def test_fallback(self):
-        with mock.patch('nmoscommon.ptptime.Timestamp.get_time') as get_time:
+        with mock.patch('nmoscommon.timestamp.Timestamp.get_time') as get_time:
             with mock.patch('__builtin__.__import__', side_effect=import_mock("ipppython.ptptime",False)):
                 tval = 23*1e9 + 17
                 get_time.return_value.to_nanosec.return_value = tval

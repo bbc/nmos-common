@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import unittest
-import requests
+import mock
 
 from nmoscommon.webapi import WebAPI, route, abort
 

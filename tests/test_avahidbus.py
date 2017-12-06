@@ -14,9 +14,9 @@
 
 import unittest
 import mock
-import dbus
 
 try:
+    import dbus
     import avahi
 except:
     pass

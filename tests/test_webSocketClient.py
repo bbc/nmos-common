@@ -1,5 +1,5 @@
 import unittest
-from ipppython.webSocketClient import *
+from nmoscommon.webSocketClient import *
 
 
 class TestWebsocketClient(unittest.TestCase):

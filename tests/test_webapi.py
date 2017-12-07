@@ -77,7 +77,7 @@ class TestWebAPI(unittest.TestCase):
                 request.headers = {}
 
             r = f(*args, **kwargs)
-        
+
             self.assertEqual(r, expected, msg="""
 
 Expected IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_type=%r\n, direct_passthrough=%r)
@@ -96,6 +96,32 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
                                                                                                                              r.direct_passthrough))
 
     def perform_test_on_decorator(self, data):
+        """This method will take a mock method and wrap it with a specified decorator, then create a webapi class instance with that method as a member.
+        It will check that the object automatically registers the 
+
+        The format of the input is as dictionary, with several keys which must be provided, and many which may:
+
+        Mandatory keys:
+
+        'methods'     -- This is a list of strings which are the HTTP methods with which the route is expected to be registered with Flask.
+        'path'        -- This is the path that is expected to be passed to Flask when the method is registered.
+        'return_data' -- This is the value that will be returned by the wrapped method when it is called.
+        'method'      -- This is the HTTP method which will be provided in the call that is made to the wrapped function for testing.
+        'decorator'   -- This is the decorator we are testing, it must be a callable object which takes a single function as a parameter and returns a callable
+        'expected'    -- This is the expected response which will be sent to the Flask subsystem for output by the wrapped method when it is called. If set to mock.ANY then
+                         any result will be acceptable.
+
+        Optional Keys:
+
+        'headers'         -- These headers will be included in the mock request when the wrapped method is called.
+        'oauth_userid'    -- if present then the call will be performed in a mock Flask environment which implements oauth, and this value will be returned by the mock 
+                             credentials server as an acceptable user id.
+        'oauth_whitelist' -- if present when 'oauth_userid' is also specified then this value will be added to the mock whitelist of acceptable user ids. If not specified then
+                             the value of 'oauth_userid' will be put on this whitelist instead.
+        'oauth_token      -- if present when 'oauth_userid' is also specified then this value will be returned by the mock credentials server as an acceptable authorisation token.
+        'best_type'       -- If the code attempts to determine what the best mime-type to use for a return format then it will be given this value,
+                             alternatively set this to TypeError to mimick the behaviour when none of the acceptible types is available.
+"""
         method = mock.MagicMock(name="webapi", return_value=data['return_data'])
 
         (f, UUT, (args, kwargs)) = self.initialise_webapi_with_method_using_decorator(method, data['decorator'], oauth_userid=data.get('oauth_whitelist',data.get('oauth_userid', None)))

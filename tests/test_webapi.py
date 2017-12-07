@@ -133,6 +133,50 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
                                                                     content_type=u'application/json'),
             })
 
+    def test_secure_route__GET__without_specified_methods(self):
+        self.perform_test_on_decorator({
+                'methods'     : ["GET", "HEAD"],
+                'path'        : '/',
+                'return_data' : { 'foo' : 'bar', 'baz' : ['boop',] },
+                'method'      : "GET",
+                'best_type'   : 'application/json',
+                'decorator'   : secure_route('/', auto_json=True, headers=["x-not-a-real-header",], origin="example.com"),
+                'expected'    : IppResponse(response=json.dumps({ 'foo' : 'bar', 'baz' : ['boop',] }, indent=4),
+                                                                    status=200,
+                                                                    headers={ 'Access-Control-Allow-Methods'     : u'GET, HEAD',
+                                                                              'Access-Control-Max-Age'           : u'21600',
+                                                                              'Cache-Control'                    : u'no-cache, must-revalidate, no-store',
+                                                                              'Access-Control-Allow-Credentials' : u'true',
+                                                                              'Access-Control-Allow-Origin'      : u'example.com',
+                                                                              'Access-Control-Allow-Headers'     : u'X-NOT-A-REAL-HEADER, CONTENT-TYPE, TOKEN',
+                                                                              'Content-Type'                     : u'application/json',
+                                                                              'Content-Length'                   : 56 },
+                                                                    mimetype=u'application/json',
+                                                                    content_type=u'application/json'),
+            })
+
+    def test_secure_route__GET__without_specified_headers(self):
+        self.perform_test_on_decorator({
+                'methods'     : ["GET", "POST", "POTATO"],
+                'path'        : '/',
+                'return_data' : { 'foo' : 'bar', 'baz' : ['boop',] },
+                'method'      : "GET",
+                'best_type'   : 'application/json',
+                'decorator'   : secure_route('/', methods=["GET", "POST", "POTATO"], auto_json=True, origin="example.com"),
+                'expected'    : IppResponse(response=json.dumps({ 'foo' : 'bar', 'baz' : ['boop',] }, indent=4),
+                                                                    status=200,
+                                                                    headers={ 'Access-Control-Allow-Methods'     : u'GET, POST, POTATO',
+                                                                              'Access-Control-Max-Age'           : u'21600',
+                                                                              'Cache-Control'                    : u'no-cache, must-revalidate, no-store',
+                                                                              'Access-Control-Allow-Credentials' : u'true',
+                                                                              'Access-Control-Allow-Origin'      : u'example.com',
+                                                                              'Access-Control-Allow-Headers'     : u'CONTENT-TYPE, TOKEN',
+                                                                              'Content-Type'                     : u'application/json',
+                                                                              'Content-Length'                   : 56 },
+                                                                    mimetype=u'application/json',
+                                                                    content_type=u'application/json'),
+            })
+
     def test_secure_route__GET__with_TypeError_when_checking_best_mime_type(self):
         self.perform_test_on_decorator({
                 'methods'     : ["GET", "POST", "POTATO"],

@@ -36,6 +36,7 @@ from werkzeug.wrappers import BaseResponse
 from requests.structures import CaseInsensitiveDict
 
 import flask_oauthlib
+import flask_oauthlib.client
 
 try:
     from urlparse import urlparse
@@ -236,7 +237,8 @@ def returns_requires_auth(f):
         if isinstance(r, tuple) and len(r) > 1:
             status = r[0]
             if len(r) > 2:
-                headers = r[2]
+                for h in r[2]:
+                    headers[h] = r[2][h]
             r = r[1]
         if isinstance(r, list):
             flatfmt = True
@@ -446,6 +448,14 @@ class IppResponse(Response):
                                           mimetype=mimetype,
                                           content_type=content_type,
                                           direct_passthrough=direct_passthrough)
+
+    def __eq__(self, other):
+        return ((self.get_data() == other.get_data()) and
+                    (self.status == other.status) and
+                    (self.headers == other.headers) and
+                    (self.mimetype == other.mimetype) and
+                    (self.content_type == other.content_type) and
+                    (self.direct_passthrough == other.direct_passthrough))
 
 
 def proxied_request(uri, headers=None, data=None, method=None, proxies=None):

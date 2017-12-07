@@ -208,6 +208,8 @@ def returns_json(f):
                 if status == 200:
                     status = 204
                 return IppResponse(status=status)
+        elif isinstance(r, IppResponse):
+            return r
         else:
             return IppResponse(r, status=status, headers=headers)
     return decorated_function
@@ -298,11 +300,18 @@ def obj_path_access(f):
                     rep = rep[y]
                 else:
                     abort(404)
-            repdump = json.dumps(rep)
+            try:
+                repdump = json.dumps(rep)
+            except:
+                abort(404)
             if repdump == "{}":
                 return []
             else:
-                return rep
+                if isinstance(rep, basestring):
+                    """Returning a string here will bypass the jsonification, which we want, have to do it manually"""
+                    return jsonify(rep)
+                else:
+                    return rep
         else:
             return rep
     return decorated_function
@@ -419,7 +428,7 @@ def grain_event_wrapper(func):
 class IppResponse(Response):
     def __init__(self, response=None, status=None, headers=None, mimetype=None, content_type=None, direct_passthrough=False):
         headers = CaseInsensitiveDict(headers) if headers is not None else None
-        if response is not None and isinstance(response, BaseResponse):
+        if response is not None and isinstance(response, BaseResponse) and response.headers is not None:
             headers = CaseInsensitiveDict(response.headers)
 
         if headers is None:
@@ -441,10 +450,11 @@ class IppResponse(Response):
 
         else:
             headers.update(h)
+            headers = dict(headers)
 
         super(IppResponse, self).__init__(response=response,
                                           status=status,
-                                          headers=dict(headers),
+                                          headers=headers,
                                           mimetype=mimetype,
                                           content_type=content_type,
                                           direct_passthrough=direct_passthrough)
@@ -514,14 +524,22 @@ class WebAPI(object):
                 value = getattr(cl, name)
                 if callable(value):
                     endpoint = "{}_{}".format(basepath.replace('/', '_'), value.__name__)
+                    if hasattr(value, 'app_methods') and value.app_methods is not None:
+                        methods = value.app_methods
+                    else:
+                        methods = [ "GET", "HEAD" ]
+                    if hasattr(value, 'app_headers') and value.app_headers is not None:
+                        headers = value.app_headers
+                    else:
+                        headers = []
                     if hasattr(value, "secure_route"):
                         self.app.route(
                             basepath + value.secure_route,
                             endpoint=endpoint,
-                            methods=value.app_methods + ["OPTIONS"])(crossdomain(
+                            methods=methods + ["OPTIONS"])(crossdomain(
                                 origin=value.app_origin,
-                                methods=value.app_methods,
-                                headers=value.app_headers +
+                                methods=methods,
+                                headers=headers +
                                 ['Content-Type',
                                  'token',])(returns_requires_auth(value)))
                     elif hasattr(value, "response_route"):
@@ -534,79 +552,45 @@ class WebAPI(object):
                                 headers=['Content-Type',])(returns_response(value)))
                     elif hasattr(value, "app_route"):
                         if value.app_auto_json:
-                            if value.app_methods:
-                                self.app.route(
-                                    basepath + value.app_route,
-                                    endpoint=endpoint,
-                                    methods=value.app_methods +
+                            self.app.route(
+                                basepath + value.app_route,
+                                endpoint=endpoint,
+                                methods=methods +
                                     ["OPTIONS",])(crossdomain(
                                         origin=value.app_origin,
-                                        methods=value.app_methods,
-                                        headers=value.app_headers +
-                                        ["Content-Type",])(returns_json(value)))
-                            else:
-                                self.app.route(
-                                    basepath + value.app_route,
-                                    endpoint=endpoint,
-                                    methods=["GET", "HEAD", "OPTIONS"])(crossdomain(
-                                        origin=value.app_origin,
-                                        methods=["GET", "HEAD"],
-                                        headers=value.app_headers +
+                                        methods=methods,
+                                        headers=headers +
                                         ["Content-Type",])(returns_json(value)))
                         else:
-                            if value.app_methods:
-                                self.app.route(
+                            self.app.route(
                                     basepath + value.app_route,
                                     endpoint=endpoint,
-                                    methods=value.app_methods +
+                                    methods=methods +
                                     ["OPTIONS",])(crossdomain(
                                         origin=value.app_origin,
-                                        methods=value.app_methods,
-                                        headers=["Content-Type",])(dummy(value)))
-                            else:
-                                self.app.route(
-                                    basepath + value.app_route,
-                                    endpoint=endpoint,
-                                    methods=["GET", "HEAD", "OPTIONS"])(crossdomain(
-                                        origin=value.app_origin,
-                                        methods=["GET", "HEAD"],
-                                        headers=["Content-Type",])(dummy(value)))
+                                        methods=methods,
+                                        headers=headers + ["Content-Type",])(dummy(value)))
                     elif hasattr(value, "app_file_route"):
                         self.app.route(
                             basepath + value.app_file_route,
                             endpoint=endpoint,
-                            methods=value.app_methods)(crossdomain(
+                            methods=methods + ["OPTIONS"])(crossdomain(
                                 origin='*',
-                                methods=['GET', 'HEAD'],
-                                headers=['Content-Type',])(returns_file(value)))
+                                methods=methods,
+                                headers=headers + ["Content-Type",])(returns_file(value)))
                     elif hasattr(value, "app_resource_route"):
-                        if value.app_methods:
-                            f = crossdomain(origin='*',
-                                            methods=value.app_methods,
-                                            headers=["Content-Type",
+                        f = crossdomain(origin='*',
+                                            methods=methods,
+                                            headers=headers + ["Content-Type",
                                                      "api-key",])(returns_json(
                                                          obj_path_access(value)))
-                            self.app.route(basepath + value.app_resource_route,
-                                           methods=value.app_methods + ["OPTIONS",],
+                        self.app.route(basepath + value.app_resource_route,
+                                           methods=methods + ["OPTIONS",],
                                            endpoint=endpoint)(f)
-                            f.__name__ = endpoint + '_path'
-                            self.app.route(
+                        f.__name__ = endpoint + '_path'
+                        self.app.route(
                                 basepath + value.app_resource_route + '<path:path>/',
-                                methods=value.app_methods + ["OPTIONS",],
-                                endpoint=f.__name__)(f)
-                        else:
-                            f = crossdomain(origin='*',
-                                            methods=["GET", "HEAD"],
-                                            headers=["Content-Type",
-                                                     "api-key",])(returns_json(
-                                                         obj_path_access(value)))
-                            self.app.route(basepath + value.app_resource_route,
-                                           methods=["GET", "HEAD", "OPTIONS"],
-                                           endpoint=f.__name__)(f)
-                            f.__name__ = endpoint + '_path'
-                            self.app.route(
-                                basepath + value.app_resource_route + '<path:path>/',
-                                methods=["GET", "HEAD", "OPTIONS"],
+                                methods=methods + ["OPTIONS",],
                                 endpoint=f.__name__)(f)
                     elif hasattr(value, "sockets_on"):
                         socket_recv_gen = getattr(cl, "on_websocket_connect", None)

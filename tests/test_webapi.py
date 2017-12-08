@@ -25,8 +25,6 @@ import flask
 
 class TestWebAPI(unittest.TestCase):
 
-    htmlified_standard_dict = u'<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"\n   "http://www.w3.org/TR/html4/strict.dtd">\n\n<html>\n<head>\n  <title><a href="://example.com/">://example.com</a></title>\n  <meta http-equiv="content-type" content="text/html; charset=None">\n  <style type="text/css">\ntd.linenos { background-color: #f0f0f0; padding-right: 10px; }\nspan.lineno { background-color: #f0f0f0; padding: 0 5px 0 5px; }\npre { line-height: 125%; }\nbody .hll { background-color: #ffffcc }\nbody  { background: #f8f8f8; }\nbody .c { color: #408080; font-style: italic } /* Comment */\nbody .err { border: 1px solid #FF0000 } /* Error */\nbody .k { color: #008000; font-weight: bold } /* Keyword */\nbody .o { color: #666666 } /* Operator */\nbody .ch { color: #408080; font-style: italic } /* Comment.Hashbang */\nbody .cm { color: #408080; font-style: italic } /* Comment.Multiline */\nbody .cp { color: #BC7A00 } /* Comment.Preproc */\nbody .cpf { color: #408080; font-style: italic } /* Comment.PreprocFile */\nbody .c1 { color: #408080; font-style: italic } /* Comment.Single */\nbody .cs { color: #408080; font-style: italic } /* Comment.Special */\nbody .gd { color: #A00000 } /* Generic.Deleted */\nbody .ge { font-style: italic } /* Generic.Emph */\nbody .gr { color: #FF0000 } /* Generic.Error */\nbody .gh { color: #000080; font-weight: bold } /* Generic.Heading */\nbody .gi { color: #00A000 } /* Generic.Inserted */\nbody .go { color: #888888 } /* Generic.Output */\nbody .gp { color: #000080; font-weight: bold } /* Generic.Prompt */\nbody .gs { font-weight: bold } /* Generic.Strong */\nbody .gu { color: #800080; font-weight: bold } /* Generic.Subheading */\nbody .gt { color: #0044DD } /* Generic.Traceback */\nbody .kc { color: #008000; font-weight: bold } /* Keyword.Constant */\nbody .kd { color: #008000; font-weight: bold } /* Keyword.Declaration */\nbody .kn { color: #008000; font-weight: bold } /* Keyword.Namespace */\nbody .kp { color: #008000 } /* Keyword.Pseudo */\nbody .kr { color: #008000; font-weight: bold } /* Keyword.Reserved */\nbody .kt { color: #B00040 } /* Keyword.Type */\nbody .m { color: #666666 } /* Literal.Number */\nbody .s { color: #BA2121 } /* Literal.String */\nbody .na { color: #7D9029 } /* Name.Attribute */\nbody .nb { color: #008000 } /* Name.Builtin */\nbody .nc { color: #0000FF; font-weight: bold } /* Name.Class */\nbody .no { color: #880000 } /* Name.Constant */\nbody .nd { color: #AA22FF } /* Name.Decorator */\nbody .ni { color: #999999; font-weight: bold } /* Name.Entity */\nbody .ne { color: #D2413A; font-weight: bold } /* Name.Exception */\nbody .nf { color: #0000FF } /* Name.Function */\nbody .nl { color: #A0A000 } /* Name.Label */\nbody .nn { color: #0000FF; font-weight: bold } /* Name.Namespace */\nbody .nt { color: #008000; font-weight: bold } /* Name.Tag */\nbody .nv { color: #19177C } /* Name.Variable */\nbody .ow { color: #AA22FF; font-weight: bold } /* Operator.Word */\nbody .w { color: #bbbbbb } /* Text.Whitespace */\nbody .mb { color: #666666 } /* Literal.Number.Bin */\nbody .mf { color: #666666 } /* Literal.Number.Float */\nbody .mh { color: #666666 } /* Literal.Number.Hex */\nbody .mi { color: #666666 } /* Literal.Number.Integer */\nbody .mo { color: #666666 } /* Literal.Number.Oct */\nbody .sb { color: #BA2121 } /* Literal.String.Backtick */\nbody .sc { color: #BA2121 } /* Literal.String.Char */\nbody .sd { color: #BA2121; font-style: italic } /* Literal.String.Doc */\nbody .s2 { color: #BA2121 } /* Literal.String.Double */\nbody .se { color: #BB6622; font-weight: bold } /* Literal.String.Escape */\nbody .sh { color: #BA2121 } /* Literal.String.Heredoc */\nbody .si { color: #BB6688; font-weight: bold } /* Literal.String.Interpol */\nbody .sx { color: #008000 } /* Literal.String.Other */\nbody .sr { color: #BB6688 } /* Literal.String.Regex */\nbody .s1 { color: #BA2121 } /* Literal.String.Single */\nbody .ss { color: #19177C } /* Literal.String.Symbol */\nbody .bp { color: #008000 } /* Name.Builtin.Pseudo */\nbody .vc { color: #19177C } /* Name.Variable.Class */\nbody .vg { color: #19177C } /* Name.Variable.Global */\nbody .vi { color: #19177C } /* Name.Variable.Instance */\nbody .il { color: #666666 } /* Literal.Number.Integer.Long */\n\n  </style>\n</head>\n<body>\n<h2><a href="://example.com/">://example.com</a></h2>\n\n<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>1\n2\n3\n4\n5\n6</pre></div></td><td class="code"><div class="highlight"><pre><span class="p">{</span>\n    <span class="nt">&quot;foo&quot;</span><span class="p">:</span> <span class="s2">&quot;bar&quot;</span><span class="p">,</span> \n    <span class="nt">&quot;baz&quot;</span><span class="p">:</span> <span class="p">[</span>\n        <span class="s2">&quot;boop&quot;</span>\n    <span class="p">]</span>\n<span class="p">}</span>\n</pre></div>\n</td></tr></table></body>\n</html>\n'
-
     @mock.patch("nmoscommon.webapi.Flask")
     @mock.patch("nmoscommon.webapi.Sockets")
     def initialise_webapi_with_method_using_decorator(self, mock_webapi_method, decorator, Sockets, Flask, oauth_userid=None, expect_paths_below=False):
@@ -70,7 +68,7 @@ class TestWebAPI(unittest.TestCase):
     @mock.patch('nmoscommon.webapi.http.install_opener')
     @mock.patch('nmoscommon.flask_cors.make_response', side_effect=lambda x:x)
     @mock.patch('nmoscommon.flask_cors.request')
-    def assert_wrapped_route_method_returns(self, f, expected, request, make_response, install_opener, urlopen, method="GET", args=[], kwargs={}, best_mimetype='application/json', request_headers=None, oauth_userid=None, oauth_token=None):
+    def assert_wrapped_route_method_returns(self, f, expected, request, make_response, install_opener, urlopen, method="GET", args=[], kwargs={}, best_mimetype='application/json', request_headers=None, oauth_userid=None, oauth_token=None, ignore_body=False):
         with mock.patch('nmoscommon.webapi.request', request):
             if oauth_userid is not None:
                 # this method is called by the default_authorizer when oauth credentials are checked
@@ -106,6 +104,9 @@ class TestWebAPI(unittest.TestCase):
                     if isinstance(expected, int):
                         self.fail(msg="Got unexpected Response object when expecting an abort with code %d" % (expected, ))
                     else:
+                        if ignore_body:
+                            expected.response = r.response
+                            expected.headers['Content-Length'] = r.headers['Content-Length']
                         self.assertEqual(r, expected, msg="""
 
 Expected IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_type=%r\n, direct_passthrough=%r)
@@ -150,6 +151,8 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
         'best_type'       -- If the code attempts to determine what the best mime-type to use for a return format then it will be given this value,
                              alternatively set this to TypeError to mimick the behaviour when none of the acceptible types is available.
         'extract_path'    -- If this is included and set to true then the wrapped function will be called with this value as a parameter as if it were a path
+        'ignore_body'     -- If this is set to true then the contents of the body of the 'expected' request will be forced to the same value as the body of the returned response
+                             before a comparison is performed. Metadata, headers, etc ... are still compared.
 """
         method = mock.MagicMock(name="webapi", return_value=data['return_data'])
 
@@ -169,7 +172,8 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
                                                      request_headers=data.get('headers',None),
                                                      oauth_userid=data.get('oauth_userid', None),
                                                      oauth_token=data.get('oauth_token',None),
-                                                     kwargs=kwargs)
+                                                     kwargs=kwargs,
+                                                     ignore_body=data.get('ignore_body', False))
 
     def test_secure_route__GET__json(self):
         self.perform_test_on_decorator({
@@ -340,10 +344,8 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
                 'method'      : "GET",
                 'best_type'   : 'text/html',
                 'decorator'   : secure_route('/', methods=["GET", "POST", "POTATO"], auto_json=True, headers=["x-not-a-real-header",], origin="example.com"),
-                'expected'    : IppResponse(response=self.htmlified_standard_dict,
-                                                status=200,
-                                                headers={'Content-Length': u'4956',
-                                                             'Access-Control-Allow-Headers': u'X-NOT-A-REAL-HEADER, CONTENT-TYPE, TOKEN',
+                'expected'    : IppResponse(    status=200,
+                                                headers={    'Access-Control-Allow-Headers': u'X-NOT-A-REAL-HEADER, CONTENT-TYPE, TOKEN',
                                                              'Access-Control-Max-Age': u'21600',
                                                              'Cache-Control': u'no-cache, must-revalidate, no-store',
                                                              'Access-Control-Allow-Origin': u'example.com',
@@ -351,7 +353,8 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
                                                              'Content-Type': u'text/html; charset=utf-8'},
                                                 mimetype=u'text/html',
                                                 content_type=u'text/html; charset=utf-8',
-                                                direct_passthrough=False)
+                                                direct_passthrough=False),
+                'ignore_body' : True
             })
 
     def test_secure_route__GET__with_wrapped_method_returning_list(self):
@@ -688,10 +691,8 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
                 'method'      : "GET",
                 'best_type'   : 'text/html',
                 'decorator'   : route('/', methods=["GET", "POST", "POTATO"], auto_json=True, headers=["x-not-a-real-header",], origin="example.com"),
-                'expected'    : IppResponse(response=self.htmlified_standard_dict,
-                                                status=200,
-                                                headers={'Content-Length': u'4956',
-                                                             'Access-Control-Allow-Headers': u'X-NOT-A-REAL-HEADER, CONTENT-TYPE',
+                'expected'    : IppResponse(    status=200,
+                                                headers={    'Access-Control-Allow-Headers': u'X-NOT-A-REAL-HEADER, CONTENT-TYPE',
                                                              'Access-Control-Max-Age': u'21600',
                                                              'Cache-Control': u'no-cache, must-revalidate, no-store',
                                                              'Access-Control-Allow-Origin': u'example.com',
@@ -699,7 +700,8 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
                                                              'Content-Type': u'text/html; charset=utf-8'},
                                                 mimetype=u'text/html',
                                                 content_type=u'text/html; charset=utf-8',
-                                                direct_passthrough=False)
+                                                direct_passthrough=False),
+                'ignore_body' : True
             })
 
     def test_route__GET__without_matching_type(self):

@@ -27,14 +27,19 @@ class TestWebAPI(unittest.TestCase):
 
     @mock.patch("nmoscommon.webapi.Flask")
     @mock.patch("nmoscommon.webapi.Sockets")
-    def initialise_webapi_with_method_using_decorator(self, mock_webapi_method, decorator, Sockets, Flask, oauth_userid=None, expect_paths_below=False):
+    def initialise_webapi_with_method_using_decorator(self, mock_webapi_method, decorator, Sockets, Flask, oauth_userid=None, expect_paths_below=False, is_socket=False, on_websocket_connect=None):
         """Returns a pair of the wrapped function that would be sent to flask.app.route, and the parameters which would
         be passed to flask.app.route for it."""
-        def TEST(self):
-            return mock_webapi_method()
+        def TEST(self, *args, **kwargs):
+            return mock_webapi_method(*args, **kwargs)
 
         class StubWebAPI(WebAPI):
             pass
+
+        if on_websocket_connect is not None:
+            def _on_websocket_connect(*args, **kwargs):
+                return on_websocket_connect(*args, **kwargs)
+            StubWebAPI.on_websocket_connect = _on_websocket_connect
 
         StubWebAPI.TEST = decorator(TEST)
         basemethod = StubWebAPI.TEST
@@ -50,7 +55,11 @@ class TestWebAPI(unittest.TestCase):
         torun = app.before_first_request.call_args[0][0]
         Sockets.assert_called_once_with(app)
 
-        if not expect_paths_below:
+        if is_socket:
+            Sockets.return_value.route.assert_called_once_with('/', endpoint="_TEST")
+            Sockets.return_value.route.return_value.assert_called_once_with(mock.ANY)
+            return (Sockets.return_value.route.return_value.call_args[0][0], UUT, [ (call[1], call[2]) for call in Sockets.return_value.route.mock_calls if call[0] == '' ])
+        elif not expect_paths_below:
             app.route.assert_called_once_with('/',
                                             endpoint="_TEST",
                                             methods=mock.ANY)
@@ -782,6 +791,25 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
                                                                               'Content-Disposition'              : u'attachment; filename=afile.zog' }),
             })
 
+    def test_file_route__GET_with_content_type(self):
+        self.perform_test_on_decorator({
+                'methods'     : ["GET", "POST", "POTATO",],
+                'path'        : '/',
+                'return_data' : { 'content' : "POJNDCJSL", 'filename' : "afile", "type" : 'zog', "content-type" : "application/zog" },
+                'method'      : "GET",
+                'best_type'   : 'application/json',
+                'decorator'   : file_route('/', methods=["GET", "POST", "POTATO"], headers=["x-not-a-real-header",]),
+                'expected'    : IppResponse(response="POJNDCJSL",
+                                                                    status=200,
+                                                                    headers={ 'Access-Control-Allow-Methods'     : u'GET, POST, POTATO',
+                                                                              'Access-Control-Max-Age'           : u'21600',
+                                                                              'Cache-Control'                    : u'no-cache, must-revalidate, no-store',
+                                                                              'Access-Control-Allow-Origin'      : u'*',
+                                                                              'Access-Control-Allow-Headers'     : u'X-NOT-A-REAL-HEADER, CONTENT-TYPE',
+                                                                              'Content-Disposition'              : u'attachment; filename=afile.zog',
+                                                                              'Content-Type'                     : u'application/zog' }),
+            })
+
     def test_file_route__GET_without_methods(self):
         self.perform_test_on_decorator({
                 'methods'     : ["GET", "HEAD",],
@@ -997,3 +1025,60 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
                                                 'Access-Control-Allow-Methods': u'GET, POST, POTATO'},
                                             content_type=u'application/json'),
             })
+
+    def test_on_json(self):
+        """This tests the on_json decorator which is used for websocket end-points and so has a slightly different
+        structure from that of the other decorators."""
+        m = mock.MagicMock(name="webapi")
+        (f, UUT, calls) = self.initialise_webapi_with_method_using_decorator(m, on_json('/'), is_socket=True)
+
+        socket_uuid = "05f1c8da-dc36-11e7-af05-7fe527dcf7ab"
+        with mock.patch("uuid.uuid4", return_value=socket_uuid):
+            m.side_effect = lambda ws,msg : self.assertIn(socket_uuid, UUT.socks)
+            ws = mock.MagicMock(name="ws")
+            ws.receive.side_effect = [ json.dumps({ "foo" : "bar", "baz" : [ "boop", ] }), Exception ]
+
+            f(ws)
+
+            self.assertListEqual(ws.receive.mock_calls, [ mock.call(), mock.call() ])
+
+            m.assert_called_once_with(ws, { "foo" : "bar", "baz" : [ "boop", ] })
+
+    def test_on_json_with_on_websocket_connect(self):
+        """This tests the on_json decorator which is used for websocket end-points and so has a slightly different
+        structure from that of the other decorators, it checks the behaviour when an alternative on_websocket_connect
+        method is specified in the class."""
+        m = mock.MagicMock(name="webapi")
+        on_websocket_connect = mock.MagicMock(name="on_websocket_connect")
+        (f, UUT, calls) = self.initialise_webapi_with_method_using_decorator(m, on_json('/'), is_socket=True, on_websocket_connect=on_websocket_connect)
+
+        on_websocket_connect.assert_called_once_with(UUT, mock.ANY)
+        self.assertEqual(f, on_websocket_connect.return_value)
+        f = on_websocket_connect.call_args[0][1]
+
+        socket_uuid = "05f1c8da-dc36-11e7-af05-7fe527dcf7ab"
+        with mock.patch("uuid.uuid4", return_value=socket_uuid):
+            ws = mock.MagicMock(name="ws")
+
+            f(ws, json.dumps({ "foo" : "bar", "baz" : [ "boop", ] }))
+
+            m.assert_called_once_with(ws, { "foo" : "bar", "baz" : [ "boop", ] })
+
+    def test_on_json_with_grain_event_wrapper(self):
+        """This tests the on_json decorator which is used for websocket end-points and so has a slightly different
+        structure from that of the other decorators."""
+        m = mock.MagicMock(name="webapi", __name__="webapi")
+        (f, UUT, calls) = self.initialise_webapi_with_method_using_decorator(grain_event_wrapper(m), on_json('/'), is_socket=True)
+
+        socket_uuid = "05f1c8da-dc36-11e7-af05-7fe527dcf7ab"
+        with mock.patch("uuid.uuid4", return_value=socket_uuid):
+            m.side_effect = lambda ws,msg : msg
+            ws = mock.MagicMock(name="ws")
+            ws.receive.side_effect = [ json.dumps({ "grain" : { "event_payload" : { "data" : [ {"post" : { "foo" : "bar", "baz" : [ "boop", ] } } ] } } }), Exception ]
+
+            f(ws)
+
+            self.assertListEqual(ws.receive.mock_calls, [ mock.call(), mock.call() ])
+
+            m.assert_called_once_with(ws, { "foo" : "bar", "baz" : [ "boop", ] })
+            print ws.receive.send.mock_calls

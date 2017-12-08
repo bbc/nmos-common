@@ -133,6 +133,12 @@ class LinkingHTMLFormatter(HtmlFormatter):
 
             yield i, t
 
+def expects_json(func):
+    @wraps(func)
+    def __inner(ws, msg, **kwargs):
+        return func(ws, json.loads(msg), **kwargs)
+    return __inner
+
 def htmlify(r, mimetype, status=200):
 
     # if the request was proxied via the nodefacade, use the original host in response.
@@ -373,11 +379,8 @@ def errorhandler(*args,**kwargs):
 
 def on_json(path):
     def annotate_function(func):
-        @wraps(func)
-        def inner_func(self, ws, message, **kwds):
-            return func(self, ws, json.loads(message), **kwds)
-        inner_func.sockets_on = path
-        return inner_func
+        func.sockets_on = path
+        return func
     return annotate_function
 
 
@@ -419,8 +422,8 @@ def wrap_val_in_grain(pval):
 
 def grain_event_wrapper(func):
     @wraps(func)
-    def wrapper(self, ws, message):
-        pval = func(self, ws, message["grain"]["event_payload"]["data"][0]["post"])
+    def wrapper(ws, message):
+        pval = func(ws, message["grain"]["event_payload"]["data"][0]["post"])
         if pval is not None:
             ws.send(wrap_val_in_grain(pval))
     return wrapper
@@ -595,9 +598,9 @@ class WebAPI(object):
                     elif hasattr(value, "sockets_on"):
                         socket_recv_gen = getattr(cl, "on_websocket_connect", None)
                         if socket_recv_gen is None:
-                            f = self.handle_sock(value, self.socks)
+                            f = self.handle_sock(expects_json(value), self.socks)
                         else:
-                            f = socket_recv_gen(value)
+                            f = socket_recv_gen(expects_json(value))
                         self.sockets.route(basepath + value.sockets_on, endpoint=endpoint)(f)
                     elif hasattr(value, "errorhandler_args"):
                         if value.errorhandler_args:

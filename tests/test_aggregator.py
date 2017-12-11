@@ -20,6 +20,7 @@ from nmoscommon import nmoscommonconfig
 
 class TestMDNSUpdater(unittest.TestCase):
     def test_init(self):
+        """Test of initialisation of an MDNSUpdater"""
         mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
         mdnstype = "_nmos-node._tcp"
         txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
@@ -43,6 +44,7 @@ class TestMDNSUpdater(unittest.TestCase):
         UUT.mdns.register.assert_called_once_with(mdnsname, mdnstype, port, txt_recs)
 
     def test_p2p_enable(self):
+        """Test of MDNSUpdater.p2p_enable, should trigger an mdns update"""
         mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
         mdnstype = "_nmos-node._tcp"
         txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
@@ -59,6 +61,7 @@ class TestMDNSUpdater(unittest.TestCase):
         UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
     def test_inc_P2P_enable_count(self):
+        """Test of of MDNSUpdater.inc_P2P_enable_count, should do nothing the first p2p_cut_in_count - 1 times, and then activate P2P mode"""
         mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
         mdnstype = "_nmos-node._tcp"
         txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
@@ -81,6 +84,7 @@ class TestMDNSUpdater(unittest.TestCase):
         UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
     def test_P2P_disable_when_enabled(self):
+        """When an MDNSUpdater is already enabled for P2P calling P2P_disable should disable P2P"""
         mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
         mdnstype = "_nmos-node._tcp"
         txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
@@ -98,6 +102,7 @@ class TestMDNSUpdater(unittest.TestCase):
         UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
     def test_P2P_disable_resets_enable_count(self):
+        """If an MDNSUpdater is not yet enabled for P2P but has had inc_P2P_enable_count called on it then calling P2P_disable should reset this counter."""
         mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
         mdnstype = "_nmos-node._tcp"
         txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
@@ -128,6 +133,7 @@ class TestMDNSUpdater(unittest.TestCase):
         UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
     def test_update_mdns_does_nothing_when_not_enabled(self):
+        """A call to MDNSUpdater.update_mdns should not do anything if P2P is disabled"""
         mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
         mdnstype = "_nmos-node._tcp"
         txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
@@ -143,6 +149,8 @@ class TestMDNSUpdater(unittest.TestCase):
         UUT.mdns.update.assert_not_called()
 
     def test_update_mdns(self):
+        """A call to MDNSUpdater.update_mdns when P2P is enabled ought to call mdns.update to increment version numbers for devices. Device 
+        version numbers should be 8-bit integers which roll over to 0 when incremented beyond the limits of 1 byte."""
         mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
         mdnstype = "_nmos-node._tcp"
         txt_recs = {"api_ver": "v1.0,v1.1,v1.2", "api_proto": "http"}
@@ -190,6 +198,7 @@ class TestAggregator(unittest.TestCase):
 #        self.mocks['nmoscommon.aggregator.Logger'].return_value.writeFatal.side_effect = printmsg("FATAL")
     
     def test_init(self):
+        """Test a call to Aggregator()"""
         self.mocks['gevent.spawn'].side_effect = lambda f : mock.MagicMock(thread_function=f)
 
         a = Aggregator()
@@ -202,6 +211,7 @@ class TestAggregator(unittest.TestCase):
         self.assertEqual(a.queue_thread.thread_function, a._process_queue)
 
     def test_register_into(self):
+        """register_into should register an object into a namespace, adding a scheduled call to the registration queue to that effect."""
         a = Aggregator()
 
         objects = [
@@ -217,6 +227,8 @@ class TestAggregator(unittest.TestCase):
             self.assertEqual(a._registered["entities"]["potato"][o[0]][o[1]], send_obj)
 
     def test_register(self):
+        """register should register an object into namespace "resource", adding a scheduled call to the registration queue to that effect.
+        There is special behaviour when registering a node, since the object can only ever have one node registration at a time."""
         a = Aggregator()
 
         objects = [
@@ -236,6 +248,8 @@ class TestAggregator(unittest.TestCase):
                 self.assertEqual(a._registered["entities"]["resource"][o[0]][o[1]], send_obj)
 
     def test_unregister(self):
+        """unregister should schedule a call to unregister the specified devices.
+        Special behaviour is expected when unregistering a node."""
         a = Aggregator()
 
         objects = [
@@ -255,6 +269,7 @@ class TestAggregator(unittest.TestCase):
                 self.assertNotIn(o[1], a._registered["entities"]["resource"][o[0]])
 
     def test_stop(self):
+        """A call to stop should set _running to false and then join the heartbeat thread."""
         self.mocks['gevent.spawn'].side_effect = lambda f : mock.MagicMock(thread_function=f)
         a = Aggregator()
 
@@ -267,6 +282,7 @@ class TestAggregator(unittest.TestCase):
         a.queue_thread.join.assert_called_with()
 
     def test_heartbeat_registers(self):
+        """The heartbeat thread should trigger a registration of the node if the node is not yet registered when it is run."""
         a = Aggregator(mdns_updater=mock.MagicMock())
         a._registered["registered"] = False        
 
@@ -282,6 +298,7 @@ class TestAggregator(unittest.TestCase):
                     a._mdns_updater.inc_P2P_enable_count.assert_not_called()
 
     def test_heartbeat_unregisters_when_no_node(self):
+        """Each time the heartbeat thread finds there is no node it should mark the object as unregistered and increment the P2P enable count."""
         a = Aggregator(mdns_updater=mock.MagicMock())
         a._registered["registered"] = True
         a._registered["node"] = None
@@ -299,6 +316,7 @@ class TestAggregator(unittest.TestCase):
                     self.assertFalse(a._registered["registered"])
 
     def test_heartbeat_correctly(self):
+        """Each time the heartbeat thread activates if there is already a registered node then it should trigger a SEND of a heartbeat."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         a = Aggregator(mdns_updater=mock.MagicMock())
         a._registered["registered"] = True
@@ -318,6 +336,7 @@ class TestAggregator(unittest.TestCase):
                     self.assertTrue(a._registered["registered"])
 
     def test_heartbeat_with_404_exception(self):
+        """If the heartbeat returns a 404 exception then the object should reset to unregistered state and increment the P2P enable counter."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         a = Aggregator(mdns_updater=mock.MagicMock())
         a._registered["registered"] = True
@@ -337,6 +356,7 @@ class TestAggregator(unittest.TestCase):
                     self.assertFalse(a._registered["registered"])
 
     def test_heartbeat_with_500_exception(self):
+        """If the heartbeat returns a 500 exception then the object should simply exit. This is a bad way."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         a = Aggregator(mdns_updater=mock.MagicMock())
         a._registered["registered"] = True
@@ -356,6 +376,7 @@ class TestAggregator(unittest.TestCase):
                     sleep.assert_not_called()
 
     def test_heartbeat_with_other_exception(self):
+        """If an unknown exception is raised during the heartbeat process then the object should reset to unregistered state but not increment the P2P enable counter."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         a = Aggregator(mdns_updater=mock.MagicMock())
         a._registered["registered"] = True
@@ -375,6 +396,7 @@ class TestAggregator(unittest.TestCase):
                     self.assertFalse(a._registered["registered"])
 
     def test_process_queue_does_nothing_when_not_registered(self):
+        """The queue processing thread should not SEND any messages when the node is not registered."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         a = Aggregator(mdns_updater=mock.MagicMock())
         a._registered["registered"] = False
@@ -392,6 +414,7 @@ class TestAggregator(unittest.TestCase):
                 sleep.assert_called_with(mock.ANY)
 
     def test_process_queue_does_nothing_when_queue_empty(self):
+        """The queue processing thread should not SEND any messages when the queue is empty."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         a = Aggregator(mdns_updater=mock.MagicMock())
         a._registered["registered"] = True
@@ -410,6 +433,7 @@ class TestAggregator(unittest.TestCase):
                 sleep.assert_called_with(mock.ANY)
 
     def test_process_queue_processes_queue_when_running(self):
+        """The queue processing thread should check the queue and SEND a registration/deregistration request to the remote aggregator when required."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         DUMMYKEY = "dummykey"
         DUMMYPARAMKEY = "dummyparamkey"
@@ -453,6 +477,7 @@ class TestAggregator(unittest.TestCase):
                 a._mdns_updater.P2P_disable.assert_called_with()
 
     def test_process_queue_processes_queue_when_not_running(self):
+        """The process queue method should continue until the queue is empty even if the object has been instructed to stop. Then it should stop only once the queue is empty."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         DUMMYKEY = "dummykey"
         DUMMYPARAMKEY = "dummyparamkey"
@@ -498,6 +523,7 @@ class TestAggregator(unittest.TestCase):
                 sleep.assert_not_called()
 
     def test_process_queue_processes_queue_when_running_and_aborts_on_exception_in_node_register(self):
+        """If a node register performed by the queue processing thread throws an exception then the loop should abort."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         DUMMYKEY = "dummykey"
         DUMMYPARAMKEY = "dummyparamkey"
@@ -536,6 +562,7 @@ class TestAggregator(unittest.TestCase):
                 a._mdns_updater.P2P_disable.assert_not_called()
 
     def test_process_queue_processes_queue_when_running_and_aborts_on_exception_in_general_register(self):
+        """If a non-node register performed by the queue processing thread throws an exception then the loop should abort."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         DUMMYKEY = "dummykey"
         DUMMYPARAMKEY = "dummyparamkey"
@@ -575,6 +602,7 @@ class TestAggregator(unittest.TestCase):
                 self.assertNotIn(DUMMYKEY, a._registered["entities"]["resource"]["dummy"])
 
     def test_process_queue_processes_queue_when_running_and_aborts_on_exception_in_general_unregister(self):
+        """If an unregister performed by the queue processing thread throws an exception then the loop should abort."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         DUMMYKEY = "dummykey"
         DUMMYPARAMKEY = "dummyparamkey"
@@ -613,6 +641,7 @@ class TestAggregator(unittest.TestCase):
                 a._mdns_updater.P2P_disable.assert_not_called()
 
     def test_process_queue_processes_queue_when_running_and_ignores_unknown_methods(self):
+        """Unknown verbs in the queue should be ignored."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         DUMMYKEY = "dummykey"
         DUMMYPARAMKEY = "dummyparamkey"
@@ -647,6 +676,7 @@ class TestAggregator(unittest.TestCase):
                 a._mdns_updater.P2P_disable.assert_not_called()
 
     def test_process_queue_handles_exception_in_unqueueing(self):
+        """An exception in unqueing an item should reset the object state to unregistered."""
         DUMMYNODEID = "90f7c2c0-cfa9-11e7-9b9d-2fe338e1e7ce"
         DUMMYKEY = "dummykey"
         DUMMYPARAMKEY = "dummyparamkey"
@@ -781,12 +811,15 @@ class TestAggregator(unittest.TestCase):
             self.assertListEqual(a._reg_queue.put.mock_calls, expected_put_calls)
 
     def test_process_reregister(self):
+        """A call to process_reregister with no errors should delete the current registration, increment the P2P enable counter, drain the queue, reregister the node, and then reregister the resources."""
         self.assert_reregister_runs_correctly()
 
     def test_process_reregister_handles_queue_exception(self):
+        """A call to process_reregister where the queue drain raises an exception should still delete the current registration, increment the P2P enable counter, drain the queue, reregister the node, and then reregister the resources."""
         self.assert_reregister_runs_correctly(trigger_exception_in_drain=True)
 
     def test_process_reregister_bails_if_node_not_registered(self):
+        """A call to process_reregister where the node is not registered should bail at the start."""
         def _prerun(a):
             a._registered["registered"] = False
             a._registered["node"] = None
@@ -794,6 +827,7 @@ class TestAggregator(unittest.TestCase):
         self.assert_reregister_runs_correctly(to_point=self.REREGISTER_START, with_prerun=_prerun)
 
     def test_process_reregister_continues_when_delete_fails(self):
+        """A call to process_reregister where the DELETE call returns 404 should still delete the current registration, increment the P2P enable counter, drain the queue, reregister the node, and then reregister the resources."""
         def _send(method, path, data=None):
             if method == "DELETE":
                 raise InvalidRequest(status_code=404)
@@ -802,6 +836,7 @@ class TestAggregator(unittest.TestCase):
         self.assert_reregister_runs_correctly(_send=_send)
 
     def test_process_reregister_bails_if_delete_throws_unknown_exception(self):
+        """A call to process_reregister where DELETE message throws an unknown exception should delete the current registration, then bail"""
         def _send(method, path, data=None):
             if method == "DELETE":
                 raise Exception
@@ -810,6 +845,7 @@ class TestAggregator(unittest.TestCase):
         self.assert_reregister_runs_correctly(_send=_send, to_point=self.REREGISTER_DELETE)
 
     def test_process_reregister_bails_if_first_post_throws_unknown_exception(self):
+        """A call to process_reregister where the POST call raises an exception should still delete the current registration, increment the P2P enable counter, drain the queue, and try to reregister the node, but should bail before reregistering the resources."""
         def _send(method, path, data=None):
             if method == "POST":
                 raise Exception
@@ -829,6 +865,21 @@ class TestAggregator(unittest.TestCase):
     SEND_TOO_MANY_RETRIES         = 7
 
     def assert_send_runs_correctly(self, method, url, data=None, to_point=SEND_ITERATION_0, initial_aggregator="", aggregator_urls=["http://example0.com/aggregator/", "http://example1.com/aggregator/", "http://example2.com/aggregator/"], request=None, expected_return=None, expected_exception=None, prefer_ipv6=False):
+        """This method checks that the SEND routine runs through its state machine as expected:
+
+        The states are:
+
+    SEND_START                    = The start of the method
+    SEND_AGGREGATOR_EMPTY_CHECK_0 = Check that the aggregator value href isn't empty
+    SEND_ITERATION_0              = Attempt a SEND
+    SEND_AGGREGATOR_EMPTY_CHECK_1 = Check that the aggregator value href isn't empty
+    SEND_ITERATION_1              = Attempt a SEND
+    SEND_AGGREGATOR_EMPTY_CHECK_2 = Check that the aggregator value href isn't empty
+    SEND_ITERATION_2              = Attempt a SEND
+    SEND_TOO_MANY_RETRIES         = Raise an exception due to too many failures.
+
+    If any of the SEND attempts succeeds then the routine exits immediately succesfully.
+"""
         aggregator_urls_queue = [ x for x in aggregator_urls ]
         def _get_href(_):
             if len(aggregator_urls_queue) == 0:
@@ -897,19 +948,23 @@ class TestAggregator(unittest.TestCase):
                 self.assertEqual(R, expected_return)
 
     def test_send_get_with_no_aggregators_fails_at_first_checkpoint(self):
+        """If there are no aggregators then the SEND method will fail immediately"""
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_AGGREGATOR_EMPTY_CHECK_0, aggregator_urls=[])
 
     def test_send_get_which_returns_400_raises_exception(self):
+        """If the first attempt at sending gives a 400 error then the SEND method will raise it."""
         def request(*args, **kwargs):
             return mock.MagicMock(status_code = 400)
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_0, request=request, expected_exception=InvalidRequest)
 
     def test_send_get_which_returns_204_returns_nothing(self):
+        """If the first attempt at sending gives a 204 success then the SEND method will return normally."""
         def request(*args, **kwargs):
             return mock.MagicMock(status_code = 204)
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_0, request=request, expected_return=None)
 
     def test_send_put_which_returns_204_returns_nothing(self):
+        """If the first attempt at sending gives a 204 success then the SEND method will return normally."""
         data = { "dummy0" : "dummy1",
                      "dummy2" : [ "dummy3", "dummy4" ] }
         def request(*args, **kwargs):
@@ -917,24 +972,28 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("PUT", "/dummy/url", data=data, to_point=self.SEND_ITERATION_0, request=request, expected_return=None)
 
     def test_send_get_which_returns_200_returns_content(self):
+        """If the first attempt at sending gives a 200 success then the SEND method will return normally with a body."""
         TEST_CONTENT = "kasjhdlkhnjgsnhjhgwhudjdndjhnrhg;kduhjhnf"
         def request(*args, **kwargs):
             return mock.MagicMock(status_code = 200, headers={}, content=TEST_CONTENT)
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_0, request=request, expected_return=TEST_CONTENT)
 
     def test_send_over_ipv6_get_which_returns_200_returns_content(self):
+        """If the first attempt at sending gives a 200 success then the SEND method will return normally with a body over ipv6."""
         TEST_CONTENT = "kasjhdlkhnjgsnhjhgwhudjdndjhnrhg;kduhjhnf"
         def request(*args, **kwargs):
             return mock.MagicMock(status_code = 200, headers={}, content=TEST_CONTENT)
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_0, request=request, expected_return=TEST_CONTENT, prefer_ipv6 = True)
 
     def test_send_get_which_returns_201_returns_content(self):
+        """If the first attempt at sending gives a 201 success then the SEND method will return normally with a body."""
         TEST_CONTENT = "kasjhdlkhnjgsnhjhgwhudjdndjhnrhg;kduhjhnf"
         def request(*args, **kwargs):
             return mock.MagicMock(status_code = 201, headers={}, content=TEST_CONTENT)
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_0, request=request, expected_return=TEST_CONTENT)
 
     def test_send_get_which_returns_200_and_json_returns_json(self):
+        """If the first attempt at sending gives a 200 success then the SEND method will return normally and decode the body as json."""
         TEST_CONTENT = { "foo" : "bar",
                              "baz" : [ "potato", "sundae" ] }
         def request(*args, **kwargs):
@@ -942,21 +1001,26 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_0, request=request, expected_return=TEST_CONTENT)
 
     def test_send_get_which_fails_with_only_one_aggregator_fails_at_second_checkpoint(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href, if it fails it will fail."""
         def request(*args, **kwargs):
             return None
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_AGGREGATOR_EMPTY_CHECK_1, request=request, aggregator_urls=["http://example.com/aggregator/",])
 
     def test_send_get_which_raises_with_only_one_aggregator_fails_at_second_checkpoint(self):
+        """If the first attempt at sending throws an Exception then the SEND routine will try to get an alternative href, if it fails it will fail."""
         def request(*args, **kwargs):
             raise requests.exceptions.RequestException
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_AGGREGATOR_EMPTY_CHECK_1, request=request, aggregator_urls=["http://example.com/aggregator/",])
 
     def test_send_get_which_returns_500_with_only_one_aggregator_fails_at_second_checkpoint(self):
+        """If the first attempt at sending returns a 500 error then the SEND routine will try to get an alternative href, if it fails it will fail."""
         def request(*args, **kwargs):
             return mock.MagicMock(status_code = 500)
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_AGGREGATOR_EMPTY_CHECK_1, request=request, aggregator_urls=["http://example.com/aggregator/",])
 
     def test_send_get_which_fails_then_returns_400_raises_exception(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt returns a 400 then it will raise an Exception"""
         class scoper:
             num_calls = 0
         def request(*args, **kwargs):
@@ -968,6 +1032,8 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_1, request=request, expected_exception=InvalidRequest)
 
     def test_send_get_which_fails_then_returns_204_returns_nothing(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt returns a 204 then it will return normally."""
         class scoper:
             num_calls = 0
         def request(*args, **kwargs):
@@ -979,6 +1045,8 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_1, request=request, expected_return=None)
 
     def test_send_get_which_fails_then_returns_200_returns_content(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt returns a 200 then it will return the body sent back by the remote aggregator"""
         TEST_CONTENT = "kasjhdlkhnjgsnhjhgwhudjdndjhnrhg;kduhjhnf"
         class scoper:
             num_calls = 0
@@ -991,6 +1059,8 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_1, request=request, expected_return=TEST_CONTENT)
 
     def test_send_get_which_fails_then_returns_201_returns_content(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt returns a 201 then it will return the body sent back by the remote aggregator"""
         TEST_CONTENT = "kasjhdlkhnjgsnhjhgwhudjdndjhnrhg;kduhjhnf"
         class scoper:
             num_calls = 0
@@ -1003,6 +1073,8 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_1, request=request, expected_return=TEST_CONTENT)
 
     def test_send_get_which_fails_then_returns_200_and_json_returns_content(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt returns a 200 with Content-Type as application/json then it will return the body sent back by the remote aggregator decoded as json"""
         TEST_CONTENT = { "foo" : "bar",
                              "baz" : [ "potato", "sundae" ] }
         class scoper:
@@ -1016,11 +1088,17 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_1, request=request, expected_return=TEST_CONTENT)
 
     def test_send_get_which_fails_with_only_two_aggregators_fails_at_third_checkpoint(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt at sending times out then the SEND routine will try to get an alternative href.
+        If it fails then the call fails."""
         def request(*args, **kwargs):
             return None
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_AGGREGATOR_EMPTY_CHECK_2, request=request, aggregator_urls=["http://example.com/aggregator/", "http://example1.com/aggregator/"])
 
     def test_send_get_which_fails_twice_then_returns_400_raises_exception(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the third attempt returns a 400 then it raiases an exception."""
         class scoper:
             num_calls = 0
         def request(*args, **kwargs):
@@ -1032,6 +1110,9 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_2, request=request, expected_exception=InvalidRequest)
 
     def test_send_get_which_fails_twice_then_returns_204_returns_nothing(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the third attempt returns a 204 then it returns normally."""
         class scoper:
             num_calls = 0
         def request(*args, **kwargs):
@@ -1043,6 +1124,9 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_2, request=request, expected_return=None)
 
     def test_send_get_which_fails_twice_then_returns_200_returns_content(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the third attempt returns a 200 then it returns the body sent back."""
         TEST_CONTENT = "kasjhdlkhnjgsnhjhgwhudjdndjhnrhg;kduhjhnf"
         class scoper:
             num_calls = 0
@@ -1055,6 +1139,9 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_2, request=request, expected_return=TEST_CONTENT)
 
     def test_send_get_which_fails_twice_then_returns_201_returns_content(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the third attempt returns a 201 then it returns the body sent back."""
         TEST_CONTENT = "kasjhdlkhnjgsnhjhgwhudjdndjhnrhg;kduhjhnf"
         class scoper:
             num_calls = 0
@@ -1067,6 +1154,9 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_2, request=request, expected_return=TEST_CONTENT)
 
     def test_send_get_which_fails_twice_then_returns_200_and_json_returns_content(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the third attempt returns a 200 with Content-Type as application/json then it returns the body sent back decoded as json."""
         TEST_CONTENT = { "foo" : "bar",
                              "baz" : [ "potato", "sundae" ] }
         class scoper:
@@ -1080,6 +1170,9 @@ class TestAggregator(unittest.TestCase):
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_ITERATION_2, request=request, expected_return=TEST_CONTENT)
 
     def test_send_get_which_fails_on_three_aggregators_raises(self):
+        """If the first attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the second attempt at sending times out then the SEND routine will try to get an alternative href.
+        If the third attempt at sending times out then the SEND routine will fail."""
         def request(*args, **kwargs):
             return None
         self.assert_send_runs_correctly("GET", "/dummy/url", to_point=self.SEND_TOO_MANY_RETRIES, request=request)

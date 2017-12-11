@@ -480,7 +480,7 @@ class Timestamp(TimeOffset):
             # Fall back to system time if IPP Utils not found
             # No PTP so not as accurate
             utc_time = time.time()
-            return cls.from_utc(int(utc_time), int(utc_time*1000000000) - int(utc_time)*1000000000)
+            return cls.from_utc(int(utc_time), int(utc_time*MAX_NANOSEC) - int(utc_time)*MAX_NANOSEC)
 
 
     @classmethod

@@ -445,11 +445,17 @@ class IppResponse(Response):
         if 'Access-Control-Allow-Headers' not in headers and len(headers.keys()) > 0:
             h['Access-Control-Allow-Headers'] = ', '.join(headers.iterkeys())
 
+        data = None
+        if response is not None and isinstance(response, basestring):
+            data = response
+            response = None
+
         if response is not None and isinstance(response, BaseResponse):
             new_response_headers = CaseInsensitiveDict(response.headers if response.headers is not None else {})
             new_response_headers.update(h)
             response.headers = new_response_headers
             headers = None
+            data = response.get_data()
 
         else:
             headers.update(h)
@@ -461,6 +467,8 @@ class IppResponse(Response):
                                           mimetype=mimetype,
                                           content_type=content_type,
                                           direct_passthrough=direct_passthrough)
+        if data is not None:
+            self.set_data(data)
 
     def __eq__(self, other):
         return ((self.get_data() == other.get_data()) and

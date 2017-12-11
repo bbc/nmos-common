@@ -21,6 +21,35 @@ from datetime import timedelta
 
 import flask
 
+def diff_ippresponse(self, other):
+    result = []
+    if self.headers != other.headers:
+        result.append("HEADERS DIFFER")
+        for (key, value) in self.headers:
+            if key not in other.headers:
+                result.append("  %r in self, but not other" % (key,))
+            elif self.headers[key] != other.headers[key]:
+                result.append("  %r : %r != %r" % (key, self.headers[key], other.headers[key]))
+        for (key, value) in other.headers:
+            if key not in self.headers:
+                result.append("  %r in other but not self" % (key,))
+        if self.get_data() != other.get_data():
+            result.append("DATA DIFFERS")
+            result.append("  " + repr(self.get_data()) + " != " + repr(other.get_data()))
+        if self.status != other.status:
+            result.append("STATUS DIFFERS")
+            result.append("  " + repr(self.status) + " != " + repr(other.status))
+        if self.mimetype != other.mimetype:
+            result.append("MIMETYPE DIFFERS")
+            result.append("  " + repr(self.mimetype) + " != " + repr(other.mimetype))
+        if self.content_type != other.content_type:
+            result.append("CONTENT TYPE DIFFERS")
+            result.append("  " + repr(self.content_type) + " != " + repr(other.content_type))
+        if self.direct_passthrough != other.direct_passthrough:
+            result.append("PASSTHROUGH DIFFERS")
+            result.append("  " + repr(self.direct_passthrough) + " != " + repr(other.direct_passthrough))
+        return '\n'.join(result) + '\n'
+
 class TestWebAPI(unittest.TestCase):
 
     @mock.patch("nmoscommon.webapi.Flask")
@@ -112,13 +141,20 @@ class TestWebAPI(unittest.TestCase):
                         self.fail(msg="Got unexpected Response object when expecting an abort with code %d" % (expected, ))
                     else:
                         if ignore_body:
-                            expected.response = r.response
-                            expected.headers['Content-Length'] = r.headers['Content-Length']
+                            expected.set_data(r.get_data())
+                        if not isinstance(r, IppResponse):
+                            r = IppResponse(r)
+                        if not isinstance(expected, IppResponse):
+                            expected = IppResponse(expected)
                         self.assertEqual(r, expected, msg="""
 
 Expected IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_type=%r\n, direct_passthrough=%r)
 
-Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_type=%r,\n direct_passthrough=%r)""" % (expected.get_data(),
+Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_type=%r,\n direct_passthrough=%r)
+
+Differences: 
+
+%s""" % (expected.get_data(),
                                                                                                                              expected.status,
                                                                                                                              dict(expected.headers),
                                                                                                                              expected.mimetype,
@@ -129,7 +165,8 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
                                                                                                                              dict(r.headers),
                                                                                                                              r.mimetype,
                                                                                                                              r.content_type,
-                                                                                                                             r.direct_passthrough))
+                                                                                                                             r.direct_passthrough,
+                          diff_ippresponse(expected, r)))
 
     def perform_test_on_decorator(self, data):
         """This method will take a mock method and wrap it with a specified decorator, then create a webapi class instance with that method as a member.
@@ -1080,3 +1117,83 @@ Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content
 
             m.assert_called_once_with(ws, { "foo" : "bar", "baz" : [ "boop", ] })
             print ws.receive.send.mock_calls
+
+    @mock.patch("nmoscommon.webapi.Flask")
+    @mock.patch("nmoscommon.webapi.Sockets")
+    def assert_default_errorhandler_handles(self, Sockets, Flask, exc=None, status_code=404, description="", expected=None, method="GET", expect_html=False):
+        """The method error is the default error handler. It's not a route decorator so we can't use the fixtures we set up for those."""
+        self.maxDiff = None
+        class StubWebAPI(WebAPI):
+            pass
+        app = Flask.return_value
+        app.errorhandler.side_effect = lambda n : getattr(app, 'error_handler_for_' + str(n))
+        UUT = StubWebAPI()
+        Flask.assert_called_once_with('nmoscommon.webapi')
+        expected_calls = [ mock.call(n) for n in range(400, 600) ]
+        # This checks that all expected elements are in the list, but doesn't mind if the list has extra elements
+        self.assertItemsEqual([ call for call in app.errorhandler.mock_calls if call[0] == '' and call in expected_calls ],  expected_calls)
+        f = getattr(app, 'error_handler_for_' + str(status_code)).call_args[0][0]
+        for n in range(400, 600):
+            getattr(app, 'error_handler_for_' + str(n)).assert_called_once_with(mock.ANY)
+            self.assertEqual(getattr(app, 'error_handler_for_' + str(n)).call_args[0][0].__name__, f.__name__)
+
+        if exc is None:
+            exc = HTTPException()
+            exc.code = status_code
+            exc.description = description
+        try:
+            raise exc
+        except Exception as e:
+            t, v, tb = sys.exc_info()
+            if expected is None:
+                if method == 'HEAD' and isinstance(e, HTTPException):
+                    expected = IppResponse('', status=e.code, headers={'Access-Control-Allow-Methods': u'DELETE, GET, HEAD, OPTIONS, POST, PUT'})
+                elif method == 'HEAD':
+                    expected = IppResponse('', status=500, headers={'Access-Control-Allow-Methods': u'DELETE, GET, HEAD, OPTIONS, POST, PUT'})
+                elif expect_html and isinstance(e, HTTPException) and status_code != 400:
+                    expected = e.get_response()
+                    expected.headers['Access-Control-Allow-Methods'] = u'DELETE, GET, HEAD, OPTIONS, POST, PUT'
+                    expected.headers['Access-Control-Allow-Origin']  = u'*'
+                    expected.headers['Access-Control-Max-Age']       = u'21600'
+                elif expect_html:
+                    expected = IppResponse(response='',
+                                            status=status_code,
+                                            headers={'Access-Control-Allow-Methods': u'DELETE, GET, HEAD, OPTIONS, POST, PUT'},
+                                            content_type=u'text/html; charset=utf-8')
+                else:
+                    expected = IppResponse(response=json.dumps({"debug" : {
+                        'traceback': [x for x in traceback.extract_tb(tb)],
+                            'exception': [x for x in traceback.format_exception_only(t, v)]
+                        },
+                        "code" : status_code,
+                                            "error" : description }),
+                                            status=status_code,
+                                            headers={'Access-Control-Allow-Methods': u'DELETE, GET, HEAD, OPTIONS, POST, PUT'},
+                                            content_type=u'application/json')
+            self.assert_wrapped_route_method_returns(f,
+                                                    expected,
+                                                    method=method,
+                                                    args=[e,],
+                                                    best_mimetype="application/json" if not expect_html else "text/html",
+                                                    ignore_body=expect_html)
+
+    def test_default_errorhandler__404(self):
+        self.assert_default_errorhandler_handles(status_code=404, description="Not Found", method="GET")
+
+    def test_default_errorhandler__HEAD(self):
+        self.assert_default_errorhandler_handles(status_code=404, description="Not Found", method="HEAD")
+
+    def test_default_errorhandler__Exception_triggers_500(self):
+        self.assert_default_errorhandler_handles(exc=Exception("Uncaught Exception"), status_code=500, description="Internal Error", method="GET")
+
+    def test_default_errorhandler__Exception_triggers_500__HEAD(self):
+        self.assert_default_errorhandler_handles(exc=Exception("Uncaught Exception"), status_code=500, description="Internal Error", method="HEAD")
+
+    def test_default_errorhandler__Exception_triggers_500_expecting_html(self):
+        self.assert_default_errorhandler_handles(exc=Exception("Uncaught Exception"), status_code=500, description="Internal Error", method="GET", expect_html=True)
+
+    def test_default_errorhandler__404_expecting_html(self):
+        self.assert_default_errorhandler_handles(status_code=404, description="Not Found", method="GET", expect_html=True)
+
+    def test_default_errorhandler__400_expecting_html(self):
+        self.assert_default_errorhandler_handles(status_code=400, description="User Error", method="GET", expect_html=True)

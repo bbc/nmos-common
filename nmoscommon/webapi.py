@@ -680,10 +680,10 @@ class WebAPI(object):
 
             return IppResponse(json.dumps(response), status=500, mimetype='application/json')
 
-    def torun(self):
+    def torun(self): # pragma: no cover
         pass
 
-    def stop(self):
+    def stop(self): # pragma: no cover
         pass
 
     def handle_sock(self, func, socks):

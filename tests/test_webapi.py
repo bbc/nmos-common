@@ -54,6 +54,26 @@ class TestWebAPI(unittest.TestCase):
 
     @mock.patch("nmoscommon.webapi.Flask")
     @mock.patch("nmoscommon.webapi.Sockets")
+    def test_init(self, Sockets, Flask):
+        _torun = mock.MagicMock(name="torun")
+        class StubWebAPI(WebAPI):
+            def torun(self):
+                return _torun()
+
+        UUT = StubWebAPI()
+
+        self.assertEqual(UUT.app, Flask.return_value)
+        self.assertEqual(UUT.app.response_class, IppResponse)
+        UUT.app.before_first_request.assert_called_once_with(mock.ANY)
+        installed_torun = UUT.app.before_first_request.call_args[0][0]
+        self.assertEqual(UUT.sockets, Sockets.return_value)
+
+        _torun.assert_not_called()
+        installed_torun()
+        _torun.assert_called_once_with()
+
+    @mock.patch("nmoscommon.webapi.Flask")
+    @mock.patch("nmoscommon.webapi.Sockets")
     def initialise_webapi_with_method_using_decorator(self, mock_webapi_method, decorator, Sockets, Flask, oauth_userid=None, expect_paths_below=False, is_socket=False, on_websocket_connect=None):
         """Returns a pair of the wrapped function that would be sent to flask.app.route, and the parameters which would
         be passed to flask.app.route for it."""
@@ -197,6 +217,8 @@ Differences:
         'extract_path'    -- If this is included and set to true then the wrapped function will be called with this value as a parameter as if it were a path
         'ignore_body'     -- If this is set to true then the contents of the body of the 'expected' request will be forced to the same value as the body of the returned response
                              before a comparison is performed. Metadata, headers, etc ... are still compared.
+        'authenticate'    -- a custom callable for the oauth authenticate method
+        'authorize'       -- a custom callable for the oauth autorize method
 """
         method = mock.MagicMock(name="webapi", return_value=data['return_data'])
 
@@ -206,6 +228,11 @@ Differences:
         for (args, kwargs) in calls:
             # Check that flask was given through the expected commands
             self.assertEqual(kwargs['methods'], data['methods'] + ["OPTIONS"])
+
+        if 'authenticate' in data:
+            UUT.authenticate(data['authenticate'])
+        if 'authorize' in data:
+            UUT.authorize(data['authorize'])
 
         kwargs = {}
         if 'extract_path' in data:
@@ -507,6 +534,38 @@ Differences:
                                             content_type=u'application/json',
                                             direct_passthrough=False),
             })
+
+    def test_secure_route__GET__with_custom_authenticate_and_authorize_methods(self):
+        custom_authenticate = mock.MagicMock(name='custom_authenticate', return_value=True)
+        custom_authorize    = mock.MagicMock(name='custom_authorize',    return_value=True)
+        self.perform_test_on_decorator({
+                'methods'     : ["GET", "POST", "POTATO"],
+                'path'        : '/',
+                'return_data' : { 'foo' : 'bar', 'baz' : ['boop',] },
+                'method'      : "GET",
+                'headers'     : { 'token' : "jkhndgkjsj.jkuhjhn" },
+                'best_type'   : 'application/json',
+                'decorator'   : secure_route('/', methods=["GET", "POST", "POTATO"], auto_json=True, headers=["x-not-a-real-header",], origin="example.com"),
+                'oauth_userid': "FAKE_USER_ID",
+                'oauth_token' : "jkhndgkjsj.jkuhjhn",
+                'authenticate': custom_authenticate,
+                'authorize'   : custom_authorize,
+                'expected'    : IppResponse(response=json.dumps({ 'foo' : 'bar', 'baz' : ['boop',] }, indent=4),
+                                            status=200,
+                                            headers= {'Content-Length': u'56',
+                                                          'Access-Control-Allow-Headers': u'X-NOT-A-REAL-HEADER, CONTENT-TYPE, TOKEN',
+                                                          'Access-Control-Max-Age': u'21600',
+                                                          'Cache-Control': u'no-cache, must-revalidate, no-store',
+                                                          'Access-Control-Allow-Credentials': u'true',
+                                                          'Access-Control-Allow-Origin': u'example.com',
+                                                          'Access-Control-Allow-Methods': u'GET, POST, POTATO',
+                                                          'Content-Type': u'application/json'},
+                                            mimetype=u'application/json',
+                                            content_type=u'application/json',
+                                            direct_passthrough=False),
+            })
+        custom_authenticate.assert_called_once_with("jkhndgkjsj.jkuhjhn")
+        custom_authorize.assert_called_once_with("jkhndgkjsj.jkuhjhn")
 
     def test_secure_route__GET__with_wrapped_method_returning_status_code(self):
         self.perform_test_on_decorator({
@@ -1197,3 +1256,31 @@ Differences:
 
     def test_default_errorhandler__400_expecting_html(self):
         self.assert_default_errorhandler_handles(status_code=400, description="User Error", method="GET", expect_html=True)
+
+    def test_default_authorize_falls_back_when_no_oauth_set(self):
+        """In point of fact it should never even be called under this circumstance, but belt and braces isn't bad."""
+        class StubWebAPI(WebAPI):
+            def __init__(self, *args, **kwargs):
+                super(StubWebAPI, self).__init__(*args, **kwargs)
+                self._oauth_config = None
+        UUT = StubWebAPI()
+        self.assertTrue(UUT.default_authorize(mock.sentinel.token))
+
+    def test_default_authenticate_falls_back_when_no_oauth_set(self):
+        """In point of fact it should never even be called under this circumstance, but belt and braces isn't bad."""
+        class StubWebAPI(WebAPI):
+            def __init__(self, *args, **kwargs):
+                super(StubWebAPI, self).__init__(*args, **kwargs)
+                self._oauth_config = None
+        UUT = StubWebAPI()
+        self.assertTrue(UUT.default_authenticate(mock.sentinel.token))
+
+    def test_default_authenticate_fails_on_null_token(self):
+        """In point of fact it should never even be called under this circumstance, but belt and braces isn't bad."""
+        class StubWebAPI(WebAPI):
+            def __init__(self, *args, **kwargs):
+                super(StubWebAPI, self).__init__(*args, **kwargs)
+                self._oauth_config = { 'loginserver' : mock.sentinel.loginserver,
+                                           'proxies' : mock.sentinel.proxies }
+        UUT = StubWebAPI()
+        self.assertFalse(UUT.default_authenticate(None))

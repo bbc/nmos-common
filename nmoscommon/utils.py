@@ -40,12 +40,11 @@ def get_node_id():
 def getLocalIP():
     interfaces= netifaces.interfaces()
     for interface in interfaces:
-        if (interface is not None) & (interface != 'lo'):
+        if (interface is not None) & (str(interface)[0:2] != 'lo'):
             try:
-                return netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
-            except IndexError:
-                # Not an IPv4 interface, skip over
-                pass
+                for addr in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
+                    if str(addr['addr'])[0:4] != "127.":
+                        return addr['addr']
             except KeyError:
                 pass
     # Could not find an interface

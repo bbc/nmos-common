@@ -14,7 +14,7 @@
 
 import unittest
 from datetime import datetime
-from .util import strptime_partial
+from nmoscommon.rql.dateutil.util import strptime_partial
 
 
 class TestPartialStrptime(unittest.TestCase):

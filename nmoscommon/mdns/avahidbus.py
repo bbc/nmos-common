@@ -76,7 +76,7 @@ class MDNSEngine(object):
                         callback({ "action" : "collision", "name" : name, "regtype" : regtype, "port" : port, "txtRecord" : txtRecord})
                     elif state == avahi.ENTRY_GROUP_ESTABLISHED:
                         callback({ "action" : "established", "name" : name, "regtype" : regtype, "port" : port, "txtRecord" : txtRecord})
-                    elif state == ENTRY_GROUP_FAILURE:
+                    elif state == avahi.ENTRY_GROUP_FAILURE:
                         callback({ "action" : "failure", "name" : name, "regtype" : regtype, "port" : port, "txtRecord" : txtRecord})
             return _inner
 
@@ -179,7 +179,7 @@ class MDNSEngine(object):
 
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     import sys
     from gevent import monkey; monkey.patch_all()
 

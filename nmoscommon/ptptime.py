@@ -21,18 +21,16 @@ try:
     import ipppython.ptptime
     IPP_PYTHON = True
 except ImportError:
+    import traceback
     IPP_PYTHON = False
 
-__all__ = ["ptp_time"]
+__all__ = [ "ptp_time", "ptp_detail" ]
 
 class timespec(ctypes.Structure):
     _fields_ = [
         ('tv_sec', ctypes.c_long),
         ('tv_nsec', ctypes.c_long)
     ]
-
-def FD_TO_CLOCKID(fd):
-    return ctypes.c_int((((~(fd)) << 3) | CLOCKFD))
 
 # This method is depricated, use Timestamp.get_time()
 def ptp_data():
@@ -55,6 +53,6 @@ def ptp_detail():
     t = ptp_data()
     return [t.tv_sec, t.tv_nsec]
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     print ptp_time()
     print ptp_detail()

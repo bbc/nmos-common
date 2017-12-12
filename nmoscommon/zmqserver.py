@@ -53,8 +53,8 @@ class ZmqServer(threading.Thread):
 
     def stop(self):
         for worker in self.workers:
-            worker.amRunning = False
-            while not worker.finished:
+            worker.stop()
+            while not worker.is_finished():
                 pass
         self.context.destroy()
 
@@ -87,9 +87,15 @@ class ServerWorker(threading.Thread):
                     msg = json.loads(msg)
                 except ValueError:
                     response = [400]
-                    worker.send_multipart([ident], json.dumps(response))
-                finally:
+                    worker.send_multipart([ident, json.dumps(response)])
+                else:
                     response = self.callback(msg)
                     worker.send_multipart([ident, json.dumps(response)])
         self.finished = True
         return
+
+    def stop(self):
+        self.amRunning = False
+
+    def is_finished(self):
+        return self.finished

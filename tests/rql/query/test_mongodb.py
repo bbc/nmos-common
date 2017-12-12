@@ -17,7 +17,7 @@ Tests ported from https://github.com/alonho/pql
 '''
 
 from unittest import TestCase, skip
-from .. import mongodb
+from nmoscommon.rql.query import mongodb
 from datetime import datetime
 
 

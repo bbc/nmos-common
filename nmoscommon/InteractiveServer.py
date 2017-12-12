@@ -49,8 +49,7 @@ def interact(address=("0.0.0.0",9999)):
     server.serve_forever()
 
 port = 9999
-if __name__ == '__main__':
-    import threading
+if __name__ == '__main__': # pragma: no cover
     if len(sys.argv) > 1:
         port = int(sys.argv[1])
     interact(("0.0.0.0",port))

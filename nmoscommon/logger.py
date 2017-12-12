@@ -16,17 +16,17 @@ import logging
 import sys
 
 # Check to see if BBC R&D internal logger is present
-try:
+try: # pragma: no cover
     from ipppython.ipplogger import IppLogger
     IPP_LOGGER = True
-except ImportError:
+except ImportError: # pragma: no cover
     IPP_LOGGER = False
 
 from logging import FileHandler
 
 __all__ = [ "Logger" ]
 
-class Logger:
+class PurePythonLogger:
 
     logsOpened = False
 
@@ -36,7 +36,7 @@ class Logger:
         self.log.setLevel(logging.DEBUG)
         logFormat = logging.Formatter('%(asctime)s : %(name)s : %(levelname)s : %(message)s')
         
-        if not Logger.logsOpened:
+        if not PurePythonLogger.logsOpened:
             try:
                 fileHandler = logging.FileHandler('/var/log/nmos.log')
                 fileHandler.setLevel(logging.DEBUG)
@@ -49,7 +49,7 @@ class Logger:
             streamHandler.setLevel(logging.DEBUG)
             streamHandler.setFormatter(logFormat)
             self.log.addHandler(streamHandler)
-            Logger.logsOpened = True
+            PurePythonLogger.logsOpened = True
 
         logging.info("Logging started...")
 
@@ -69,5 +69,8 @@ class Logger:
         self.log.debug(message)
 
 # Use BBC R&D logger in preference to this one
-if IPP_LOGGER:
-    Logger = IppLogger
+if True: # pragma: no cover
+    if IPP_LOGGER:
+        Logger = IppLogger
+    else:
+        Logger = PurePythonLogger

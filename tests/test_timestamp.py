@@ -19,11 +19,21 @@ import mock
 from datetime import datetime
 from dateutil import tz
 
+
 orig_import = __import__
-
 mock_imports = {}
-
 def import_mock(magic_name, allow):
+    """An explanation of how this import gubbins works:
+
+    * The __import__ function is the underlying python function called by import statements
+    * Here I save the existing __import__ function and then use mock.patch to replace it with a custom function
+    * The custom function normally passes through to the default __import__ function, but when you try to import a specific module
+      (in this case "pyipputils.ipptimestamp" it instead either raises an ImportError exception or passes back a mock masquerading as
+      the module.
+    * The use of this is because the module under test starts by importing pyipputils.ipptimestamp and then behaves differently depending on
+      whether that raises an exception. By substituing a mock for the module we can force it to succeed even on systems where pyipputils is not
+      installed, or by raising the exception we can force the import to fail even on systems where the module is installed. This allows us to 
+      test both sets of behaviour from the module."""
     def __inner(name, *args):
         if name == magic_name:
             if allow:
@@ -35,13 +45,13 @@ def import_mock(magic_name, allow):
         else:
             return orig_import(name, *args)
     return __inner
-
 with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
     import nmoscommon.timestamp
     from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
 
 class TestTimestampImport(unittest.TestCase):
     def test_import_with_ipp(self):
+        """This tests the import of the module and ensures that when the pyipputils module is installed it will defer to that module."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",True)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import IPP_UTILS, Timestamp
@@ -51,6 +61,7 @@ class TestTimestampImport(unittest.TestCase):
             self.assertEqual(Timestamp.get_time(), Timestamp(23, 17))
 
     def test_import_without_ipp(self):
+        """This tests the import of the module and ensures that when the pyipputils module is not installed it will fall back to pure pythonic methods."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import IPP_UTILS
@@ -58,6 +69,7 @@ class TestTimestampImport(unittest.TestCase):
 
 class TestTimeOffset(unittest.TestCase):
     def test_from_timeoffset(self):
+        """This tests that TimeOffsets can be created with a variety of values."""
         tests_ts = [
             (TimeOffset.from_timeoffset(TimeOffset(0, 0)), TimeOffset(0, 0)),
             (TimeOffset.from_timeoffset(TimeOffset(1001, 0)), TimeOffset(1001, 0)),
@@ -81,6 +93,7 @@ class TestTimeOffset(unittest.TestCase):
             self.assertEqual(t[0], t[1])
 
     def test_subsec(self):
+        """This tests that TimeOffsets can be converted to millisec, nanosec, and microsec values."""
         tests_ts = [
             (TimeOffset(1, 1000000).to_millisec(), 1001),
             (TimeOffset(1, 1000).to_microsec(), 1000001),
@@ -102,6 +115,7 @@ class TestTimeOffset(unittest.TestCase):
             self.assertEqual(t[0], t[1])
 
     def test_interval_frac(self):
+        """This tests that TimeOffsets can be converted to interval fractions."""
         tests_ts = [
             (TimeOffset.get_interval_fraction(50, 1, 1), TimeOffset(0, 20000000)),
             (TimeOffset.get_interval_fraction(50, 1, 2), TimeOffset(0, 10000000))
@@ -119,6 +133,7 @@ class TestTimeOffset(unittest.TestCase):
                 TimeOffset.get_interval_fraction(*params)
 
     def test_from_sec_frac(self):
+        """This tests that timeoffsets can be instantiated from fractional second values."""
         tests_ts = [
             (TimeOffset.from_sec_frac("1.000000001"), TimeOffset(1, 1)),
             (TimeOffset.from_sec_frac("-1.000000001"), TimeOffset(1, 1, sign=-1)),
@@ -137,6 +152,7 @@ class TestTimeOffset(unittest.TestCase):
                 TimeOffset.from_sec_frac(*params)
 
     def test_from_sec_nsec(self):
+        """This tests that time offsets can be created from second:nanosecond pairs."""
         tests_ts = [
             (TimeOffset.from_sec_nsec("1:1"), TimeOffset(1, 1)),
             (TimeOffset.from_sec_nsec("-1:1"), TimeOffset(1, 1, sign=-1)),
@@ -153,6 +169,7 @@ class TestTimeOffset(unittest.TestCase):
                 TimeOffset.from_sec_nsec(*params)
 
     def test_from_count(self):
+        """This tests that time offsets can be created from counts at a specified frequency."""
         tests_ts = [
             (TimeOffset.from_count(1, 50, 1), TimeOffset(0, 20000000)),
             (TimeOffset.from_count(75, 50, 1), TimeOffset(1, 500000000)),
@@ -170,6 +187,7 @@ class TestTimeOffset(unittest.TestCase):
                 TimeOffset.from_count(*params)
 
     def test_from_millisec(self):
+        """This tests that time offsets can be created from millisecond values."""
         tests_ts = [
             (TimeOffset.from_millisec(1), TimeOffset(0, 1000000)),
             (TimeOffset.from_millisec(1000), TimeOffset(1, 0)),
@@ -180,6 +198,7 @@ class TestTimeOffset(unittest.TestCase):
             self.assertEqual(t[0], t[1])
 
     def test_from_microsec(self):
+        """This tests that time offsets can be created from microsecond values."""
         tests_ts = [
             (TimeOffset.from_microsec(1), TimeOffset(0, 1000)),
             (TimeOffset.from_microsec(1000000), TimeOffset(1, 0)),
@@ -190,6 +209,7 @@ class TestTimeOffset(unittest.TestCase):
             self.assertEqual(t[0], t[1])
 
     def test_from_nanosec(self):
+        """This tests that time offsets can be created from nanosecond values."""
         tests_ts = [
             (TimeOffset.from_nanosec(1), TimeOffset(0, 1)),
             (TimeOffset.from_nanosec(1000000000), TimeOffset(1, 0)),
@@ -200,6 +220,7 @@ class TestTimeOffset(unittest.TestCase):
             self.assertEqual(t[0], t[1])
 
     def test_set_value(self):
+        """This tests that time offsets can have their value set."""
         tests_ts = [
             (TimeOffset(0,0), TimeOffset(0, 1), (0,1)),
             (TimeOffset(0,0), TimeOffset(1, 0), (1,0)),
@@ -211,6 +232,7 @@ class TestTimeOffset(unittest.TestCase):
             self.assertEqual(t[0], t[1])
 
     def test_to_count(self):
+        """This tests that time offsets can be converted to counts at particular frequencies."""
         tests_ts = [
             (TimeOffset(0, 20000000).to_count(50, 1), 1),
             (TimeOffset(1, 500000000).to_count(50, 1), 75),
@@ -240,6 +262,7 @@ class TestTimeOffset(unittest.TestCase):
                 TimeOffset(0,0).to_count(*params)
 
     def test_to_microsec(self):
+        """This tests that time offsets can be converted to microsecond values."""
         tests_ts = [
             (TimeOffset(0, 1000).to_microsec(), 1),
             (TimeOffset(1, 1000000).to_microsec(), 1001000),
@@ -268,6 +291,7 @@ class TestTimeOffset(unittest.TestCase):
 
 
     def test_abs(self):
+        """This tests that negative time offsets can be converted to positive ones using abs."""
         tests_ts = [
             (abs(TimeOffset(10, 1)), TimeOffset(10, 1)),
             (abs(TimeOffset(10, 1, -1)), TimeOffset(10, 1))
@@ -277,6 +301,7 @@ class TestTimeOffset(unittest.TestCase):
             self.assertEqual(t[0], t[1])
 
     def test_average(self):
+        """This tests that time offsets can be averaged."""
         toff1 = TimeOffset(11, 976)
         toff2 = TimeOffset(21, 51)
         toff_avg = (toff1 * 49 + toff2) / 50
@@ -284,6 +309,7 @@ class TestTimeOffset(unittest.TestCase):
         self.assertEqual(avg, toff_avg.to_nanosec())
 
     def test_cast(self):
+        """This tests that addition and subtraction of TimeOffsets and integers or floats works as expected."""
         tests_ts = [
             (TimeOffset(10, 1) + 1, TimeOffset(11, 1)),
             (TimeOffset(10, 1) - 1, TimeOffset(9, 1)),
@@ -299,6 +325,7 @@ class TestTimeOffset(unittest.TestCase):
             self.assertEqual(t[0], t[1])
 
     def test_repr(self):
+        """This tests that the repr function turns time offsets into second:nanosecond pairs."""
         tests_ts = [
             (repr(TimeOffset(10, 1)), "10:1"),
             (repr(TimeOffset(10, 1, -1)), "-10:1"),
@@ -309,6 +336,7 @@ class TestTimeOffset(unittest.TestCase):
 
 class TestTimestamp(unittest.TestCase):
     def test_get_time_pythonic(self):
+        """This tests that the fallback pure python implementation of get_time works as expected."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -326,6 +354,7 @@ class TestTimestamp(unittest.TestCase):
                 self.assertEqual(gottime, t[1], msg="Times not equal, expected: %r, got %r" % (t[1], gottime))
 
     def test_iaddsub(self):
+        """This tests integer addition and subtraction on timestamps."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -358,6 +387,7 @@ class TestTimestamp(unittest.TestCase):
         self.assertEqual(toff, TimeOffset(9, 500000000, -1))
 
     def test_addsub(self):
+        """This tests addition and subtraction on timestamps."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -379,6 +409,7 @@ class TestTimestamp(unittest.TestCase):
             self.assertEqual(isinstance(t[0], Timestamp), isinstance(t[1], Timestamp))
 
     def test_multdiv(self):
+        """This tests multiplication and division on timestamps."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -407,6 +438,7 @@ class TestTimestamp(unittest.TestCase):
             count = count + 1
 
     def test_compare(self):
+        """This tests comparison of timestamps."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -432,6 +464,7 @@ class TestTimestamp(unittest.TestCase):
             self.assertEqual(t[0], t[1])
 
     def test_invalid_str(self):
+        """This tests that invalid strings fed into from_str raise exceptions."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -453,6 +486,7 @@ class TestTimestamp(unittest.TestCase):
                 pass
 
     def test_invalid_int(self):
+        """This tests that invalid int values fed into timestamp constructor get normalised."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -469,6 +503,7 @@ class TestTimestamp(unittest.TestCase):
             self.assertEqual(t[0], t[1])
 
     def test_convert_str(self):
+        """This tests that various string formats can be converted to timestamps."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -488,6 +523,7 @@ class TestTimestamp(unittest.TestCase):
             self.assertEqual(ts, t[1])
 
     def test_convert_tai_sec_nsec(self):
+        """This tests that the conversion to and from TAI second:nanosecond pairs works as expected."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -508,6 +544,7 @@ class TestTimestamp(unittest.TestCase):
             self.assertEqual(ts_str, t[2])
 
     def test_convert_tai_sec_frac(self):
+        """This tests that the conversion to and from TAI seconds with fractional parts works as expected."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -530,6 +567,7 @@ class TestTimestamp(unittest.TestCase):
             self.assertEqual(ts_str, t[2])
 
     def test_convert_iso_utc(self):
+        """This tests that conversion to and from ISO date format UTC time works as expected."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -577,6 +615,7 @@ class TestTimestamp(unittest.TestCase):
                 Timestamp.from_iso8601_utc(*p)
 
     def test_smpte_timelabel(self):
+        """This tests that conversion to and from SMPTE time labels works correctly."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -633,6 +672,7 @@ class TestTimestamp(unittest.TestCase):
 
 
     def test_from_datetime(self):
+        """Conversion from python's datetime object."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -648,6 +688,7 @@ class TestTimestamp(unittest.TestCase):
             self.assertEqual(Timestamp.from_datetime(t[0]), t[1])
 
     def test_to_datetime(self):
+        """Conversion to python's datetime object."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -663,6 +704,7 @@ class TestTimestamp(unittest.TestCase):
             self.assertEqual(t[0], t[1].to_datetime())
 
     def test_from_str(self):
+        """Conversion from string formats."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError
@@ -679,6 +721,7 @@ class TestTimestamp(unittest.TestCase):
                 self.assertEqual(Timestamp.from_str(t[0]), t[1])
 
     def test_get_leap_seconds(self):
+        """get_leap_seconds should return the correct number of leap seconds at any point in history."""
         with mock.patch('__builtin__.__import__', side_effect=import_mock("pyipputils.ipptimestamp",False)):
             reload(nmoscommon.timestamp)
             from nmoscommon.timestamp import Timestamp, TimeOffset, IPP_UTILS, TsValueError

@@ -24,4 +24,4 @@ clean:
 	find . -name '*.pyc' -delete
 
 test:
-	$(PYTHON) -m unittest discover -s ./nmoscommon
+	$(PYTHON) -m unittest discover -s .

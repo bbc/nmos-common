@@ -56,12 +56,15 @@ else:
 #        self.mocks['nmoscommon.facade.Logger'].return_value.writeFatal.side_effect = printmsg("FATAL")
 
         def DBUSObject(self, path):
+            """Returns a mock set up by the fixtures in the class for a particular DBUS object path"""
             return getattr(self.objects, path)
 
         def DBUSInterface(self, obj, interface):
+            """Returns a mock set up by the fixtures in the class for a particular DBUS interface on an object"""
             return getattr(obj, interface)
 
         def test_init(self):
+            """Tests the initialisation of an MDNSEngine"""
             from nmoscommon.mdns.avahidbus import MDNSEngine
             UUT = MDNSEngine()
 
@@ -71,7 +74,7 @@ else:
             self.mocks["dbus.Interface"].assert_called_once_with(self.DBUSObject('/'), 'org.freedesktop.Avahi.Server')
 
         def test_start_starts_a_glib_mainloop_with_gevent_idling(self):
-            """For glib and gevent to play nicely we must insert an idle handler in glib which calls gevent.sleep"""
+            """For glib and gevent to play nicely we must insert an idle handler in glib which calls gevent.sleep if this does not happen then the two will interfere."""
             from nmoscommon.mdns.avahidbus import MDNSEngine
             UUT = MDNSEngine()
 
@@ -93,6 +96,7 @@ else:
             self.mocks['gobject.MainLoop'].return_value.quit.assert_called_once_with()
 
         def assert_register_is_correct(self, name, regtype, port, txtRecord, current_state=avahi.ENTRY_GROUP_UNCOMMITED):
+            """This method performs a register with a given name, type, port, etc ... it also allows the current state of the group to be defined so that various of the safety checks can be triggered."""
             from nmoscommon.mdns.avahidbus import MDNSEngine
             UUT = MDNSEngine()
 
@@ -140,6 +144,7 @@ else:
             return (UUT, entrygroup)
 
         def test_register_new_service(self):
+            """Register a new service with a text record, should result in some calls to the provided callbacks."""
             name = "test_name"
             regtype = "test_type"
             port = 12345
@@ -148,12 +153,14 @@ else:
             self.assert_register_is_correct(name, regtype, port, txtRecord, current_state=avahi.ENTRY_GROUP_UNCOMMITED)
 
         def test_register_new_service_without_txt_record(self):
+            """Register a new service without a text record, should result in some calls to the provided callbacks."""
             name = "test_name"
             regtype = "test_type"
             port = 12345
             self.assert_register_is_correct(name, regtype, port, None, current_state=avahi.ENTRY_GROUP_UNCOMMITED)
 
         def test_reregister_service(self):
+            """Reregister an existing service with a text record, should result in some calls to the provided callbacks."""
             name = "test_name"
             regtype = "test_type"
             port = 12345
@@ -162,6 +169,7 @@ else:
             self.assert_register_is_correct(name, regtype, port, txtRecord, current_state=avahi.ENTRY_GROUP_ESTABLISHED)
 
         def test_update(self):
+            """Update the text record on an existing service, should result in some calls to the provided callbacks and to the UpdateServiceTxt dbus method."""
             name = "test_name"
             regtype = "test_type"
             port = 12345
@@ -180,6 +188,7 @@ else:
                                                                 avahi.dict_to_txt_array(newtxtRecord))
 
         def test_update_to_remove_txt_record(self):
+            """Delete the text record on an existing service, should result in some calls to the provided callbacks and to the UpdateServiceTxt dbus method."""
             name = "test_name"
             regtype = "test_type"
             port = 12345
@@ -196,6 +205,7 @@ else:
                                                                 avahi.dict_to_txt_array({}))
 
         def test_unregister(self):
+            """Unregister an existing service, should result in some calls to the provided callbacks and to the Free dbus method."""
             name = "test_name"
             regtype = "test_type"
             port = 12345
@@ -206,6 +216,7 @@ else:
             entrygroup.Free.assert_called_once_with()
 
         def test_unregister_is_idempotent(self):
+            """Multiple identical calls to unregister should not have additional side effects."""
             name = "test_name"
             regtype = "test_type"
             port = 12345
@@ -217,6 +228,7 @@ else:
             entrygroup.Free.assert_called_once_with()
 
         def test_unregister_does_nothing_when_nothing_to_be_done(self):
+            """Unregistering a service that does not exist should not do anything."""
             from nmoscommon.mdns.avahidbus import MDNSEngine
             UUT = MDNSEngine()
 
@@ -229,12 +241,15 @@ else:
             entrygroup.Free.assert_not_called()
 
         def test_callback_on_services_with_domain(self):
+            """Test that callback_on_service works when supplied with a domain."""
             self.assert_callback_on_services_calls_back(domain="potato")
 
         def test_callback_on_services_without_domain(self):
+            """Test that callback_on_service works when not supplied with a domain."""
             self.assert_callback_on_services_calls_back()
 
         def assert_callback_on_services_calls_back(self, domain=None):
+            """This method runs callback_on_service and checks that it makes the expected dbus calls."""
             from nmoscommon.mdns.avahidbus import MDNSEngine
             UUT = MDNSEngine()
 
@@ -370,6 +385,7 @@ else:
                                               "interface": mock.sentinel.interface})
 
         def test_close(self):
+            """A call to close should result in Free being called on all registered services."""
             name = "test_name"
             regtype = "test_type"
             port = 12345

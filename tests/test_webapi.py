@@ -18,6 +18,7 @@ import mock
 from nmoscommon.webapi import *
 
 from datetime import timedelta
+import re
 
 import flask
 
@@ -124,7 +125,9 @@ class TestWebAPI(unittest.TestCase):
     @mock.patch('nmoscommon.webapi.http.install_opener')
     @mock.patch('nmoscommon.flask_cors.make_response', side_effect=lambda x:x)
     @mock.patch('nmoscommon.flask_cors.request')
-    def assert_wrapped_route_method_returns(self, f, expected, request, make_response, install_opener, urlopen, method="GET", args=[], kwargs={}, best_mimetype='application/json', request_headers=None, oauth_userid=None, oauth_token=None, ignore_body=False):
+    def assert_wrapped_route_method_returns(self, f, expected, request, make_response, install_opener, urlopen, method="GET", args=[], kwargs={}, best_mimetype='application/json', request_headers=None, oauth_userid=None, oauth_token=None, ignore_body=False, urlopen_side_effect=None):
+        if urlopen_side_effect is not None:
+            urlopen.side_effect = urlopen_side_effect
         with mock.patch('nmoscommon.webapi.request', request):
             if oauth_userid is not None:
                 # this method is called by the default_authorizer when oauth credentials are checked
@@ -219,6 +222,7 @@ Differences:
                              before a comparison is performed. Metadata, headers, etc ... are still compared.
         'authenticate'    -- a custom callable for the oauth authenticate method
         'authorize'       -- a custom callable for the oauth autorize method
+        'urlopen'         -- a side effect which will be hooked into the urlopen function, pass an exception to make it fail!
 """
         method = mock.MagicMock(name="webapi", return_value=data['return_data'])
 
@@ -244,7 +248,8 @@ Differences:
                                                      oauth_userid=data.get('oauth_userid', None),
                                                      oauth_token=data.get('oauth_token',None),
                                                      kwargs=kwargs,
-                                                     ignore_body=data.get('ignore_body', False))
+                                                     ignore_body=data.get('ignore_body', False),
+                                                     urlopen_side_effect=data.get('urlopen', None))
 
     def test_secure_route__GET__json(self):
         self.perform_test_on_decorator({
@@ -566,6 +571,29 @@ Differences:
             })
         custom_authenticate.assert_called_once_with("jkhndgkjsj.jkuhjhn")
         custom_authorize.assert_called_once_with("jkhndgkjsj.jkuhjhn")
+
+    def test_secure_route__GET__can_handle_an_exception_in_proxied_request(self):
+        fp = mock.MagicMock(name="fp")
+        e = http.HTTPError("http://example.com", 404, "Coulds Not Finded", {}, fp)
+        self.perform_test_on_decorator({
+                'methods'     : ["GET", "POST", "POTATO"],
+                'path'        : '/',
+                'return_data' : { 'foo' : 'bar', 'baz' : ['boop',] },
+                'method'      : "GET",
+                'headers'     : { 'token' : "jkhndgkjsj.jkuhjhn" },
+                'best_type'   : 'application/json',
+                'decorator'   : secure_route('/', methods=["GET", "POST", "POTATO"], auto_json=True, headers=["x-not-a-real-header",], origin="example.com"),
+                'oauth_userid': "FAKE_USER_ID",
+                'oauth_token' : "jkhndgkjsj.jkuhjhn",
+                'urlopen'     : e,
+                'expected'    : IppResponse(status=401,
+                                            headers= {    'Access-Control-Allow-Headers': u'X-NOT-A-REAL-HEADER, CONTENT-TYPE, TOKEN',
+                                                          'Access-Control-Max-Age': u'21600',
+                                                          'Cache-Control': u'no-cache, must-revalidate, no-store',
+                                                          'Access-Control-Allow-Origin': u'example.com',
+                                                          'Access-Control-Allow-Methods': u'GET, POST, POTATO'},
+                                            content_type=u'text/html; charset=utf-8'),
+            })
 
     def test_secure_route__GET__with_wrapped_method_returning_status_code(self):
         self.perform_test_on_decorator({
@@ -1284,3 +1312,42 @@ Differences:
                                            'proxies' : mock.sentinel.proxies }
         UUT = StubWebAPI()
         self.assertFalse(UUT.default_authenticate(None))
+
+    @mock.patch('nmoscommon.flask_cors.make_response')
+    @mock.patch('nmoscommon.webapi.request')
+    @mock.patch("nmoscommon.webapi.Flask")
+    @mock.patch("nmoscommon.webapi.Sockets")
+    def test_default_301_handler_redirects(self, Sockets, Flask, request, make_response):
+        """The method __redirect is the default 301 handler."""
+        self.maxDiff = None
+        class StubWebAPI(WebAPI):
+            pass
+        app = Flask.return_value
+        app.errorhandler.side_effect = lambda n : getattr(app, 'error_handler_for_' + str(n))
+        UUT = StubWebAPI()
+        Flask.assert_called_once_with('nmoscommon.webapi')
+        f = app.error_handler_for_301.call_args[0][0]
+
+        with mock.patch('nmoscommon.flask_cors.request', request):
+            e = mock.MagicMock(name="301Error")
+            f(e)
+            make_response.assert_called_once_with(e.get_response.return_value)
+            e.get_response.assert_called_once_with(request.environ)
+
+    @mock.patch('nmoscommon.webapi.config', {'node_hostname' : 'example.com', 'https_mode' : 'enabled'})
+    @mock.patch('nmoscommon.webapi.request', headers={ 'X-Forwarded-Path' : '/dummy/path', 'X-Forwarded-Proto' : 'ftp' }, url="ntp://potato.xxx/hot/potatoes/")
+    def test_htmlify(self, request):
+        """The method htmlify should covert json into html."""
+        r = [ 'foo/', 'bar/', 'baz/', "boop" ]
+        resp = htmlify(r, 'application/json')
+        self.assertEqual(resp.status_code, 200)
+        html = resp.get_data()
+
+        base_url = "https://example.com"
+
+        self.assertRegexpMatches(html, r'<h2><a href="' + re.escape(base_url + '/') + r'">' + re.escape(base_url) + r'</a>/<a href="' + re.escape(base_url + '/dummy') + r'">dummy</a>/<a href="' + re.escape(base_url + '/dummy/path') + r'">path</a></h2>',
+                                     msg="html output does not contain the expected h2 element for the title")
+        self.assertRegexpMatches(html, r'<a href="\./foo/?">foo/?</a>',
+                                     msg="html output has not converted a list entry with a trailing slash into a link")
+        self.assertNotRegexpMatches(html, r'<a href="\./boop/?">boop/?</a>',
+                                     msg="html output contains a link for an entry that lacked a trailing slash, this is wrong")

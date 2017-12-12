@@ -41,7 +41,7 @@ import flask_oauthlib.client
 try:
     from urlparse import urlparse
     import urllib2 as http
-except ImportError:
+except:
     from urllib import request as http
     from urllib.parse import urlparse
 

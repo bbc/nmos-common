@@ -41,6 +41,7 @@ class MDNSEngine(object):
         self.unreg_queue = []
         self.greenlet = None
         self.running = False
+        self._mainloop = None
 
     def start(self):
         if not gobject.MainLoop().is_running():
@@ -49,8 +50,11 @@ class MDNSEngine(object):
 
     def stop(self):
         if self.greenlet is not None:
-            self._mainloop.quit()
+            if self._mainloop is not None:
+                self._mainloop.quit()
+            self._mainloop = None
             self.greenlet = None
+        self.running = False
 
     def close(self):
         for x in self.rlist:
@@ -182,6 +186,7 @@ class MDNSEngine(object):
 if __name__ == "__main__": # pragma: no cover
     import sys
     from gevent import monkey; monkey.patch_all()
+    import traceback
 
     def print_results_callback(data):
         print data
@@ -200,12 +205,14 @@ if __name__ == "__main__": # pragma: no cover
 
     e.callback_on_services(regtype, callback=print_results_callback, domain=domain)
 
-    time.sleep(10)
-
-    e.update("python_avahi_test", "_test._tcp", {"Potato" : "somewhat"})
-
     while True:
-        time.sleep(1)
+        try:
+            time.sleep(1)
+        except KeyboardInterrupt:
+            break
+        except:
+            traceback.print_exc()
+            break
 
     e.stop()
     e.close()

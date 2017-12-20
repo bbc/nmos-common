@@ -12,10 +12,11 @@ VENV_MODULE_DIR=$(VENV)/lib/python2.7/site-packages
 VENV_TEST_DEPS=$(addprefix $(VENV_MODULE_DIR)/,$(TEST_DEPS))
 
 all:
-	@echo "make source - Create source package"
+	@echo "make source  - Create source package"
 	@echo "make install - Install on local system (only during development)"
-	@echo "make deb - Generate a deb package - for local testing"
-	@echo "make clean - Get rid of scratch and byte files"
+	@echo "make deb     - Generate a deb package - for local testing"
+	@echo "make clean   - Get rid of scratch and byte files"
+	@echo "make test    - Tests are nice"
 
 source:
 	$(PYTHON) setup.py sdist $(COMPILE)

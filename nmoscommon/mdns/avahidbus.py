@@ -47,11 +47,13 @@ class MDNSEngine(object):
         if not gobject.MainLoop().is_running():
             self.greenlet = gevent.spawn(self.run)
             self.running = True
+            gevent.sleep(0)
 
     def stop(self):
         if self.greenlet is not None:
             if self._mainloop is not None:
                 self._mainloop.quit()
+                gevent.sleep(0)
             self._mainloop = None
             self.greenlet = None
         self.running = False

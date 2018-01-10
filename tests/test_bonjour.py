@@ -14,7 +14,6 @@
 
 import unittest
 import mock
-from nmoscommon.mdns.bonjour import *
 import traceback
 
 try:
@@ -22,6 +21,7 @@ try:
 except:
     pass
 else:
+    from nmoscommon.mdns.bonjour import *
 
     class ExitTestNormally(Exception):
         pass

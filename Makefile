@@ -1,15 +1,16 @@
 PYTHON=`which python`
 DESTDIR=/
 PROJECT=nmos-common
+MODNAME=nmoscommon
 
 TEST_DEPS=\
-	mock \
-	gevent
+	mock
 
 VENV=virtpython
 VENV_ACTIVATE=$(VENV)/bin/activate
 VENV_MODULE_DIR=$(VENV)/lib/python2.7/site-packages
 VENV_TEST_DEPS=$(addprefix $(VENV_MODULE_DIR)/,$(TEST_DEPS))
+VENV_INSTALLED=$(VENV_MODULE_DIR)/$(MODNAME).egg-link
 
 all:
 	@echo "make source  - Create source package"
@@ -35,12 +36,15 @@ clean:
 	find . -name '*.pyc' -delete
 
 $(VENV):
-	virtualenv --system-site-packages $@
+	virtualenv $@
 
 $(VENV_TEST_DEPS): $(VENV)
 	. $(VENV_ACTIVATE); pip install $(@F)
 
-test: $(VENV_TEST_DEPS)
+$(VENV_INSTALLED) : $(VENV)
+	. $(VENV_ACTIVATE); pip install -e .
+
+test: $(VENV_TEST_DEPS) $(VENV_INSTALLED)
 	. $(VENV_ACTIVATE); $(PYTHON) -m unittest discover -s .
 
 .PHONY: test clean deb install source all

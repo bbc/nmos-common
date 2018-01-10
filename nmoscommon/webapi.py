@@ -413,9 +413,33 @@ class IppResponse(Response):
             self.set_data(data)
 
     def __eq__(self, other):
+
+        headers_match = True
+        for (hdr, val) in self.headers:
+            if hdr not in other.headers.keys():
+                print "{} not in other".format(hdr)
+                headers_match = False
+                break
+            else:
+                if hdr in [ "Access-Control-Allow-Headers" ]:
+                    if set([ h.strip() for h in self.headers[hdr].split(',') ]) != set([ h.strip() for h in other.headers[hdr].split(',') ]):
+                        print "{} != {}".format(set([ h.strip() for h in self.headers[hdr].split(',') ]), set([ h.strip() for h in other.headers[hdr].split(',') ]))
+                        headers_match = False
+                        break
+                else:
+                    if self.headers[hdr] != other.headers[hdr]:
+                        print "{} != {}".format(self.headers[hdr], other.headers[hdr])
+                        headers_match = False
+                        break
+
+        for (hdr, val) in other.headers:
+            if hdr not in self.headers.keys():
+                headers_match = False
+                break
+
         return ((self.get_data() == other.get_data()) and
                     (self.status == other.status) and
-                    (self.headers == other.headers) and
+                    headers_match and
                     (self.mimetype == other.mimetype) and
                     (self.content_type == other.content_type) and
                     (self.direct_passthrough == other.direct_passthrough))

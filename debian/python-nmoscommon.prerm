@@ -19,7 +19,7 @@ set -e
 
 case "$1" in
     remove|upgrade|deconfigure)
-	rm /var/log/nmoscommon.log
+	rm /var/log/nmos.log
     ;;
 
     failed-upgrade)

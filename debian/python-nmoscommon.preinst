@@ -17,7 +17,7 @@ set -e
 
 case "$1" in
     install|upgrade)
-	install -m 666 /dev/null /var/log/nmoscommon.log
+	install -m 666 /dev/null /var/log/nmos.log
     ;;
 
     abort-upgrade)

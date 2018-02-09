@@ -1,3 +1,2 @@
-recursive-include debian *
 recursive-include etc *
-include README
+include README.md

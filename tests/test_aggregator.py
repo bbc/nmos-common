@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
+from six import iteritems, itervalues
+from six import PY2
+
 import unittest
 import mock
 from nmoscommon.aggregator import *
@@ -19,6 +24,11 @@ import nmoscommon.logger
 from nmoscommon import nmoscommonconfig
 
 class TestMDNSUpdater(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestMDNSUpdater, self).__init__(*args, **kwargs)
+        if PY2:
+            self.assertCountEqual = self.assertItemsEqual
+
     def test_init(self):
         """Test of initialisation of an MDNSUpdater"""
         mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
@@ -37,7 +47,7 @@ class TestMDNSUpdater(unittest.TestCase):
         self.assertEqual(UUT.txt_rec_base, txt_recs)
         self.assertEqual(UUT.logger, logger)
 
-        for key in mappings.itervalues():
+        for key in itervalues(mappings):
             self.assertIn(key, UUT.service_versions)
             self.assertEqual(UUT.service_versions[key], 0)
 
@@ -176,19 +186,24 @@ class TestMDNSUpdater(unittest.TestCase):
         UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
 class TestAggregator(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestAggregator, self).__init__(*args, **kwargs)
+        if PY2:
+            self.assertCountEqual = self.assertItemsEqual
+
     def setUp(self):
         paths = ['nmoscommon.aggregator.Logger',
                  'nmoscommon.aggregator.IppmDNSBridge',
                  'gevent.queue.Queue',
                  'gevent.spawn' ]
         patchers = { name : mock.patch(name) for name in paths }
-        self.mocks = { name : patcher.start() for (name, patcher) in patchers.iteritems() }
-        for (name, patcher) in patchers.iteritems():
+        self.mocks = { name : patcher.start() for (name, patcher) in iteritems(patchers) }
+        for (name, patcher) in iteritems(patchers):
             self.addCleanup(patcher.stop)
 
         def printmsg(t):
             def _inner(msg):
-                print t + ": " + msg
+                print(t + ": " + msg)
             return _inner
 
 #        self.mocks['nmoscommon.aggregator.Logger'].return_value.writeInfo.side_effect = printmsg("INFO")
@@ -221,7 +236,7 @@ class TestAggregator(unittest.TestCase):
         for o in objects:
             a.register_into("potato", o[0], o[1], **o[2])
             a._reg_queue.put.assert_called_with({"method": "POST", "namespace": "potato", "res_type": o[0], "key": o[1]})
-            send_obj = { "type" : o[0], "data" : { k : v for (k,v) in o[2].iteritems() } }
+            send_obj = { "type" : o[0], "data" : { k : v for (k,v) in iteritems(o[2]) } }
             if 'id' not in send_obj['data']:
                 send_obj['data']['id'] = o[1]
             self.assertEqual(a._registered["entities"]["potato"][o[0]][o[1]], send_obj)
@@ -239,7 +254,7 @@ class TestAggregator(unittest.TestCase):
         for o in objects:
             a.register(o[0], o[1], **o[2])
             a._reg_queue.put.assert_called_with({"method": "POST", "namespace": "resource", "res_type": o[0], "key": o[1]})
-            send_obj = { "type" : o[0], "data" : { k : v for (k,v) in o[2].iteritems() } }
+            send_obj = { "type" : o[0], "data" : { k : v for (k,v) in iteritems(o[2]) } }
             if 'id' not in send_obj['data']:
                 send_obj['data']['id'] = o[1]
             if o[0] == "node":
@@ -795,7 +810,7 @@ class TestAggregator(unittest.TestCase):
                 with_prerun(a)
             a._process_reregister()
 
-            self.assertItemsEqual(SEND.mock_calls, expected_send_calls)
+            self.assertCountEqual(SEND.mock_calls, expected_send_calls)
             if to_point >= self.REREGISTER_INC_PTP:
                 a._mdns_updater.inc_P2P_enable_count.assert_called_with()
             else:

@@ -15,9 +15,14 @@
 import unittest
 import mock
 from nmoscommon.logger import PurePythonLogger, Logger, IPP_LOGGER
-from StringIO import StringIO
+from six import PY2
 from logging import StreamHandler
 import re
+
+if PY2:
+    from StringIO import StringIO
+else:
+    from io import StringIO
 
 class TestLogger(unittest.TestCase):
     def assert_message_logged(self, level, msg):

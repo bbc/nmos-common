@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
+from six import iteritems
+
 import unittest
 import mock
 
@@ -30,8 +34,8 @@ else:
                     "gobject.MainLoop",
                     "glib.idle_add" ]
             patchers = { name : mock.patch(name) for name in paths }
-            self.mocks = { name : patcher.start() for (name, patcher) in patchers.iteritems() }
-            for (name, patcher) in patchers.iteritems():
+            self.mocks = { name : patcher.start() for (name, patcher) in iteritems(patchers) }
+            for (name, patcher) in iteritems(patchers):
                 self.addCleanup(patcher.stop)
 
             self.mocks["gobject.MainLoop"].return_value.is_running.return_value = False
@@ -46,7 +50,7 @@ else:
 
             def printmsg(t):
                 def _inner(msg):
-                    print t + ": " + msg
+                    print(t + ": " + msg)
                 return _inner
 
 #        self.mocks['nmoscommon.facade.Logger'].return_value.writeInfo.side_effect = printmsg("INFO")

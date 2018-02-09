@@ -12,12 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six import PY2
+from six.moves import reload_module
+
 import unittest
 import time
 
 import nmoscommon
 from nmoscommon.ptptime import *
 import mock
+
+if PY2:
+    BUILTINS = "__builtin__"
+else:
+    BUILTINS = "builtins"
 
 orig_import = __import__
 
@@ -35,21 +43,21 @@ def import_mock(magic_name, allow):
 class PTPTest(unittest.TestCase):
 
     def test_import_noerror(self):
-        with mock.patch('__builtin__.__import__', side_effect=import_mock("ipppython.ptptime",True)):
-            reload(nmoscommon.ptptime)
+        with mock.patch(BUILTINS + '.__import__', side_effect=import_mock("ipppython.ptptime",True)):
+            reload_module(nmoscommon.ptptime)
             from nmoscommon.ptptime import IPP_PYTHON
             self.assertTrue(IPP_PYTHON)
     
     def test_import_error(self):
-        with mock.patch('__builtin__.__import__', side_effect=import_mock("ipppython.ptptime",False)):
-            reload(nmoscommon.ptptime)
+        with mock.patch(BUILTINS + '.__import__', side_effect=import_mock("ipppython.ptptime",False)):
+            reload_module(nmoscommon.ptptime)
             from nmoscommon.ptptime import IPP_PYTHON
             self.assertFalse(IPP_PYTHON)
 
     def test_ptp_detail(self):
         """Testing the fallback when IPP_PYTHON doesn't load"""
-        with mock.patch('__builtin__.__import__', side_effect=import_mock("ipppython.ptptime",False)):
-            reload(nmoscommon.ptptime)
+        with mock.patch(BUILTINS + '.__import__', side_effect=import_mock("ipppython.ptptime",False)):
+            reload_module(nmoscommon.ptptime)
             from nmoscommon.ptptime import ptp_detail
             rv = ptp_detail()
             self.assertEqual(2, len(rv))
@@ -58,10 +66,10 @@ class PTPTest(unittest.TestCase):
 
     def test_fallback(self):
         with mock.patch('nmoscommon.timestamp.Timestamp.get_time') as get_time:
-            with mock.patch('__builtin__.__import__', side_effect=import_mock("ipppython.ptptime",False)):
+            with mock.patch(BUILTINS + '.__import__', side_effect=import_mock("ipppython.ptptime",False)):
                 tval = 23*1e9 + 17
                 get_time.return_value.to_nanosec.return_value = tval
-                reload(nmoscommon.ptptime)
+                reload_module(nmoscommon.ptptime)
                 from nmoscommon.ptptime import ptp_time
                 ts = ptp_time()
                 get_time.assert_called_once_with()

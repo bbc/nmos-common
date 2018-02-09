@@ -16,6 +16,8 @@
 Tests ported from https://github.com/alonho/pql
 '''
 
+from __future__ import absolute_import
+from __future__ import print_function
 from unittest import TestCase, skip
 from nmoscommon.rql.query import mongodb
 from datetime import datetime
@@ -24,7 +26,7 @@ from datetime import datetime
 class BaseMongoTestCase(TestCase):
 
     def compare(self, ast, expected):
-        print ast, '->', expected
+        print(ast, '->', expected)
         self.assertEqual(mongodb.unparse(ast), expected)
 
 

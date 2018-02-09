@@ -14,9 +14,13 @@
 
 # DEPRECATED - This class is deprecated - please use timestamp.py
 
+from __future__ import print_function
+from __future__ import absolute_import
+
 import ctypes, os, time
 from subprocess import check_output
-from timestamp import Timestamp
+from .timestamp import Timestamp
+
 try:
     import ipppython.ptptime
     IPP_PYTHON = True
@@ -54,5 +58,5 @@ def ptp_detail():
     return [t.tv_sec, t.tv_nsec]
 
 if __name__ == "__main__": # pragma: no cover
-    print ptp_time()
-    print ptp_detail()
+    print(ptp_time())
+    print(ptp_detail())

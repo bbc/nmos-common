@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import traceback
-from ipc import Proxy
+from .ipc import Proxy
 import gevent
 from threading import Lock
 from nmoscommon.logger import Logger
@@ -186,7 +188,7 @@ class Facade(object):
         if type in self.resources:
             # Hack until adoption of flow instances (Ensure transports for flow are deleted)
             if type == "flow" and "transport" in self.resources:
-                for transport in self.resources["transport"].keys():
+                for transport in tuple(self.resources["transport"].keys()):
                     if key == self.resources["transport"][transport]["flow-id"]:
                         del self.resources["transport"][transport]
             if key in self.resources[type]:

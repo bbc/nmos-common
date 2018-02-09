@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six import PY2
+
 import unittest
 import mock
 
@@ -21,6 +23,11 @@ with mock.patch("nmoscommon.query.monkey"):
 import traceback
 
 class TestQueryInit(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestQueryInit, self).__init__(*args, **kwargs)
+        if PY2:
+            self.assertCountEqual = self.assertItemsEqual
+
     def test_init_with_ipv6_fallback(self):
         self.query_url = "http://query.example/"
         self.mdns_bridge = mock.MagicMock(name="mdnsbridge")
@@ -48,6 +55,11 @@ class TestQueryInit(unittest.TestCase):
         self.assertListEqual(self.mdns_bridge.getHref.mock_calls, expected_calls)
 
 class TestQuery(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestQuery, self).__init__(*args, **kwargs)
+        if PY2:
+            self.assertCountEqual = self.assertItemsEqual
+
     def setUp(self):
         self.query_url = "http://query.example/"
         self.mdns_bridge = mock.MagicMock(name="mdnsbridge")
@@ -97,11 +109,11 @@ class TestQuery(unittest.TestCase):
         if with_exceptions < 3:
             if status_code == 200:
                 if not with_node_id:
-                    self.assertItemsEqual(r, [ { "id" : mock.sentinel.id0, "type" :  mock.sentinel.service_urn },
+                    self.assertCountEqual(r, [ { "id" : mock.sentinel.id0, "type" :  mock.sentinel.service_urn },
                                                 { "id" : mock.sentinel.id4, "type" :  mock.sentinel.service_urn },
                                             ])
                 else:
-                    self.assertItemsEqual(r, [ { "id" : mock.sentinel.id0, "type" :  mock.sentinel.service_urn } ])
+                    self.assertCountEqual(r, [ { "id" : mock.sentinel.id0, "type" :  mock.sentinel.service_urn } ])
             else:
                 self.assertListEqual(r, [])
 

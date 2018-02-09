@@ -12,12 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six import PY2
+from six.moves import reload_module
+
 import unittest
 import mock
 
-from urlparse import urlparse as urlparse_urlparse
+from six.moves.urllib.parse import urlparse as urlparse_urlparse
 
 import nmoscommon.webapi
+
+if PY2:
+    BUILTINS = "__builtin__"
+else:
+    BUILTINS = "builtins"
 
 #import urlparse.urlparse
 #import urllib.request
@@ -50,29 +58,29 @@ def import_mock(magic_names, cursed_names):
 
 class TestImport(unittest.TestCase):
     def test_import_with_urllib2(self):
-        with mock.patch('__builtin__.__import__', import_mock(['urllib2', ], [])):
-            reload(nmoscommon.webapi)
+        with mock.patch(BUILTINS + '.__import__', import_mock(['urllib2', ], [])):
+            reload_module(nmoscommon.webapi)
             from nmoscommon.webapi import http, urlparse
             self.assertEqual(http, mock_imports['urllib2'])
             self.assertEqual(urlparse, urlparse_urlparse)
 
     def test_import_without_urllib2(self):
-        with mock.patch('__builtin__.__import__', import_mock(['urllib', 'urllib.parse' ], ['urllib2',])):
-            reload(nmoscommon.webapi)
+        with mock.patch(BUILTINS + '.__import__', import_mock(['urllib', 'urllib.parse' ], ['urllib2',])):
+            reload_module(nmoscommon.webapi)
             from nmoscommon.webapi import http, urlparse
             self.assertEqual(http, mock_imports['urllib'].request)
             self.assertEqual(urlparse, mock_imports['urllib.parse'].urlparse)
 
     def test_getlocalip_for_host(self):
         with mock.patch('nmoscommon.utils.getLocalIP', return_value=mock.sentinel.localip):
-            reload(nmoscommon.webapi)
+            reload_module(nmoscommon.webapi)
             from nmoscommon.webapi import HOST
             self.assertEqual(HOST, mock.sentinel.localip)
 
     def test_getlocalip_for_host_retries_on_failure(self):
         with mock.patch('time.sleep'):
             with mock.patch('nmoscommon.utils.getLocalIP', side_effect=[ Exception, mock.sentinel.localip ]):
-                reload(nmoscommon.webapi)
+                reload_module(nmoscommon.webapi)
                 from nmoscommon.webapi import HOST
                 self.assertEqual(HOST, mock.sentinel.localip)
 
@@ -80,5 +88,5 @@ class TestImport(unittest.TestCase):
         with mock.patch('time.sleep'):
             with mock.patch('nmoscommon.utils.getLocalIP', side_effect=[ Exception, Exception, Exception, Exception, Exception, Exception, Exception, mock.sentinel.localip ]):
                 with self.assertRaises(OSError):
-                    reload(nmoscommon.webapi)
+                    reload_module(nmoscommon.webapi)
                     from nmoscommon.webapi import HOST

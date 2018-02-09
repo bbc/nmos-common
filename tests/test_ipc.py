@@ -12,18 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
+from six import PY2
+from six import string_types
+from six import iteritems
+
 import unittest
 import mock
 from nmoscommon.ipc import *
-from StringIO import StringIO
+
+if PY2:
+    from StringIO import StringIO
+else:
+    from io import StringIO
 
 class TestHost(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestHost, self).__init__(*args, **kwargs)
+        if PY2:
+            self.assertCountEqual = self.assertItemsEqual
+
     def setUp(self):
         paths = ['nmoscommon.ipc.zmq',
                  'os.chmod', ]
         patchers = { name : mock.patch(name) for name in paths }
-        self.mocks = { name : patcher.start() for (name, patcher) in patchers.iteritems() }
-        for (name, patcher) in patchers.iteritems():
+        self.mocks = { name : patcher.start() for (name, patcher) in iteritems(patchers) }
+        for (name, patcher) in iteritems(patchers):
             self.addCleanup(patcher.stop)
         self.zmq = self.mocks['nmoscommon.ipc.zmq']
 
@@ -314,13 +330,13 @@ class TestHost(unittest.TestCase):
             test_function_mock.assert_called_once_with(*args, **kwargs)
             self.zmq.Context.instance.return_value.socket.return_value.send.assert_called_once_with(mock.ANY)
             sentval = self.zmq.Context.instance.return_value.socket.return_value.send.call_args[0][0]
-            self.assertIsInstance(sentval, basestring)
+            self.assertIsInstance(sentval, string_types)
             try:
                 sentdict = json.loads(sentval)
             except:
                 self.fail(msg="String sent back to remote client is not valid json")
             self.assertIn("exc", sentdict)
-            self.assertIsInstance(sentdict["exc"], basestring)
+            self.assertIsInstance(sentdict["exc"], string_types)
             self.assertRegexpMatches(sentdict["exc"], r'Exception: This is a test Exception')
 
     def test_getmethods(self):
@@ -334,12 +350,17 @@ class TestHost(unittest.TestCase):
         self.assertEqual(UUT.getmethods(), dict([ (m.__name__, m.__doc__ if m.__doc__ is not None else "") for m in methods ] + [ ("getmethods", UUT.getmethods.__doc__) ]))
 
 class TestProxy(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestProxy, self).__init__(*args, **kwargs)
+        if PY2:
+            self.assertCountEqual = self.assertItemsEqual
+
     def setUp(self):
         paths = ['nmoscommon.ipc.zmq',
                  'os.path.exists', ]
         patchers = { name : mock.patch(name) for name in paths }
-        self.mocks = { name : patcher.start() for (name, patcher) in patchers.iteritems() }
-        for (name, patcher) in patchers.iteritems():
+        self.mocks = { name : patcher.start() for (name, patcher) in iteritems(patchers) }
+        for (name, patcher) in iteritems(patchers):
             self.addCleanup(patcher.stop)
         self.zmq = self.mocks['nmoscommon.ipc.zmq']
 
@@ -358,7 +379,7 @@ class TestProxy(unittest.TestCase):
 
         self.zmq.Context.instance.return_value.socket.assert_called_once_with(self.zmq.REQ)
         self.zmq.Context.instance.return_value.socket.return_value.connect.assert_called_once_with(address)
-        self.assertItemsEqual(self.zmq.Context.instance.return_value.socket.return_value.setsockopt.mock_calls,
+        self.assertCountEqual(self.zmq.Context.instance.return_value.socket.return_value.setsockopt.mock_calls,
                               [ mock.call(self.zmq.LINGER, 0),
                                 mock.call(self.zmq.SNDTIMEO, 0),
                                 mock.call(self.zmq.RCVTIMEO, 0) ])
@@ -440,8 +461,8 @@ class TestMain(unittest.TestCase):
                  'os.path.exists',
                  'os.chmod']
         patchers = { name : mock.patch(name) for name in paths }
-        self.mocks = { name : patcher.start() for (name, patcher) in patchers.iteritems() }
-        for (name, patcher) in patchers.iteritems():
+        self.mocks = { name : patcher.start() for (name, patcher) in iteritems(patchers) }
+        for (name, patcher) in iteritems(patchers):
             self.addCleanup(patcher.stop)
         self.zmq = self.mocks['nmoscommon.ipc.zmq']
         self.mocks['os.path.exists'].return_value = True

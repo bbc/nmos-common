@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 import json
-from nmoscommon.logger import Logger
+from .logger import Logger
 
 config = {}
 
@@ -24,4 +26,4 @@ try:
         f = open(config_file, 'r')
         config = json.loads(f.read())
 except Exception as e:
-    print "Exception loading config: {}".format(e)
+    print("Exception loading config: {}".format(e))

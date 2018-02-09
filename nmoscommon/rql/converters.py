@@ -12,7 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from urllib import unquote
+from __future__ import absolute_import
+from __future__ import print_function
+from six import PY2
+if PY2:
+    from urllib import unquote
+else:
+    from urllib.parse import unquote
 from .dateutil import strptime_partial
 from datetime import datetime
 import json

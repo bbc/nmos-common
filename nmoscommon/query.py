@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
+from six.moves import range as xrange
+
 from gevent import monkey
 monkey.patch_all()
 
@@ -150,16 +154,16 @@ if __name__ == '__main__': # pragma: no cover
 
     qs = QueryService(IppmDNSBridge())
 
-    print qs.get_services("urn:x-ipstudio:service:status/v1.0")
-    print qs.get_services("urn:x-ipstudio:service:storedflowquery/v2.0")
-    print qs.get_services("urn:x-ipstudio:service:fake/v1.0")
+    print(qs.get_services("urn:x-ipstudio:service:status/v1.0"))
+    print(qs.get_services("urn:x-ipstudio:service:storedflowquery/v2.0"))
+    print(qs.get_services("urn:x-ipstudio:service:fake/v1.0"))
 
     def callback(data):
-        print "\n----\n",
+        print("\n----\n",)
         pprint(data)
 
     def on_open():
-        print "ONOPEN"
+        print("ONOPEN")
 
     gevent.spawn(qs.subscribe_topic, "nodes", callback, on_open)
 

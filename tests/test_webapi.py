@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
+from six import PY2
+
 import unittest
 import mock
 
@@ -52,6 +57,11 @@ def diff_ippresponse(self, other):
         return '\n'.join(result) + '\n'
 
 class TestWebAPI(unittest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        super(TestWebAPI, self).__init__(*args, **kwargs)
+        if PY2:
+            self.assertCountEqual = self.assertItemsEqual
 
     @mock.patch("nmoscommon.webapi.Flask")
     @mock.patch("nmoscommon.webapi.Sockets")
@@ -94,7 +104,7 @@ class TestWebAPI(unittest.TestCase):
 
         UUT = StubWebAPI()
         if oauth_userid is not None:
-            UUT._oauth_config = { "loginserver" : "LOGINSERVER", "proxies" : { "http" : "HHTPPROXY", "https" : "HTTPSPROXY" }, 'access_whitelist' : [ oauth_userid, ] }
+            UUT._oauth_config = { "loginserver" : "http://example.com/loginserver", "proxies" : { "http" : "http://httpproxy.example", "https" : "http://httpsproxy.example" }, 'access_whitelist' : [ oauth_userid, ] }
         Flask.assert_called_once_with('nmoscommon.webapi')
         app = Flask.return_value
 
@@ -113,10 +123,10 @@ class TestWebAPI(unittest.TestCase):
                                             methods=mock.ANY)
             app.route.return_value.assert_called_once_with(mock.ANY)
         else:
-            self.assertItemsEqual((call for call in app.route.mock_calls if call[0] == ''), [
+            self.assertCountEqual((call for call in app.route.mock_calls if call[0] == ''), [
                 mock.call('/', endpoint="_TEST", methods=mock.ANY),
                 mock.call('/<path:path>/', endpoint="_TEST_path", methods=mock.ANY), ])
-            self.assertItemsEqual((call for call in app.route.return_value.mock_calls if call[0] == ''), [
+            self.assertCountEqual((call for call in app.route.return_value.mock_calls if call[0] == ''), [
                 mock.call(mock.ANY),
                 mock.call(mock.ANY), ])
         return (app.route.return_value.call_args[0][0], UUT, [ (call[1], call[2]) for call in app.route.mock_calls if call[0] == '' ])
@@ -133,6 +143,9 @@ class TestWebAPI(unittest.TestCase):
                 # this method is called by the default_authorizer when oauth credentials are checked
                 urlopen.return_value.read.return_value = json.dumps({ 'userid' : oauth_userid, 'token' : oauth_token })
                 urlopen.return_value.code = 200
+                request.url = "https://example.com/"
+            else:
+                request.url = "http://example.com/"
             request.method = method
             request.host = "example.com"
             if best_mimetype == TypeError:
@@ -171,18 +184,20 @@ class TestWebAPI(unittest.TestCase):
                             expected = IppResponse(expected)
                         self.assertEqual(r, expected, msg="""
 
-Expected IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_type=%r\n, direct_passthrough=%r)
+Expected %s(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_type=%r\n, direct_passthrough=%r)
 
-Got IppResponse(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_type=%r,\n direct_passthrough=%r)
+Got %s(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_type=%r,\n direct_passthrough=%r)
 
 Differences: 
 
-%s""" % (expected.get_data(),
+%s""" % (type(expected).__name__,
+         expected.get_data(),
                                                                                                                              expected.status,
                                                                                                                              dict(expected.headers),
                                                                                                                              expected.mimetype,
                                                                                                                              expected.content_type,
                                                                                                                              expected.direct_passthrough,
+                                                                                                                             type(r).__name__,
                                                                                                                              r.get_data(),
                                                                                                                              r.status,
                                                                                                                              dict(r.headers),
@@ -1203,7 +1218,7 @@ Differences:
             self.assertListEqual(ws.receive.mock_calls, [ mock.call(), mock.call() ])
 
             m.assert_called_once_with(ws, { "foo" : "bar", "baz" : [ "boop", ] })
-            print ws.receive.send.mock_calls
+            print(ws.receive.send.mock_calls)
 
     @mock.patch("nmoscommon.webapi.Flask")
     @mock.patch("nmoscommon.webapi.Sockets")
@@ -1218,7 +1233,7 @@ Differences:
         Flask.assert_called_once_with('nmoscommon.webapi')
         expected_calls = [ mock.call(n) for n in range(400, 600) ]
         # This checks that all expected elements are in the list, but doesn't mind if the list has extra elements
-        self.assertItemsEqual([ call for call in app.errorhandler.mock_calls if call[0] == '' and call in expected_calls ],  expected_calls)
+        self.assertCountEqual([ call for call in app.errorhandler.mock_calls if call[0] == '' and call in expected_calls ],  expected_calls)
         f = getattr(app, 'error_handler_for_' + str(status_code)).call_args[0][0]
         for n in range(400, 600):
             getattr(app, 'error_handler_for_' + str(n)).assert_called_once_with(mock.ANY)
@@ -1248,15 +1263,17 @@ Differences:
                                             headers={'Access-Control-Allow-Methods': u'DELETE, GET, HEAD, OPTIONS, POST, PUT'},
                                             content_type=u'text/html; charset=utf-8')
                 else:
-                    expected = IppResponse(response=json.dumps({"debug" : {
-                        'traceback': [x for x in traceback.extract_tb(tb)],
-                            'exception': [x for x in traceback.format_exception_only(t, v)]
+                    expected = IppResponse(response=json.dumps({
+                        "debug" : {
+                            'traceback': [str(x) for x in traceback.extract_tb(tb)],
+                            'exception': [str(x) for x in traceback.format_exception_only(t, v)]
                         },
                         "code" : status_code,
-                                            "error" : description }),
-                                            status=status_code,
-                                            headers={'Access-Control-Allow-Methods': u'DELETE, GET, HEAD, OPTIONS, POST, PUT'},
-                                            content_type=u'application/json')
+                        "error" : description
+                        }),
+                        status=status_code,
+                        headers={'Access-Control-Allow-Methods': u'DELETE, GET, HEAD, OPTIONS, POST, PUT'},
+                        content_type=u'application/json')
             self.assert_wrapped_route_method_returns(f,
                                                     expected,
                                                     method=method,
@@ -1341,7 +1358,7 @@ Differences:
         r = [ 'foo/', 'bar/', 'baz/', "boop" ]
         resp = htmlify(r, 'application/json')
         self.assertEqual(resp.status_code, 200)
-        html = resp.get_data()
+        html = str(resp.get_data())
 
         base_url = "https://example.com"
 

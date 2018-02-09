@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from urlparse import urljoin
+from six import itervalues
+from six.moves.urllib.parse import urljoin
+
 import requests
 import json
 import time
@@ -355,7 +357,7 @@ class MDNSUpdater:
         self.p2p_enable_count = 0
         self.p2p_cut_in_count = p2p_cut_in_count
 
-        for mapValue in self.mappings.itervalues():
+        for mapValue in itervalues(self.mappings):
             self.service_versions[mapValue] = 0
 
         self.mdns.register(self.mdns_name, self.mdns_type, self.port, self.txt_rec_base)

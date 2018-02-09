@@ -12,17 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
+from __future__ import print_function
+from six import PY2
+from six import iteritems
 import unittest
 import mock
 from nmoscommon.facade import *
+
 
 class TestFacade(unittest.TestCase):
     def setUp(self):
         paths = ['nmoscommon.facade.Logger',
                  'nmoscommon.facade.Proxy', ]
         patchers = { name : mock.patch(name) for name in paths }
-        self.mocks = { name : patcher.start() for (name, patcher) in patchers.iteritems() }
-        for (name, patcher) in patchers.iteritems():
+        self.mocks = { name : patcher.start() for (name, patcher) in iteritems(patchers) }
+        for (name, patcher) in iteritems(patchers):
             self.addCleanup(patcher.stop)
         def _invoke_named(obj):
             def __inner(method, *args, **kwargs):
@@ -32,7 +37,7 @@ class TestFacade(unittest.TestCase):
 
         def printmsg(t):
             def _inner(msg):
-                print t + ": " + msg
+                print(t + ": " + msg)
             return _inner
 
 #        self.mocks['nmoscommon.facade.Logger'].return_value.writeInfo.side_effect = printmsg("INFO")
@@ -40,6 +45,9 @@ class TestFacade(unittest.TestCase):
 #        self.mocks['nmoscommon.facade.Logger'].return_value.writeDebug.side_effect = printmsg("DEBUG")
 #        self.mocks['nmoscommon.facade.Logger'].return_value.writeError.side_effect = printmsg("ERROR")
 #        self.mocks['nmoscommon.facade.Logger'].return_value.writeFatal.side_effect = printmsg("FATAL")
+
+        if PY2:
+            self.assertCountEqual = self.assertItemsEqual
 
     def test_setup_ipc(self):
         address="ipc:///tmp/nmos-nodefacade.dummy.for.test"
@@ -378,8 +386,8 @@ class TestFacade(unittest.TestCase):
 
         self.assertFalse(UUT.reregister)
         self.assertTrue(UUT.srv_registered)
-        self.assertItemsEqual(UUT.ipc.res_register.mock_calls, expected_res_register_calls)
-        self.assertItemsEqual(UUT.ipc.control_register.mock_calls, expected_control_register_calls)
+        self.assertCountEqual(UUT.ipc.res_register.mock_calls, expected_res_register_calls)
+        self.assertCountEqual(UUT.ipc.control_register.mock_calls, expected_control_register_calls)
 
     def test_reregister_all_bails_if_failed_to_unregister(self):
         address="ipc:///tmp/nmos-nodefacade.dummy.for.test"
@@ -497,5 +505,5 @@ class TestFacade(unittest.TestCase):
             UUT.reregister_all()
 
         self.assertIsNone(UUT.ipc)
-        self.assertItemsEqual(self.mocks['nmoscommon.facade.Proxy'].return_value.res_register.mock_calls, expected_res_register_calls)
+        self.assertCountEqual(self.mocks['nmoscommon.facade.Proxy'].return_value.res_register.mock_calls, expected_res_register_calls)
         self.assertEqual(len(self.mocks['nmoscommon.facade.Proxy'].return_value.control_register.mock_calls), 1)

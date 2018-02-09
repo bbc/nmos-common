@@ -13,12 +13,12 @@
 # limitations under the License.
 
 import sys
-import SocketServer
+from six.moves import socketserver
 from code import InteractiveConsole
 
 interpreter_globals = {}
 
-class InteractiveServer(SocketServer.BaseRequestHandler):
+class InteractiveServer(socketserver.BaseRequestHandler):
     def handle(self):
         global interpreter_globals
 
@@ -45,7 +45,7 @@ class Shell(InteractiveConsole):
         return self.file.readline()
 
 def interact(address=("0.0.0.0",9999)):
-    server = SocketServer.TCPServer(address, InteractiveServer)
+    server = socketserver.TCPServer(address, InteractiveServer)
     server.serve_forever()
 
 port = 9999

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six import PY2
+
 import unittest
 import mock
 import nmoscommon
@@ -20,8 +22,14 @@ import code
 import sys
 import runpy
 
+if PY2:
+    SOCKETSERVER = "SocketServer"
+else:
+    SOCKETSERVER = "socketserver"
+
+
 class TestInteractiveServer(unittest.TestCase):
-    @mock.patch('SocketServer.TCPServer')
+    @mock.patch(SOCKETSERVER + '.TCPServer')
     def test_interact(self, tcpserver):
         interact()
         tcpserver.assert_called_with(("0.0.0.0",9999), InteractiveServer)

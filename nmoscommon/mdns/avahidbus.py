@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import avahi
 import dbus
 import gevent
@@ -130,7 +132,7 @@ class MDNSEngine(object):
     def callback_on_services(self, regtype, callback, registerOnly=True, domain=None):
 
         def _error_handler(*args):
-            print "Error: %r" % (args,)
+            print("Error: %r" % (args,))
 
         def _resolve_callback(callback):
             def _inner(interface, protocol, name, stype, domain, host, arprotocol, address, port, txt, flags):
@@ -191,7 +193,7 @@ if __name__ == "__main__": # pragma: no cover
     import traceback
 
     def print_results_callback(data):
-        print data
+        print(data)
 
     e = MDNSEngine()
     e.start()

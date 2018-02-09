@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
+from __future__ import print_function
 from nmoscommon.rql.parser import parse
 from .fixtures import query_pairs
 
@@ -20,7 +22,7 @@ def test_generator():
     for test_cases in query_pairs.values():
         for q, expected in test_cases.items():
 
-            print 'next query {} -> {}'.format(q, expected)
+            print('next query {} -> {}'.format(q, expected))
 
             actual = parse(q)
 
@@ -34,7 +36,7 @@ def test_generator():
 
 
 def check_params(a, b):
-    print 'found actual {}, expected {}. Result: {}'.format(a, b, a == b)
+    print('found actual {}, expected {}. Result: {}'.format(a, b, a == b))
 
     if isinstance(b, dict):
         # poor mans deep comparison

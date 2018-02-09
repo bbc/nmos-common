@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
+from __future__ import print_function
+
+from six import string_types
+from six import iterkeys
+from six import get_method_self
+
 import uuid
 import json
 import traceback
@@ -21,13 +28,11 @@ from flask import Flask, Response, request, abort, jsonify
 from flask_sockets import Sockets
 from nmoscommon.flask_cors import crossdomain
 from functools import wraps
-from utils import getLocalIP
 import re
 
 from pygments import highlight
 from pygments.lexers import JsonLexer, PythonTracebackLexer
 from pygments.formatters import HtmlFormatter
-import urlparse
 import sys
 
 from werkzeug.exceptions import HTTPException
@@ -38,8 +43,10 @@ from requests.structures import CaseInsensitiveDict
 import flask_oauthlib
 import flask_oauthlib.client
 
+from .utils import getLocalIP
+
 try:
-    from urlparse import urlparse
+    from six.moves.urllib.parse import urlparse
     import urllib2 as http
 except:
     from urllib import request as http
@@ -167,18 +174,18 @@ def returns_requires_auth(f):
     def decorated_function(*args, **kwargs):
         r = f(*args, **kwargs)
 
-        if f.im_self._oauth_config is not None:
+        if get_method_self(f)._oauth_config is not None:
             if 'token' not in request.headers:
-                print 'Could not find token'
+                print('Could not find token')
                 return IppResponse(status=401)
 
             token = request.headers.get('token')
-            if not f.im_self._authenticate(token):
-                print 'Authentication Failed'
+            if not get_method_self(f)._authenticate(token):
+                print('Authentication Failed')
                 return IppResponse(status=401)
 
-            if not f.im_self._authorize(token):
-                print 'Authorization Failed.'
+            if not get_method_self(f)._authorize(token):
+                print('Authorization Failed.')
                 return IppResponse(status=401)
 
         status = 200
@@ -255,7 +262,7 @@ def obj_path_access(f):
             if repdump == "{}":
                 return []
             else:
-                if isinstance(rep, basestring):
+                if isinstance(rep, string_types):
                     """Returning a string here will bypass the jsonification, which we want, have to do it manually"""
                     return jsonify(rep)
                 else:
@@ -385,10 +392,10 @@ class IppResponse(Response):
         h['Access-Control-Max-Age'] = headers.get('Access-Control-Max-Age', "21600")
         h['Cache-Control'] = headers.get('Cache-Control', "no-cache, must-revalidate, no-store")
         if 'Access-Control-Allow-Headers' not in headers and len(headers.keys()) > 0:
-            h['Access-Control-Allow-Headers'] = ', '.join(headers.iterkeys())
+            h['Access-Control-Allow-Headers'] = ', '.join(iterkeys(headers))
 
         data = None
-        if response is not None and isinstance(response, basestring):
+        if response is not None and isinstance(response, string_types):
             data = response
             response = None
 
@@ -417,18 +424,18 @@ class IppResponse(Response):
         headers_match = True
         for (hdr, val) in self.headers:
             if hdr not in other.headers.keys():
-                print "{} not in other".format(hdr)
+                print("{} not in other".format(hdr))
                 headers_match = False
                 break
             else:
                 if hdr in [ "Access-Control-Allow-Headers" ]:
                     if set([ h.strip() for h in self.headers[hdr].split(',') ]) != set([ h.strip() for h in other.headers[hdr].split(',') ]):
-                        print "{} != {}".format(set([ h.strip() for h in self.headers[hdr].split(',') ]), set([ h.strip() for h in other.headers[hdr].split(',') ]))
+                        print("{} != {}".format(set([ h.strip() for h in self.headers[hdr].split(',') ]), set([ h.strip() for h in other.headers[hdr].split(',') ])))
                         headers_match = False
                         break
                 else:
                     if self.headers[hdr] != other.headers[hdr]:
-                        print "{} != {}".format(self.headers[hdr], other.headers[hdr])
+                        print("{} != {}".format(self.headers[hdr], other.headers[hdr]))
                         headers_match = False
                         break
 
@@ -628,8 +635,8 @@ class WebAPI(object):
                     'code': e.code,
                     'error': e.description,
                     'debug': {
-                        'traceback': [x for x in traceback.extract_tb(tb)],
-                        'exception': [x for x in traceback.format_exception_only(t, v)]
+                        'traceback': [str(x) for x in traceback.extract_tb(tb)],
+                        'exception': [str(x) for x in traceback.format_exception_only(t, v)]
                     }
                 }
 
@@ -639,8 +646,8 @@ class WebAPI(object):
                 'code': 500,
                 'error': 'Internal Error',
                 'debug': {
-                    'traceback': [x for x in traceback.extract_tb(tb)],
-                    'exception': [x for x in traceback.format_exception_only(t, v)]
+                    'traceback': [str(x) for x in traceback.extract_tb(tb)],
+                    'exception': [str(x) for x in traceback.format_exception_only(t, v)]
                 }
             }
 
@@ -657,7 +664,7 @@ class WebAPI(object):
         def inner_func(ws, **kwds):
             sock_uuid = uuid.uuid4()
             socks[sock_uuid] = ws
-            print "Opening Websocket {} at path /, Receiving ...".format(sock_uuid)
+            print("Opening Websocket {} at path /, Receiving ...".format(sock_uuid))
             while True:
                 try:
                     message = ws.receive()
@@ -668,7 +675,7 @@ class WebAPI(object):
                     func(ws, message, **kwds)
                     continue
                 else:
-                    print "Websocket {} closed".format(sock_uuid)
+                    print("Websocket {} closed".format(sock_uuid))
                     del socks[sock_uuid]
                     break
         return inner_func

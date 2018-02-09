@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six import PY2
+from six.moves import reload_module
+
 import unittest
 import mock
 import traceback
@@ -20,14 +23,19 @@ import json
 import nmoscommon
 import nmoscommon.nmoscommonconfig
 
+if PY2:
+    BUILTINS = "__builtin__"
+else:
+    BUILTINS = "builtins"
+
 class TestNMOSCommonConfig(unittest.TestCase):
     def test_import(self):
         test_data = { "foo" : "bar",
                       "baz" : [ "potato", ] }
         with mock.patch('os.path.isfile', return_value=True) as isfile:
-            with mock.patch('__builtin__.open', create=True) as _open:
+            with mock.patch(BUILTINS + '.open', create=True) as _open:
                 _open.return_value.read.return_value = json.dumps(test_data)
-                reload(nmoscommon.nmoscommonconfig)
+                reload_module(nmoscommon.nmoscommonconfig)
                 from nmoscommon.nmoscommonconfig import config
                 isfile.assert_called_with('/etc/nmoscommon/config.json')
                 self.assertEqual(config, test_data)
@@ -36,8 +44,8 @@ class TestNMOSCommonConfig(unittest.TestCase):
         test_data = { "foo" : "bar",
                       "baz" : [ "potato", ] }
         with mock.patch('os.path.isfile', return_value=True) as isfile:
-            with mock.patch('__builtin__.open', create=True, side_effect=Exception) as _open:
-                reload(nmoscommon.nmoscommonconfig)
+            with mock.patch(BUILTINS + '.open', create=True, side_effect=Exception) as _open:
+                reload_module(nmoscommon.nmoscommonconfig)
                 from nmoscommon.nmoscommonconfig import config
                 isfile.assert_called_with('/etc/nmoscommon/config.json')
                 self.assertEqual(config, {})
@@ -46,8 +54,8 @@ class TestNMOSCommonConfig(unittest.TestCase):
         test_data = { "foo" : "bar",
                       "baz" : [ "potato", ] }
         with mock.patch('os.path.isfile', return_value=False) as isfile:
-            with mock.patch('__builtin__.open', create=True) as _open:
-                reload(nmoscommon.nmoscommonconfig)
+            with mock.patch(BUILTINS + '.open', create=True) as _open:
+                reload_module(nmoscommon.nmoscommonconfig)
                 from nmoscommon.nmoscommonconfig import config
                 isfile.assert_called_with('/etc/nmoscommon/config.json')
                 self.assertEqual(config, {})

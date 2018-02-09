@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
+from six import integer_types
+
 import calendar
 import time
 import re
@@ -376,10 +380,21 @@ class TimeOffset(object):
         toff *= anint
         return self.__class__(toff.sec, toff.ns, toff.sign)
 
-    def __div__(self, anint):
-        toff = TimeOffset(self.sec, self.ns, self.sign)
-        toff /= anint
-        return self.__class__(toff.sec, toff.ns, toff.sign)
+    def __truediv__(self, anint):
+        toff = type(self)(self.sec, self.ns, self.sign)
+        abs_anint = abs(anint)
+        sec = self.sec // abs_anint
+        ns = int((self.ns + (self.sec % abs_anint) * MAX_NANOSEC) / abs_anint + 5e-10)
+
+        toff.sec = sec + ns // MAX_NANOSEC
+        toff.ns = ns % MAX_NANOSEC
+        if anint < 0:
+            toff.sign *= -1
+        toff._make_valid()
+        return toff
+
+    def __floordiv__(self, anint):
+        return self.__truediv__(anint)
 
     def __imul__(self, anint):
         abs_anint = abs(anint)
@@ -387,18 +402,6 @@ class TimeOffset(object):
         ns = self.ns * (abs_anint % MAX_NANOSEC)
 
         self.sec = self.sec * abs_anint + ns_sec + ns // MAX_NANOSEC
-        self.ns = ns % MAX_NANOSEC
-        if anint < 0:
-            self.sign *= -1
-        self._make_valid()
-        return self
-
-    def __idiv__(self, anint):
-        abs_anint = abs(anint)
-        sec = self.sec // abs_anint
-        ns = int((self.ns + (self.sec % abs_anint) * MAX_NANOSEC) / abs_anint + 5e-10)
-
-        self.sec = sec + ns // MAX_NANOSEC
         self.ns = ns % MAX_NANOSEC
         if anint < 0:
             self.sign *= -1
@@ -445,7 +448,7 @@ class TimeOffset(object):
         return sec_frac
 
     def _cast_arg(self, other):
-        if isinstance(other, int) or isinstance(other, long):
+        if isinstance(other, integer_types):
             return TimeOffset(other)
         elif isinstance(other, float):
             return TimeOffset.from_sec_frac(str(other))
@@ -648,7 +651,6 @@ class Timestamp(TimeOffset):
                     utc_sign_char, utc_offset_hour, utc_offset_min,
                     tai_sign_char, abs(tai_offset))
 
-
     def _make_valid(self):
         super(Timestamp, self)._make_valid()
         if self.sign < 0:
@@ -668,11 +670,11 @@ if __name__ == '__main__': # pragma: no cover
     ts = Timestamp.from_str(arg)
 
     if ts is not None:
-        print "ips-tai-nsec     {}".format(ts.to_tai_sec_nsec())
-        print "ips-tai-frac     {}".format(ts.to_tai_sec_frac())
-        print "utc              {}".format(ts.to_iso8601_utc())
-        print "utc-secs         {}".format(ts.to_utc()[0])
-        print "smpte time label {}".format(ts.to_smpte_timelabel(50, 1))
+        print("ips-tai-nsec     {}".format(ts.to_tai_sec_nsec()))
+        print("ips-tai-frac     {}".format(ts.to_tai_sec_frac()))
+        print("utc              {}".format(ts.to_iso8601_utc()))
+        print("utc-secs         {}".format(ts.to_utc()[0]))
+        print("smpte time label {}".format(ts.to_smpte_timelabel(50, 1)))
         sys.exit(0)
 
     else:

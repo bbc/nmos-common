@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 import select
 import sys
 import pybonjour
@@ -116,7 +118,7 @@ class MDNSEngine(object):
         def _query_record_callback(serviceName, regtype, port, txtRec, callback):
             def __inner(sdRef, flags, interfaceIndex, errorCode, fullname,
                         rrtype, rrclass, rdata, ttl):
-#                print "_query_record_callback(%r, %r, %r, %r, %r, %r, %r, %r, %r)" % (sdRef, flags, interfaceIndex, errorCode, fullname, rrtype, rrclass, rdata, ttl)
+#                print("_query_record_callback(%r, %r, %r, %r, %r, %r, %r, %r, %r)" % (sdRef, flags, interfaceIndex, errorCode, fullname, rrtype, rrclass, rdata, ttl))
                 if errorCode == pybonjour.kDNSServiceErr_NoError:
                     callback({"action": "add", "name": serviceName, "type": regtype, "address": socket.inet_ntoa(rdata), "port": port, "txt": dict(txtRec), "interface": interfaceIndex})
                 X = [ x for x in self.rlist if x[0] == sdRef ]
@@ -129,7 +131,7 @@ class MDNSEngine(object):
         def _resolve_callback(serviceName, regtype, callback):
             def __inner(sdRef, flags, interfaceIndex, errorCode, fullname,
                         hosttarget, port, txtRecord):
-#                print "_resolve_callback(%r, %r, %r, %r, %r, %r, %r, %r)" % (sdRef, flags, interfaceIndex, errorCode, fullname, hosttarget, port, txtRecord)
+#                print("_resolve_callback(%r, %r, %r, %r, %r, %r, %r, %r)" % (sdRef, flags, interfaceIndex, errorCode, fullname, hosttarget, port, txtRecord))
                 if errorCode != pybonjour.kDNSServiceErr_NoError:
                     return
 
@@ -149,9 +151,9 @@ class MDNSEngine(object):
 
         def _query_SRV_callback(serviceName, regtype, callback):
             def __inner(sdRef, flags, interfaceIndex, errorCode, fullname, rrtype, rrclass, rdata, ttl):
-#                print "_query_SRV_callback(%r, %r, %r, %r, %r, %r, %r, %r, %r)" % (sdRef, flags, interfaceIndex, errorCode, fullname, rrtype, rrclass, rdata, ttl)
+#                print("_query_SRV_callback(%r, %r, %r, %r, %r, %r, %r, %r, %r)" % (sdRef, flags, interfaceIndex, errorCode, fullname, rrtype, rrclass, rdata, ttl))
                 if errorCode == pybonjour.kDNSServiceErr_NoError:
-                    print "Got Data"
+                    print("Got Data")
                 X = [ x for x in self.rlist if x[0] == sdRef ]
                 for x in X:
                     self.rlist.remove(x)
@@ -162,7 +164,7 @@ class MDNSEngine(object):
         def _browse_callback(callback):
             def __inner(sdRef, flags, interfaceIndex, errorCode, serviceName,
                         regtype, replyDomain):
-#                print "_browse_callback(%r, %r, %r, %r, %r, %r, %r)" % (sdRef, flags, interfaceIndex, errorCode, serviceName, regtype, replyDomain)
+#                print("_browse_callback(%r, %r, %r, %r, %r, %r, %r)" % (sdRef, flags, interfaceIndex, errorCode, serviceName, regtype, replyDomain))
                 if errorCode != pybonjour.kDNSServiceErr_NoError:
                     return
 
@@ -189,7 +191,7 @@ class MDNSEngine(object):
 
         def _domain_callback(callback):
             def __inner(sdRef, flags, interfaceIndex, errorCode, replyDomain):
- #               print "_domain_callback(%r, %r, %r, %r, %r)" % (sdRef, flags, interfaceIndex, errorCode, replyDomain)
+ #               print("_domain_callback(%r, %r, %r, %r, %r)" % (sdRef, flags, interfaceIndex, errorCode, replyDomain))
                 if errorCode != pybonjour.kDNSServiceErr_NoError:
                     return
 
@@ -220,7 +222,7 @@ if __name__ == "__main__": # pragma: no cover
     from gevent import monkey; monkey.patch_all()
 
     def print_results_callback(data):
-        print data
+        print(data)
 
     e = MDNSEngine()
     e.start()

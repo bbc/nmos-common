@@ -12,11 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six import string_types
+from six import PY2
+
 import unittest
 import mock
 from nmoscommon.flask_cors import *
 
 class TestCrossDomain(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestCrossDomain, self).__init__(*args, **kwargs)
+        if PY2:
+            self.assertCountEqual = self.assertItemsEqual
+
     def assert_crossdomain_call_correct(self, method, methods=None, headers=None,
                                         max_age=21600, attach_to_all=True,
                                         origin="localhost", automatic_options=True):
@@ -61,9 +69,9 @@ class TestCrossDomain(unittest.TestCase):
 
                     if methods is not None:
                         methods = ', '.join(sorted(x.upper() for x in methods))
-                    if headers is not None and not isinstance(headers, basestring):
+                    if headers is not None and not isinstance(headers, string_types):
                         headers = ', '.join(x.upper() for x in headers)
-                    if not isinstance(origin, basestring):
+                    if not isinstance(origin, string_types):
                         origin = ', '.join(origin)
                     if isinstance(max_age, timedelta):
                         max_age = max_age.total_seconds()
@@ -81,7 +89,7 @@ class TestCrossDomain(unittest.TestCase):
                         h = resp_headers
 
                     if not attach_to_all and method != "OPTIONS":
-                        self.assertItemsEqual(h.keys(), [])
+                        self.assertCountEqual(h.keys(), [])
                     else:
                         self.assertEqual(h['Access-Control-Allow-Origin'], origin)
                         self.assertEqual(h['Access-Control-Allow-Methods'], methods)

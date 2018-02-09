@@ -12,16 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from six import PY2
+
 import unittest
 import mock
 import json
 
 from nmoscommon.utils import *
 
+if PY2:
+    BUILTINS = "__builtin__"
+else:
+    BUILTINS = "builtins"
+
 
 class TestUtils(unittest.TestCase):
     @mock.patch("uuid.uuid1")
-    @mock.patch("__builtin__.open")
+    @mock.patch(BUILTINS + ".open")
     @mock.patch("os.path.exists")
     @mock.patch("nmoscommon.utils.Logger")
     def test_get_node_id__gets_from_file(self, Logger, path_exists, _open, uuid1):
@@ -34,7 +41,7 @@ class TestUtils(unittest.TestCase):
         _open.assert_called_once_with("/var/nmos-node/facade.json", "r")
 
     @mock.patch("uuid.uuid1")
-    @mock.patch("__builtin__.open")
+    @mock.patch(BUILTINS + ".open")
     @mock.patch("os.path.exists")
     @mock.patch("nmoscommon.utils.Logger")
     def test_get_node_id__writes_to_file(self, Logger, path_exists, _open, uuid1):
@@ -48,7 +55,7 @@ class TestUtils(unittest.TestCase):
         _open.return_value.write.assert_called_once_with(json.dumps({ 'node_id' : new_uuid }))
 
     @mock.patch("uuid.uuid1")
-    @mock.patch("__builtin__.open")
+    @mock.patch(BUILTINS + ".open")
     @mock.patch("os.path.exists")
     @mock.patch("nmoscommon.utils.Logger")
     def test_get_node_id__falls_back_on_error(self, Logger, path_exists, _open, uuid1):

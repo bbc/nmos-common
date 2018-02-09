@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
+from __future__ import print_function
 import zmq.green as zmq
 import uuid
 import os
@@ -242,13 +244,13 @@ def main():
 
     if len(sys.argv) > 2:
         p = Proxy(address)
-        print json.dumps(getattr(p, sys.argv[2])(*(sys.argv[3:])))
+        print(json.dumps(getattr(p, sys.argv[2])(*(sys.argv[3:]))))
     else:
         h = Host(address)
         @h.ipcmethod("hello")
         def hello(name="James"):
             return "Hello, {}".format(name)
-        print "Listening on {}".format(address)
+        print("Listening on {}".format(address))
         h._stop = False
         h._run()
 

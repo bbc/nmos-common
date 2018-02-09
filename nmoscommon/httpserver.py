@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import print_function
+
 from geventwebsocket.handler import WebSocketHandler
 from gevent.pywsgi import WSGIServer
 import threading
 from flask import request
 import socket
+
 
 class HttpServer(threading.Thread):
   daemon = True    # causes server to stop on main thread quitting
@@ -49,7 +52,7 @@ class HttpServer(threading.Thread):
         sock.close()
 
       if self.port == 0:
-        print "ERROR! Port still 0!"
+        print("ERROR! Port still 0!")
         break
 
       try:
@@ -82,6 +85,6 @@ class HttpServer(threading.Thread):
     self.api.port = self.port
     self.started.set()
     if self.failed is None:
-      print "HttpServer running"
+      print("HttpServer running")
     else:
-      print "HttpServer failed to start"
+      print("HttpServer failed to start")

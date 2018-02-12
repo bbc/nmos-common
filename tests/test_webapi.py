@@ -1279,7 +1279,7 @@ Differences:
                                                     method=method,
                                                     args=[e,],
                                                     best_mimetype="application/json" if not expect_html else "text/html",
-                                                    ignore_body=expect_html)
+                                                    ignore_body=True)
 
     def test_default_errorhandler__404(self):
         self.assert_default_errorhandler_handles(status_code=404, description="Not Found", method="GET")

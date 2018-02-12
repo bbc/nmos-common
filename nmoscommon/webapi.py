@@ -444,7 +444,14 @@ class IppResponse(Response):
                 headers_match = False
                 break
 
-        return ((self.get_data() == other.get_data()) and
+        bodies_match = (self.get_data() == other.get_data())
+        if not bodies_match and self.mimetype == 'application/json' and other.mimetype == 'application/json':
+            try:
+                bodies_match = (json.loads(self.get_data()) == json.loads(other.get_data()))
+            except ValueError:
+                bodies_match = False
+
+        return (bodies_match and
                     (self.status == other.status) and
                     headers_match and
                     (self.mimetype == other.mimetype) and

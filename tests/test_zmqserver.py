@@ -21,6 +21,15 @@ else:
 import zmq
 from nmoscommon.zmqserver import *
 
+class JSONof(object):
+    """Pass in a json-serialisable object, compare to a json string, tests as equal if they both match as json"""
+    def __init__(self, data):
+        self.data = data
+
+    def __eq__(self, other):
+        return self.data == json.loads(other)
+
+
 class NormalTestExit(Exception):
     pass
 
@@ -191,6 +200,6 @@ class TestServerWorker(unittest.TestCase):
         context.socket.return_value.connect.assert_called_once_with('inproc://backend')
 
         self.assertListEqual(context.socket.return_value.send_multipart.mock_calls,
-                                 [ mock.call([mock.sentinel.ident0, json.dumps({ "callback_param" : good_data })]),
-                                       mock.call([mock.sentinel.ident1, json.dumps([400])]) ])
+                                 [ mock.call([mock.sentinel.ident0, JSONof({ "callback_param" : good_data })]),
+                                       mock.call([mock.sentinel.ident1, JSONof([400])]) ])
         self.assertTrue(UUT.is_finished())

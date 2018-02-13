@@ -29,11 +29,15 @@ queried = []
 __all__ = ["MDNSEngine"]
 
 class MDNSEngine(object):
-    def __init__(self):
+    def __init__(self, dns_mode=None):
+        self.dns_mode = dns_mode
         self.greenlet = None
         self.running = False
         self.rlist = []
         self.unreg_queue = []
+
+    def refresh_unicast_dns(self):
+        pass
 
     def start(self):
         if self.greenlet is not None:
@@ -199,25 +203,22 @@ class MDNSEngine(object):
                 self.rlist.append((sdRef, pybonjour.DNSServiceProcessResult))
             return __inner
 
-        if domain is None:
+        if self.dns_mode != "unicast":
             sdRef = pybonjour.DNSServiceBrowse(regtype=regtype,
-                                            callBack=_browse_callback(callback))
+                                               callBack=_browse_callback(callback))
             self.rlist.append((sdRef, pybonjour.DNSServiceProcessResult))
 
+        if self.dns_mode != "multicast":
             dRef = pybonjour.DNSServiceEnumerateDomains(pybonjour.kDNSServiceFlagsBrowseDomains,
                                                         callBack=_domain_callback(callback))
             self.rlist.append((dRef, pybonjour.DNSServiceProcessResult))
-        else:
-            sdRef = pybonjour.DNSServiceBrowse(regtype=regtype,
-                                                callBack=_browse_callback(callback),
-                                                domain=domain)
-            self.rlist.append((sdRef, pybonjour.DNSServiceProcessResult))
 
         return sdRef
 
 if __name__ == "__main__": # pragma: no cover
     import sys
-    from gevent import monkey; monkey.patch_all()
+    from gevent import monkey
+    monkey.patch_all()
 
     def print_results_callback(data):
         print data
@@ -226,13 +227,10 @@ if __name__ == "__main__": # pragma: no cover
     e.start()
 
     regtype = "_nmos-node._tcp"
-    domain = None
     if len(sys.argv) > 1:
         regtype = sys.argv[1]
-    if len(sys.argv) > 2:
-        domain = sys.argv[2]
 
-    e.callback_on_services(regtype, callback=print_results_callback, domain=domain)
+    e.callback_on_services(regtype, callback=print_results_callback)
 
     try:
         while True:

@@ -275,7 +275,7 @@ class MDNSEngine(object):
         for x in self.reg_list:
             x[4].Free()
             self.reg_list.remove(x)
-        for domain in self.domains:
+        for domain in set(self.domains):
             self._remove_domain(None, None, domain)
         self.bus.close()
 

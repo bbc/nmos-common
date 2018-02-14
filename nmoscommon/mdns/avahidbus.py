@@ -168,7 +168,7 @@ class MDNSEngine(object):
         self.domains.discard(domain)
 
         if domain in self.domain_sbrowsers:
-            for service_type in self.domain_sbrowsers[domain]:
+            for service_type in self.domain_sbrowsers[domain].keys():
                 sbrowser = self.domain_sbrowsers[domain][service_type]
                 self.bus.remove_signal_receiver(None,  # Wildcard: Remove all callbacks for this service browser
                                                 "ItemNew",
@@ -180,17 +180,21 @@ class MDNSEngine(object):
                                                 avahi.DBUS_INTERFACE_SERVICE_BROWSER,
                                                 None,
                                                 sbrowser)
+                self.domain_sbrowsers[domain].pop(service_type, None)
 
     def _get_sbrowser(self, service_type, domain):
         """ Fetch or generate a service browser instance matching the domain and service type """
         sbrowser = None
         if service_type not in self.domain_sbrowsers[domain]:
-            sbrowser = self.server.ServiceBrowserNew(avahi.IF_UNSPEC,
-                                                     avahi.PROTO_UNSPEC,
-                                                     service_type,
-                                                     domain,
-                                                     dbus.UInt32(0))
-            self.domain_sbrowsers[domain][service_type] = sbrowser
+            try:
+                sbrowser = self.server.ServiceBrowserNew(avahi.IF_UNSPEC,
+                                                         avahi.PROTO_UNSPEC,
+                                                         service_type,
+                                                         domain,
+                                                         dbus.UInt32(0))
+                self.domain_sbrowsers[domain][service_type] = sbrowser
+            except Exception:
+                print "Unable to allocate object in Avahi"
         else:
             sbrowser = self.domain_sbrowsers[domain][service_type]
         return sbrowser

@@ -47,6 +47,8 @@ class MDNSEngine(object):
         self.domains = set()
         self.domain_sbrowsers = {}
         self.callbacks = []
+        self.unicast_cache = {}
+        self.unicast_last_refresh = time.time()
 
     def callback_on_services(self, regtype, callback, registerOnly=True, domain=None):
         """ Call from outside this class in order to add a callback for a particular service type """
@@ -68,6 +70,25 @@ class MDNSEngine(object):
         for domain in full_domains:
             if domain == "local":
                 continue
+
+            # Check when we last saw an 'ItemNew' notification for this service, and trigger removal if necessary
+            removals = {}
+            for stype in self.unicast_cache[domain]:
+                removals[stype] = []
+                for sname in self.unicast_cache[domain][stype]:
+                    if self.unicast_cache[domain][stype][sname] < self.unicast_last_refresh:
+                        removals[stype].append(sname)
+
+            # Process removals and fire callbacks
+            for stype in removals:
+                for sname in removals[stype]:
+                    for callback_data in self.callbacks:
+                        if callback_data["type"] == stype and not callback_data["reg_only"]:
+                            callback = callback_data["callback"]
+                            callback({"action": "remove", "name": sname, "type": stype})
+                    self.unicast_cache[domain][stype].pop(sname, None)
+
+            self.unicast_last_refresh = time.time()
 
             self._remove_domain(None, None, domain)
             self._add_domain(None, None, domain)
@@ -135,6 +156,9 @@ class MDNSEngine(object):
         if domain not in self.domain_sbrowsers:
             self.domain_sbrowsers[domain] = {}
 
+        if domain not in self.unicast_cache:
+            self.unicast_cache[domain] = {}
+
         for callback_data in self.callbacks:
             sbrowser = self._get_sbrowser(callback_data["type"], domain)
             self._add_callback_handler(sbrowser, callback_data["callback"], callback_data["reg_only"])
@@ -195,6 +219,10 @@ class MDNSEngine(object):
         def _inner(interface, protocol, name, stype, domain, host, arprotocol, address, port, txt, flags):
             txtd = dict( x.split('=') for x in avahi.txt_array_to_string_array(txt) )
             callback({"action": "add", "name": name, "type": stype, "address": address, "port": port, "txt": txtd, "interface": interface})
+            if domain != "local" and domain in self.unicast_cache:
+                if stype not in self.unicast_cache[domain]:
+                    self.unicast_cache[domain][stype] = {}
+                self.unicast_cache[domain][stype][name] = time.time()
         return _inner
 
     def _browse_callback(self, callback):
@@ -206,8 +234,11 @@ class MDNSEngine(object):
 
     def _remove_callback(self, callback):
         """ Callback for removal of an existing record from the DNS-SD browse space """
-        def _inner(interface, protocol, name, type, domain, flags):
-            callback({"action": "remove", "name": name, "type": type})
+        def _inner(interface, protocol, name, stype, domain, flags):
+            callback({"action": "remove", "name": name, "type": stype})
+            if domain != "local" and domain in self.unicast_cache:
+                if stype in self.unicast_cache[domain]:
+                    self.unicast_cache[domain][stype].pop(name, None)
         return _inner
 
     def start(self):

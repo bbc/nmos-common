@@ -38,6 +38,7 @@ Requires:       python-zmq
 Requires:       python-pygments           >= 1.6
 Requires:       python-dateutil
 Requires:       python-flask-oauthlib
+Requires:       python-netifaces
 
 %description
 IP Studio open source Python libraries from BBC R&D.

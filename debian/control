@@ -9,7 +9,7 @@ Standards-Version: 3.9.7
 
 Package: python-nmoscommon
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, python-avahi
+Depends: ${misc:Depends}, ${python:Depends}, python-avahi, python-gobject
 Description: nmos python utilities
  .
  Implementation of the nmos python utilities

@@ -33,6 +33,7 @@ Requires:       python-socketio-client
 Requires:       python-flask-sockets
 Requires:       pybonjour
 Requires:       python-avahi
+Requires:       pygobject2
 Requires:       python-zmq
 Requires:       python-pygments           >= 1.6
 Requires:       python-dateutil

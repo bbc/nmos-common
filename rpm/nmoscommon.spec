@@ -32,12 +32,12 @@ Requires:       python-websocket-client   >= 0.13.0
 Requires:       python-socketio-client
 Requires:       python-flask-sockets
 Requires:       pybonjour
-Requires:       avahi
-Requires:       varnish
+Requires:       python-avahi
+Requires:       pygobject2
 Requires:       python-zmq
 Requires:       python-pygments           >= 1.6
 Requires:       python-dateutil
-Requires:       python-flask-oauthlib
+Requires:       python-flask-oauth
 Requires:       python-netifaces
 
 %description

@@ -92,10 +92,13 @@ packages_required = [
     "jsonschema==2.3.0",
     "netifaces",
     "websocket-client==0.18.0",
-    "zmq"
+    "pybonjour==1.1.1"
 ]
 
-deps_required = []
+# The following are included only as the package fails to download from pip
+deps_required = [
+    "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/pybonjour/pybonjour-1.1.1.tar.gz#egg=pybonjour-1.1.1"
+]
 
 
 setup(name="nmoscommon",
@@ -108,6 +111,7 @@ setup(name="nmoscommon",
       packages=package_names,
       package_dir=packages,
       install_requires=packages_required,
+      dependency_links=deps_required,
       scripts=[],
       data_files=[],
       long_description="""\

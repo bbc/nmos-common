@@ -3,4 +3,4 @@ gevent_websocket python3-gevent-websocket
 socketio_client python3-socketio-client
 flask_sockets python3-flask-sockets
 flask_oauthlib python3-flask-oauthlib
-zmq python3-zmq
+pyzmq python3-zmq

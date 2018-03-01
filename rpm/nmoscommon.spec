@@ -37,7 +37,7 @@ Requires:       pygobject2
 Requires:       python-zmq
 Requires:       python-pygments           >= 1.6
 Requires:       python-dateutil
-Requires:       python-flask-oauth
+Requires:       python-flask-oauthlib
 Requires:       python-netifaces
 
 %description

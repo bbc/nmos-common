@@ -1,6 +1,6 @@
 Name:           nmoscommon
 Version:        0.1.0
-Release:        5%{?dist}
+Release:        6%{?dist}
 License:        Internal License
 Summary:        IP Studio Open Source Python Libraries
 
@@ -37,7 +37,7 @@ Requires:       pygobject2
 Requires:       python-zmq
 Requires:       python-pygments           >= 1.6
 Requires:       python-dateutil
-Requires:       python-flask-oauth
+Requires:       python-flask-oauthlib
 Requires:       python-netifaces
 
 %description
@@ -75,5 +75,10 @@ rm -rf %{buildroot}
 %config(noreplace) %{_sysconfdir}/nmoscommon/config.json
 
 %changelog
+* Thu Mar 1 2018 Simon Rankine <simon.rankine@bbc.co.uk> - 0.1.0-6
+- Change python-flask-oauthlib dependency
+
 * Mon Nov 13 2017 Simon Rankine <simon.rankine@bbc.co.uk> - 0.1.0-1
 - Initial packaging for RPM
+
+

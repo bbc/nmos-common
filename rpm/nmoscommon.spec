@@ -1,5 +1,5 @@
 Name:           nmoscommon
-Version:        0.1.0
+Version:        0.1.1
 Release:        6%{?dist}
 License:        Internal License
 Summary:        IP Studio Open Source Python Libraries

@@ -102,10 +102,10 @@ deps_required = [
 
 
 setup(name="nmoscommon",
-      version="0.1.0",
+      version="0.1.1",
       description="nmos python utilities",
       url='www.nmos.tv',
-      author='Peter Brightell',
+      author='Peter Brightwell',
       author_email='peter.brightwell@bbc.co.uk',
       license='Apache 2',
       packages=package_names,

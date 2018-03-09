@@ -17,19 +17,6 @@
 from __future__ import print_function
 from setuptools import setup
 import os
-from subprocess import check_output, CalledProcessError
-
-
-def git_version(version):
-    try:
-        gitsha = check_output('git rev-parse --short HEAD'.split())
-    except CalledProcessError:
-        return version
-    gitsha = gitsha.decode('utf-8').strip()
-    gitstatus = (
-            ".dirty" if len(check_output('git status --porcelain -uno'.split())
-                            .decode('utf-8').strip()) > 0 else "")
-    return version + "+{}{}".format(gitsha, gitstatus)
 
 
 def check_packages(packages):
@@ -110,12 +97,12 @@ packages_required = [
 
 # The following are included only as the package fails to download from pip
 deps_required = [
-    "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/pybonjour/pybonjour-1.1.1.tar.gz#egg=pybonjour-1.1.1"  # noqa: E501
+    "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/pybonjour/pybonjour-1.1.1.tar.gz#egg=pybonjour-1.1.1"
 ]
 
 
 setup(name="nmoscommon",
-      version=git_version("0.1.1"),
+      version="0.1.1",
       description="nmos python utilities",
       url='www.nmos.tv',
       author='Peter Brightwell',

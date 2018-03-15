@@ -34,7 +34,6 @@ deb: source
 
 clean:
 	$(PYTHON) setup.py clean || true
-	dh_clean || true
 	rm -rf build/ MANIFEST
 	rm -rf dist/
 	rm -rf deb_dist rpm

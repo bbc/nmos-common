@@ -2,3 +2,8 @@ recursive-include etc *
 include README.md
 include tox.ini
 include stdeb.cfg
+include CONTRIBUTING.md
+include ICLA.md
+include ICLA.pdf
+include LICENSE.md
+include NOTICE.md

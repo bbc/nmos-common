@@ -4,7 +4,8 @@ NOSE2=`which nose2`
 
 DESTDIR=/
 PROJECT=nmos-common
-MODNAME=nmoscommon
+MODNAME=`python3 ./setup.py --name`
+MODVERSION=`python3 ./setup.py --version`
 
 all:
 	@echo "make source  - Create source package"
@@ -19,13 +20,16 @@ source:
 install:
 	$(PYTHON) setup.py install --root $(DESTDIR) $(COMPILE)
 
-deb:
-	debuild -uc -us
+deb: source
+	py2dsc-deb --with-python2=true --with-python3=false dist/$(MODNAME)-$(MODVERSION).tar.gz
+	cp deb_dist/*.deb dist
 
 clean:
 	$(PYTHON) setup.py clean || true
 	dh_clean || true
 	rm -rf build/ MANIFEST
+	rm -rf dist/
+	rm -rf deb_dist
 	rm -rf .tox
 	find . -name '*.pyc' -delete
 	find . -name '*.py,cover' -delete

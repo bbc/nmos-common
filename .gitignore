@@ -9,3 +9,7 @@ debian/python-nmoscommon/
 nmoscommon.egg-info/
 *.py,cover
 *.pyc
+
+.tox/
+deb_dist/
+dist/

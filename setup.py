@@ -85,9 +85,7 @@ setup(name="nmoscommon",
       install_requires=packages_required,
       dependency_links=deps_required,
       scripts=[],
-      data_files=[
-          ("/etc/nmoscommon", ["data/config.json"])
-      ],
+      data_files=[],
       long_description="""\
 Implementation of the nmos python utilities"""
       )

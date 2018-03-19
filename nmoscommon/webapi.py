@@ -45,10 +45,10 @@ import flask_oauthlib.client
 
 from .utils import getLocalIP
 
-try:  # pragma: no cover
+try:
     from six.moves.urllib.parse import urlparse
     import urllib2 as http
-except:  # pragma: no cover
+except:
     from urllib import request as http
     from urllib.parse import urlparse
 

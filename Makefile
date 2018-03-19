@@ -11,19 +11,11 @@ all:
 	@echo "make source  - Create source package"
 	@echo "make install - Install on local system (only during development)"
 	@echo "make deb     - Generate a deb package - for local testing"
-	@echo "make rpm     - Generate an rpm package - for local testing"
-	@echo "make wheel   - Generate a whl package - for local testing"
 	@echo "make clean   - Get rid of scratch and byte files"
 	@echo "make test    - Tests are nice"
 
 source:
 	$(PYTHON) setup.py sdist $(COMPILE)
-
-rpm:
-	$(PYTHON) setup.py bdist_rpm $(COMPILE)
-
-wheel:
-	$(PYTHON) setup.py bdist_wheel $(COMPILE)
 
 install:
 	$(PYTHON) setup.py install --root $(DESTDIR) $(COMPILE)
@@ -37,9 +29,8 @@ clean:
 	dh_clean || true
 	rm -rf build/ MANIFEST
 	rm -rf dist/
-	rm -rf deb_dist rpm
+	rm -rf deb_dist
 	rm -rf .tox
-	rm -rf *.egg-info
 	find . -name '*.pyc' -delete
 	find . -name '*.py,cover' -delete
 

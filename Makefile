@@ -4,8 +4,8 @@ NOSE2=`which nose2`
 
 DESTDIR=/
 PROJECT=nmos-common
-MODNAME=`python3 ./setup.py --name`
-MODVERSION=`python3 ./setup.py --version`
+MODNAME=$(shell python3 ./setup.py --name)
+MODVERSION=$(shell python3 ./setup.py --version)
 
 all:
 	@echo "make source  - Create source package"
@@ -28,8 +28,17 @@ wheel:
 install:
 	$(PYTHON) setup.py install --root $(DESTDIR) $(COMPILE)
 
-deb: source
-	py2dsc-deb --with-python2=true --with-python3=false dist/$(MODNAME)-$(MODVERSION).tar.gz
+deb_dist: source
+	py2dsc --with-python2=true --with-python3=false dist/$(MODNAME)-$(MODVERSION).tar.gz
+
+deb_dist/$(MODNAME)-$(MODVERSION)/debian/pydist-overrides: debian/pydist-overrides deb_dist
+	ln -s $< $@
+
+deb_dist/$(MODNAME)-$(MODVERSION)/debian/py3dist-overrides: debian/py3dist-overrides deb_dist
+	ln -s $< $@
+
+deb: deb_dist/$(MODNAME)-$(MODVERSION)/debian/pydist-overrides deb_dist/$(MODNAME)-$(MODVERSION)/debian/py3dist-overrides
+	cd deb_dist/$(MODNAME)-$(MODVERSION)/; debuild -uc -us
 	cp deb_dist/*.deb dist
 
 clean:

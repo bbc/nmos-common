@@ -19,34 +19,6 @@ from setuptools import setup
 import os
 
 
-def check_packages(packages):
-    failure = False
-    for python_package, package_details in packages:
-        try:
-            __import__(python_package)
-        except ImportError:
-            failure = True
-            print("Cannot find", python_package,)
-            print("you need to install :", package_details)
-
-    return not failure
-
-
-def check_dependencies(packages):
-    failure = False
-    for python_package, dependency_filename, dependency_url in packages:
-        try:
-            __import__(python_package)
-        except ImportError:
-            failure = True
-            print()
-            print("Cannot find", python_package,)
-            print("you need to install :", dependency_filename)
-            print("... originally retrieved from", dependency_url)
-
-    return not failure
-
-
 def is_package(path):
     return (
         os.path.isdir(path) and
@@ -113,7 +85,9 @@ setup(name="nmoscommon",
       install_requires=packages_required,
       dependency_links=deps_required,
       scripts=[],
-      data_files=[],
+      data_files=[
+          ("/etc/nmoscommon", ["data/config.json"])
+      ],
       long_description="""\
 Implementation of the nmos python utilities"""
       )

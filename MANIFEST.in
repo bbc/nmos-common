@@ -1,4 +1,9 @@
-recursive-include etc *
-recursive-include debian *
+recursive-include data *
 include README.md
 include tox.ini
+include stdeb.cfg
+include CONTRIBUTING.md
+include ICLA.md
+include ICLA.pdf
+include LICENSE.md
+include NOTICE.md

@@ -73,25 +73,25 @@ packages = find_packages(".")
 package_names = packages.keys()
 
 packages_required = [
-    "gevent==1.2.2",
-    "greenlet==0.4.13",
-    "gevent-websocket==0.9.3",
-    "six==1.10.0",
+    "gevent>=1.2.2",
+    "greenlet>=0.4.13",
+    "gevent-websocket>=0.9.3",
+    "six>=1.10.0",
     "flask==0.10.1",
-    "jinja2==2.7.2",
-    "werkzeug==0.9.4",
-    "itsdangerous==0.24",
-    "socketio-client==0.5.3",
+    "jinja2>=2.7.2",
+    "werkzeug>=0.9.4",
+    "itsdangerous>=0.24",
+    "socketio-client>=0.5.3",
     "flask-sockets==0.1",
-    "pyzmq",
-    "pygments==1.6",
-    "python-dateutil",
+    "pyzmq>=15.2.0",
+    "pygments>=1.6",
+    "python-dateutil>=2.4.2,<2.7.0",
     "flask-oauthlib==0.9.1",
-    "ws4py==0.3.2",
-    "requests==2.6",
-    "jsonschema==2.3.0",
-    "netifaces",
-    "websocket-client==0.18.0",
+    "ws4py>=0.3.2",
+    "requests>=2.6",
+    "jsonschema>=2.3.0",
+    "netifaces>=0.10.6",
+    "websocket-client>=0.18.0",
     "pybonjour==1.1.1"
 ]
 
@@ -102,7 +102,7 @@ deps_required = [
 
 
 setup(name="nmoscommon",
-      version="0.2.0",
+      version="0.2.1",
       description="nmos python utilities",
       url='www.nmos.tv',
       author='Peter Brightwell',

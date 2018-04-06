@@ -56,7 +56,7 @@ $(VENV2_INSTALLED) : $(VENV2)
 	. $(VENV2_ACTIVATE); pip install --process-dependency-links -e .
 
 test2: $(VENV2_TEST_DEPS) $(VENV2_INSTALLED)
-	. $(VENV2_ACTIVATE); $(PYTHON) -m unittest discover -s .
+	. $(VENV2_ACTIVATE); $(PYTHON) -m unittest discover -s ./tests
 
 $(VENV3):
 	virtualenv -p python3 $@

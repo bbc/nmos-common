@@ -37,6 +37,7 @@ import sys
 
 from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import BaseResponse
+from werkzeug.contrib.fixers import ProxyFix
 
 from requests.structures import CaseInsensitiveDict
 
@@ -493,6 +494,10 @@ class WebAPI(object):
         self._authenticate = self.default_authenticate
 
         self.add_routes(self, basepath='')
+
+        # Enable ProxyFix middleware if required
+        if config.get('fix_proxy', 'disabled') == 'enabled':
+            self.app.wsgi_app = ProxyFix(self.app.wsgi_app)
 
     def add_routes(self, cl, basepath):
 

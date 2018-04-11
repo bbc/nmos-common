@@ -1,6 +1,9 @@
 # nmoscommon
 --------------
 
+- v0.4.0:
+    Added py2dsc debian packaging
+
 - v0.3.0:
     Added `fix_proxy` option to honour X-Fowarded-Proto in redirects.
 

@@ -8,4 +8,4 @@ except: # pragma: no cover
 else: # pragma: no cover
     from .avahidbus import MDNSEngine
 
-__all__ = [ "MDNSEngine" ]
+__all__ = ["MDNSEngine"]

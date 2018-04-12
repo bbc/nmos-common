@@ -1,6 +1,9 @@
 # nmoscommon
 --------------
 
+- v0.4.1
+    Added py2dsc fix for python-websocket package name
+
 - v0.4.0:
     Added py2dsc debian packaging
 

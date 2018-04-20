@@ -324,22 +324,40 @@ class TimeOffset(object):
         return TimeOffset(self.sec, self.ns, 1)
 
     def __eq__(self, other):
-        return self.compare(other) == 0
+        try:
+            return self.compare(other) == 0
+        except TypeError:
+            return False
 
     def __ne__(self, other):
-        return self.compare(other) != 0
+        try:
+            return self.compare(other) != 0
+        except TypeError:
+            return False
 
     def __lt__(self, other):
-        return self.compare(other) < 0
+        try:
+            return self.compare(other) < 0
+        except TypeError:
+            return False
 
     def __le__(self, other):
-        return self.compare(other) <= 0
+        try:
+            return self.compare(other) <= 0
+        except TypeError:
+            return False
 
     def __gt__(self, other):
-        return self.compare(other) > 0
+        try:
+            return self.compare(other) > 0
+        except TypeError:
+            return False
 
     def __ge__(self, other):
-        return self.compare(other) >= 0
+        try:
+            return self.compare(other) >= 0
+        except TypeError:
+            return False
 
     def __add__(self, other_in):
         other = self._cast_arg(other_in)

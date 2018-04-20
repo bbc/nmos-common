@@ -28,7 +28,7 @@ import uuid
 import json
 from json import JSONEncoder, JSONDecoder
 from fractions import Fraction
-from six import string_types
+from six import string_types, PY2
 import re
 
 from .timestamp import Timestamp, TimeOffset
@@ -68,7 +68,7 @@ def dump(*args, **kwargs):
         # the behaviour be as expected (cls is set to the default)
         # Quite frankly why the hell would anyone call it this way?
         # Who knows, but they can if they want to
-        args = args[0:6] + [NMOSJSONEncoder] + args[7:]
+        args = list(args[0:6]) + [NMOSJSONEncoder] + list(args[7:])
     return json.dump(*args, **kwargs)
 
 
@@ -93,7 +93,7 @@ def dumps(*args, **kwargs):
         # the behaviour be as expected (cls is set to the default)
         # Quite frankly why the hell would anyone call it this way?
         # Who knows, but they can if they want to
-        args = args[0:5] + [NMOSJSONEncoder] + args[6:]
+        args = list(args[0:5]) + [NMOSJSONEncoder] + list(args[6:])
     return json.dumps(*args, **kwargs)
 
 
@@ -108,17 +108,23 @@ def load(*args, **kwargs):
     this method works identically to that method except that the deault for
     the cls parameter has been changed to nmoscommon.json.NMOSJSONDecoder
     """
-    # 'cls' is the 3rd positional argument to the underlying function
-    # so either it will be in kwargs['cls'] or args[2]
-    if 'cls' not in kwargs and len(args) < 3:
+    if PY2:  # pragma: no cover
+        n = 3
+    else:  # pragma: no cover
+        n = 2
+
+    # 'cls' is the nth positional argument to the underlying function
+    # so either it will be in kwargs['cls'] or args[n-1]
+    if 'cls' not in kwargs and len(args) < n:
         kwargs['cls'] = NMOSJSONDecoder
-    elif len(args) >= 3 and args[2] is None:
-        # This accounts for someone calling this method with more than 2
-        # positional arguments but where the 3rd one is None. This makes
+    elif len(args) >= n and args[n-1] is None:
+        # This accounts for someone calling this method with more than n-1
+        # positional arguments but where the nth one is None. This makes
         # the behaviour be as expected (cls is set to the default)
         # Quite frankly why the hell would anyone call it this way?
         # Who knows, but they can if they want to
-        args = args[0:2] + [NMOSJSONDecoder] + args[3:]
+        args = list(args[0:n-1]) + [NMOSJSONDecoder] + list(args[n:])
+
     return json.load(*args, **kwargs)
 
 
@@ -132,17 +138,19 @@ def loads(*args, **kwargs):
     this method works identically to that method except that the deault for
     the cls parameter has been changed to nmoscommon.json.NMOSJSONDecoder
     """
-    # 'cls' is the 3rd positional argument to the underlying function
-    # so either it will be in kwargs['cls'] or args[2]
-    if 'cls' not in kwargs and len(args) < 3:
+    n = 3
+
+    # 'cls' is the nth positional argument to the underlying function
+    # so either it will be in kwargs['cls'] or args[n-1]
+    if 'cls' not in kwargs and len(args) < n:
         kwargs['cls'] = NMOSJSONDecoder
-    elif len(args) >= 3 and args[2] is None:
-        # This accounts for someone calling this method with more than 2
-        # positional arguments but where the 3rd one is None. This makes
+    elif len(args) >= n and args[n-1] is None:
+        # This accounts for someone calling this method with more than n
+        # positional arguments but where the nth one is None. This makes
         # the behaviour be as expected (cls is set to the default)
         # Quite frankly why the hell would anyone call it this way?
         # Who knows, but they can if they want to
-        args = args[0:2] + [NMOSJSONDecoder] + args[3:]
+        args = list(args[0:n-1]) + [NMOSJSONDecoder] + list(args[n:])
     return json.loads(*args, **kwargs)
 
 

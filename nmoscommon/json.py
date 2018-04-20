@@ -102,8 +102,8 @@ def load(*args, **kwargs):
     which has the following signature:
 
         json.load(fp[, encoding[, cls[, object_hook[, parse_float[,
-                  parse_int[, parse_constant[, object_pairs_hook[, 
-                  **kw]]]]]]]])¶
+                  parse_int[, parse_constant[, object_pairs_hook[,
+                  **kw]]]]]]]])
 
     this method works identically to that method except that the deault for
     the cls parameter has been changed to nmoscommon.json.NMOSJSONDecoder

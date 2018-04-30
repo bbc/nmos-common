@@ -1,6 +1,9 @@
 # nmoscommon
 --------------
 
+- v0.4.2
+    Corrected timestamp.py tests to ensure that they work on systems with ipputils installed.
+
 - v0.4.1
     Added py2dsc fix for python-websocket package name
 

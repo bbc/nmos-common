@@ -478,8 +478,8 @@ class Timestamp(TimeOffset):
         super(Timestamp, self).__init__(sec, ns, sign)
 
     @classmethod
-    def get_time(cls):
-        if IPP_UTILS:
+    def get_time(cls, force_pure_python=False):
+        if not force_pure_python and IPP_UTILS:
             (sign, sec, ns) = pyipputils.ipptimestamp.ipp_ts_gettime()
             return cls(sign=sign, sec=sec, ns=ns)
         else:
@@ -540,13 +540,13 @@ class Timestamp(TimeOffset):
         return cls.from_count(count, rate_num, rate_den)
 
     @classmethod
-    def from_str(cls, ts_str):
+    def from_str(cls, ts_str, force_pure_python=False):
         if 'F' in ts_str:
             return cls.from_smpte_timelabel(ts_str)
         elif 'T' in ts_str:
             return cls.from_iso8601_utc(ts_str)
         elif ts_str.strip() == 'now':
-            return cls.get_time()
+            return cls.get_time(force_pure_python=force_pure_python)
         else:
             return super(Timestamp, cls).from_str(ts_str)
 

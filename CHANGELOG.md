@@ -1,6 +1,9 @@
 # nmoscommon
 --------------
 
+- v0.4.4
+    Switched to tox for testing
+
 - v0.4.3
     Added hash implementation to TimeOffset 
 

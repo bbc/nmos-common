@@ -40,7 +40,7 @@ def import_mock(magic_name, allow):
       the module.
     * The use of this is because the module under test starts by importing pyipputils.ipptimestamp and then behaves differently depending on
       whether that raises an exception. By substituing a mock for the module we can force it to succeed even on systems where pyipputils is not
-      installed, or by raising the exception we can force the import to fail even on systems where the module is installed. This allows us to 
+      installed, or by raising the exception we can force the import to fail even on systems where the module is installed. This allows us to
       test both sets of behaviour from the module."""
     def __inner(name, *args):
         if name == magic_name:
@@ -99,6 +99,9 @@ class TestTimeOffset(unittest.TestCase):
 
         for t in tests_ts:
             self.assertEqual(t[0], t[1])
+
+    def test_hash(self):
+        self.assertEqual(hash(TimeOffset(0,0)), hash(TimeOffset(0,0)))
 
     def test_subsec(self):
         """This tests that TimeOffsets can be converted to millisec, nanosec, and microsec values."""
@@ -234,7 +237,7 @@ class TestTimeOffset(unittest.TestCase):
             (TimeOffset(0,0), TimeOffset(1, 0), (1,0)),
             (TimeOffset(0,0), TimeOffset(0, 1,-1), (0,1,-1))
         ]
-            
+
         for t in tests_ts:
             t[0].set_value(*t[2])
             self.assertEqual(t[0], t[1])

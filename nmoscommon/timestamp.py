@@ -323,6 +323,9 @@ class TimeOffset(object):
     def __abs__(self):
         return TimeOffset(self.sec, self.ns, 1)
 
+    def __hash__(self):
+        return self.to_nanosec()
+
     def __eq__(self, other):
         return self.compare(other) == 0
 

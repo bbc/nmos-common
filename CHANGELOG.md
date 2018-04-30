@@ -1,6 +1,9 @@
 # nmoscommon
 --------------
 
+- v0.4.3
+    Added hash implementation to TimeOffset 
+
 - v0.4.2
     Corrected timestamp.py tests to ensure that they work on systems with ipputils installed.
 

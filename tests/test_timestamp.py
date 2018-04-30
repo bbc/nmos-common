@@ -53,6 +53,10 @@ class TestTimeOffset(unittest.TestCase):
         for t in tests_ts:
             self.assertEqual(t[0], t[1])
 
+    def test_hash(self):
+        self.assertEqual(hash(TimeOffset(0,0)), hash(TimeOffset(0,0)))
+        self.assertNotEqual(hash(TimeOffset(0,0)), hash(TimeOffset(0,1)))
+
     def test_subsec(self):
         """This tests that TimeOffsets can be converted to millisec, nanosec, and microsec values."""
         tests_ts = [
@@ -187,7 +191,7 @@ class TestTimeOffset(unittest.TestCase):
             (TimeOffset(0,0), TimeOffset(1, 0), (1,0)),
             (TimeOffset(0,0), TimeOffset(0, 1,-1), (0,1,-1))
         ]
-            
+
         for t in tests_ts:
             t[0].set_value(*t[2])
             self.assertEqual(t[0], t[1])

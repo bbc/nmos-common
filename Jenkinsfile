@@ -5,4 +5,6 @@ pipeline{
       steps {
 	flake8
       }
-}  
+    }
+  }
+}

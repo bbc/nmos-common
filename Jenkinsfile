@@ -3,7 +3,7 @@ pipeline{
   stages {
     stage('Lint') {
       steps {
-	flake8
+	sh flake8
       }
     }
   }

@@ -1,6 +1,9 @@
 # nmoscommon
 --------------
 
+- v0.4.5
+    Relaxed dependancy version restrictions 
+
 - v0.4.4
     Switched to tox for testing
 

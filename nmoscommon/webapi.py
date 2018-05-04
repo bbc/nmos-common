@@ -605,14 +605,19 @@ class WebAPI(object):
                                              "OPTIONS", "HEAD"])(dummy(value)))
                         else:
                             for n in range(400, 600):
-                                self.app.errorhandler(n)(crossdomain(
-                                    origin='*',
-                                    methods=["GET", "POST", "PUT", "DELETE",
-                                             "OPTIONS", "HEAD"])(dummy(value)))
-
-    @errorhandler(301)
-    def __redirect(self, e):
-        return e.get_response(request.environ)
+                                try:
+                                    self.app.errorhandler(n)(crossdomain(
+                                        origin='*',
+                                        methods=[
+                                            "GET",
+                                            "POST",
+                                            "PUT",
+                                            "DELETE",
+                                            "OPTIONS",
+                                            "HEAD"])(dummy(value)))
+                                except KeyError:
+                                    # Some error codes aren't valid
+                                    pass
 
     @errorhandler()
     def error(self, e):

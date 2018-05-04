@@ -49,32 +49,32 @@ packages_required = [
     "greenlet>=0.4.13",
     "gevent-websocket>=0.9.3",
     "six>=1.10.0",
-    "flask==0.10.1",
+    "flask>=0.10.1",
     "jinja2>=2.7.2",
     "werkzeug>=0.9.4",
     "itsdangerous>=0.24",
     "socketio-client>=0.5.3",
-    "flask-sockets==0.1",
+    "flask-sockets>=0.1",
     "pyzmq>=15.2.0",
     "pygments>=1.6",
-    "python-dateutil>=2.4.2,<2.7.0",
-    "flask-oauthlib==0.9.1",
+    "python-dateutil>=2.4.2",
+    "flask-oauthlib>=0.9.1",
     "ws4py>=0.3.2",
     "requests>=2.6",
     "jsonschema>=2.3.0",
     "netifaces>=0.10.6",
     "websocket-client>=0.18.0",
-    "pybonjour==1.1.1"
+    "pybonjour>=1.1.1"
 ]
 
 # The following are included only as the package fails to download from pip
 deps_required = [
-    "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/pybonjour/pybonjour-1.1.1.tar.gz#egg=pybonjour-1.1.1"
+    "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/pybonjour/pybonjour-1.1.1.tar.gz#egg=pybonjour-1.1.1"  # NOQA: E501
 ]
 
 
 setup(name="nmoscommon",
-      version="0.4.4",
+      version="0.4.5",
       description="nmos python utilities",
       url='www.nmos.tv',
       author='Peter Brightwell',

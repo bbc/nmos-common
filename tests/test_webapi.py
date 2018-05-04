@@ -188,7 +188,7 @@ Expected %s(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_typ
 
 Got %s(response=%r,\n status=%r,\n headers=%r,\n mimetype=%r,\n content_type=%r,\n direct_passthrough=%r)
 
-Differences: 
+Differences:
 
 %s""" % (type(expected).__name__,
          expected.get_data(),
@@ -208,7 +208,7 @@ Differences:
 
     def perform_test_on_decorator(self, data):
         """This method will take a mock method and wrap it with a specified decorator, then create a webapi class instance with that method as a member.
-        It will check that the object automatically registers the 
+        It will check that the object automatically registers the
 
         The format of the input is as dictionary, with several keys which must be provided, and many which may:
 
@@ -225,7 +225,7 @@ Differences:
         Optional Keys:
 
         'headers'         -- These headers will be included in the mock request when the wrapped method is called.
-        'oauth_userid'    -- if present then the call will be performed in a mock Flask environment which implements oauth, and this value will be returned by the mock 
+        'oauth_userid'    -- if present then the call will be performed in a mock Flask environment which implements oauth, and this value will be returned by the mock
                              credentials server as an acceptable user id.
         'oauth_whitelist' -- if present when 'oauth_userid' is also specified then this value will be added to the mock whitelist of acceptable user ids. If not specified then
                              the value of 'oauth_userid' will be put on this whitelist instead.
@@ -1102,7 +1102,7 @@ Differences:
                 'decorator'   : resource_route('/', methods=["GET", "POST", "POTATO"]),
                 'expected'    : 404,
             })
-        
+
     def test_resource_route__GET_subpath_with_non_jsonic_data(self):
         self.perform_test_on_decorator({
                 'methods'     : ["GET", "POST", "POTATO",],
@@ -1329,27 +1329,6 @@ Differences:
                                            'proxies' : mock.sentinel.proxies }
         UUT = StubWebAPI()
         self.assertFalse(UUT.default_authenticate(None))
-
-    @mock.patch('nmoscommon.flask_cors.make_response')
-    @mock.patch('nmoscommon.webapi.request')
-    @mock.patch("nmoscommon.webapi.Flask")
-    @mock.patch("nmoscommon.webapi.Sockets")
-    def test_default_301_handler_redirects(self, Sockets, Flask, request, make_response):
-        """The method __redirect is the default 301 handler."""
-        self.maxDiff = None
-        class StubWebAPI(WebAPI):
-            pass
-        app = Flask.return_value
-        app.errorhandler.side_effect = lambda n : getattr(app, 'error_handler_for_' + str(n))
-        UUT = StubWebAPI()
-        Flask.assert_called_once_with('nmoscommon.webapi')
-        f = app.error_handler_for_301.call_args[0][0]
-
-        with mock.patch('nmoscommon.flask_cors.request', request):
-            e = mock.MagicMock(name="301Error")
-            f(e)
-            make_response.assert_called_once_with(e.get_response.return_value)
-            e.get_response.assert_called_once_with(request.environ)
 
     @mock.patch('nmoscommon.webapi.config', {'node_hostname' : 'example.com', 'https_mode' : 'enabled'})
     @mock.patch('nmoscommon.webapi.request', headers={ 'X-Forwarded-Path' : '/dummy/path', 'X-Forwarded-Proto' : 'ftp' }, url="ntp://bad_site.com/man/in/the/middle/")

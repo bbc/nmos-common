@@ -51,30 +51,16 @@ clean:
 	find . -name '*.pyc' -delete
 	find . -name '*.py,cover' -delete
 
-$(VENV2):
-	virtualenv -p python2 $@
+test:
+	tox -e py27-test-coverage -e py3-test-coverage
 
-$(VENV2_TEST_DEPS): $(VENV2)
-	. $(VENV2_ACTIVATE); pip install $(@F)
+test-nocover:
+	tox -e py27
 
-$(VENV2_INSTALLED) : $(VENV2)
-	. $(VENV2_ACTIVATE); pip install --process-dependency-links -e .
+nosetest:
+	tox -e py27-nose-coverage -e py3-nose-coverage
 
-test2: $(VENV2_TEST_DEPS) $(VENV2_INSTALLED)
-	. $(VENV2_ACTIVATE); $(PYTHON) -m unittest discover -s ./tests
+nosetest-nocover:
+	tox -e py27-nose -e py3-nose
 
-$(VENV3):
-	virtualenv -p python3 $@
-
-$(VENV3_TEST_DEPS): $(VENV3)
-	. $(VENV3_ACTIVATE); pip install $(@F)
-
-$(VENV3_INSTALLED) : $(VENV3)
-	. $(VENV3_ACTIVATE); pip install -e .
-
-test3: $(VENV3_TEST_DEPS) $(VENV3_INSTALLED)
-	. $(VENV3_ACTIVATE); $(PYTHON) -m nose2 --with-coverage --coverage-report=term --coverage-report=annotate --coverage=$(MODNAME)
-
-test: test2
-
-.PHONY: test clean deb install source all
+.PHONY: test test-nocover nosetest nosetest-nocover clean deb install source all

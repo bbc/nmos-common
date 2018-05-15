@@ -147,7 +147,7 @@ class TimeOffset(object):
             raise TsValueError("invalid second.fraction format")
         sec = int(sec_frac[0])
         sign = 1
-        if sec < 0:
+        if sec_frac[0].startswith("-"):
             sign = -1
             sec = abs(sec)
         ns = 0
@@ -162,7 +162,7 @@ class TimeOffset(object):
             raise TsValueError("invalid second:nanosecond format")
         sec = int(sec_frac[0])
         sign = 1
-        if sec < 0:
+        if sec_frac[0].startswith("-"):
             sign = -1
             sec = abs(sec)
         ns = 0
@@ -233,12 +233,21 @@ class TimeOffset(object):
     def to_sec_nsec(self):
         """ Convert to <seconds>:<nanoseconds>
         """
-        return u"{}:{}".format(self.sign * self.sec, self.ns)
+        strSign = ""
+        if self.sign < 0:
+            strSign = "-"
+        return u"{}{}:{}".format(strSign, self.sec, self.ns)
 
     def to_sec_frac(self, fixed_size=False):
         """ Convert to <seconds>.<fraction>
         """
-        return u"{}.{}".format(self.sign * self.sec, self._get_fractional_seconds(fixed_size=fixed_size))
+        strSign = ""
+        if self.sign < 0:
+            strSign = "-"
+        return u"{}{}.{}".format(
+            strSign,
+            self.sec,
+            self._get_fractional_seconds(fixed_size=fixed_size))
 
     def to_count(self, rate_num, rate_den=1, rounding=ROUND_NEAREST):
         if rate_num <= 0 or rate_den <= 0:

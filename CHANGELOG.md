@@ -1,6 +1,9 @@
 # nmoscommon
 --------------
 
+- v0.4.6
+    BUGFIX: Handling of negative timeoffsets with 0 secs
+
 - v0.4.5
     Relaxed dependancy version restrictions 
 

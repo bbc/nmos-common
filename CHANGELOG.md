@@ -1,6 +1,9 @@
 # nmoscommon
 --------------
 
+- v0.5.0
+    Support for python3 in ipc
+
 - v0.4.6
     BUGFIX: Handling of negative timeoffsets with 0 secs
 

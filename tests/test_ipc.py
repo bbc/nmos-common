@@ -114,7 +114,7 @@ class TestHost(unittest.TestCase):
 
     def test_runloop_does_nothing_if_not_started(self):
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = Exception # This will throw an exception if the code gets as far as calling it
-        
+
 
         address = "ipc://dummy.test"
         UUT = Host(address)
@@ -125,7 +125,7 @@ class TestHost(unittest.TestCase):
                 UUT.stop()
                 return f()
             return __inner
-            
+
         with mock.patch('gevent.spawn', side_effect=stop_then_call) as spawn:
             try:
                 UUT.start()
@@ -164,7 +164,7 @@ class TestHost(unittest.TestCase):
                     raise e
             return __inner
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = return_vals_then_raise([ 1, ])
-        self.zmq.Context.instance.return_value.socket.return_value.recv.return_value = """{"foo" : "bar"}"""
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.return_value = {"foo" : "bar"}
 
         address = "ipc://dummy.test"
         UUT = Host(address)
@@ -175,8 +175,8 @@ class TestHost(unittest.TestCase):
                 UUT.start()
             self.assertListEqual(self.zmq.Context.instance.return_value.socket.return_value.poll.mock_calls,
                                  [ mock.call(timeout=UUT.timeout), mock.call(timeout=UUT.timeout) ])
-            self.zmq.Context.instance.return_value.socket.return_value.recv.assert_called_once_with()
-            self.zmq.Context.instance.return_value.socket.return_value.send.assert_called_once_with("{}")
+            self.zmq.Context.instance.return_value.socket.return_value.recv_json.assert_called_once_with()
+            self.zmq.Context.instance.return_value.socket.return_value.send_json.assert_called_once_with({})
 
     def test_runloop_sends_error_in_response_to_unknown_method_call(self):
         def return_vals_then_raise(retvals, e=Exception):
@@ -187,9 +187,9 @@ class TestHost(unittest.TestCase):
                     raise e
             return __inner
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = return_vals_then_raise([ 1, ])
-        self.zmq.Context.instance.return_value.socket.return_value.recv.return_value = json.dumps({"function" : "unknown_function",
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.return_value = {"function" : "unknown_function",
                                                                                                    "args" : [],
-                                                                                                   "kwargs" : {} })
+                                                                                                   "kwargs" : {} }
 
         address = "ipc://dummy.test"
         UUT = Host(address)
@@ -200,8 +200,8 @@ class TestHost(unittest.TestCase):
                 UUT.start()
             self.assertListEqual(self.zmq.Context.instance.return_value.socket.return_value.poll.mock_calls,
                                  [ mock.call(timeout=UUT.timeout), mock.call(timeout=UUT.timeout) ])
-            self.zmq.Context.instance.return_value.socket.return_value.recv.assert_called_once_with()
-            self.zmq.Context.instance.return_value.socket.return_value.send.assert_called_once_with(json.dumps({ 'exc' : 'AttributeError'}))
+            self.zmq.Context.instance.return_value.socket.return_value.recv_json.assert_called_once_with()
+            self.zmq.Context.instance.return_value.socket.return_value.send_json.assert_called_once_with({ 'exc' : 'AttributeError'})
 
     def test_runloop_sends_error_in_response_to_unknown_method_call(self):
         def return_vals_then_raise(retvals, e=Exception):
@@ -212,10 +212,9 @@ class TestHost(unittest.TestCase):
                     raise e
             return __inner
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = return_vals_then_raise([ 1, ])
-        self.zmq.Context.instance.return_value.socket.return_value.recv.return_value = json.dumps({"function" : "unknown_function",
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.return_value = {"function" : "unknown_function",
                                                                                                    "args" : [],
-                                                                                                   "kwargs" : {} })
-
+                                                                                                   "kwargs" : {} }
         address = "ipc://dummy.test"
         UUT = Host(address)
 
@@ -225,8 +224,8 @@ class TestHost(unittest.TestCase):
                 UUT.start()
             self.assertListEqual(self.zmq.Context.instance.return_value.socket.return_value.poll.mock_calls,
                                  [ mock.call(timeout=UUT.timeout), mock.call(timeout=UUT.timeout) ])
-            self.zmq.Context.instance.return_value.socket.return_value.recv.assert_called_once_with()
-            self.zmq.Context.instance.return_value.socket.return_value.send.assert_called_once_with(json.dumps({ 'exc' : 'AttributeError'}))
+            self.zmq.Context.instance.return_value.socket.return_value.recv_json.assert_called_once_with()
+            self.zmq.Context.instance.return_value.socket.return_value.send_json.assert_called_once_with({ 'exc' : 'AttributeError'})
 
     def test_runloop_passes_through_calls_to_known_method(self):
         def return_vals_then_raise(retvals, e=Exception):
@@ -239,9 +238,9 @@ class TestHost(unittest.TestCase):
         args = [ "foo", "bar" ]
         kwargs = { "baz" : "potato" }
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = return_vals_then_raise([ 1, ])
-        self.zmq.Context.instance.return_value.socket.return_value.recv.return_value = json.dumps({"function" : "test_function",
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.return_value = {"function" : "test_function",
                                                                                                    "args" : args,
-                                                                                                   "kwargs" : kwargs })
+                                                                                                   "kwargs" : kwargs }
 
         test_function_mock = mock.MagicMock(name="test_function_mock")
         def test_function(*args, **kwargs):
@@ -258,9 +257,9 @@ class TestHost(unittest.TestCase):
                 UUT.start()
             self.assertListEqual(self.zmq.Context.instance.return_value.socket.return_value.poll.mock_calls,
                                  [ mock.call(timeout=UUT.timeout), mock.call(timeout=UUT.timeout) ])
-            self.zmq.Context.instance.return_value.socket.return_value.recv.assert_called_once_with()
+            self.zmq.Context.instance.return_value.socket.return_value.recv_json.assert_called_once_with()
             test_function_mock.assert_called_once_with(*args, **kwargs)
-            self.zmq.Context.instance.return_value.socket.return_value.send.assert_called_once_with(json.dumps({}))
+            self.zmq.Context.instance.return_value.socket.return_value.send_json.assert_called_once_with({})
 
     def test_runloop_passes_through_calls_to_known_method_and_returns(self):
         def return_vals_then_raise(retvals, e=Exception):
@@ -273,9 +272,9 @@ class TestHost(unittest.TestCase):
         args = [ "foo", "bar" ]
         kwargs = { "baz" : "potato" }
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = return_vals_then_raise([ 1, ])
-        self.zmq.Context.instance.return_value.socket.return_value.recv.return_value = json.dumps({"function" : "test_function",
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.return_value = {"function" : "test_function",
                                                                                                    "args" : args,
-                                                                                                   "kwargs" : kwargs })
+                                                                                                   "kwargs" : kwargs }
 
         test_function_mock = mock.MagicMock(name="test_function_mock")
         def test_function(*args, **kwargs):
@@ -292,9 +291,9 @@ class TestHost(unittest.TestCase):
                 UUT.start()
             self.assertListEqual(self.zmq.Context.instance.return_value.socket.return_value.poll.mock_calls,
                                  [ mock.call(timeout=UUT.timeout), mock.call(timeout=UUT.timeout) ])
-            self.zmq.Context.instance.return_value.socket.return_value.recv.assert_called_once_with()
+            self.zmq.Context.instance.return_value.socket.return_value.recv_json.assert_called_once_with()
             test_function_mock.assert_called_once_with(*args, **kwargs)
-            self.zmq.Context.instance.return_value.socket.return_value.send.assert_called_once_with(json.dumps({ 'ret' : test_function_mock.return_value }))
+            self.zmq.Context.instance.return_value.socket.return_value.send_json.assert_called_once_with({ 'ret' : test_function_mock.return_value })
 
     def test_runloop_passes_through_calls_to_known_method_and_sends_back_exception_when_one_is_raised(self):
         def return_vals_then_raise(retvals, e=Exception):
@@ -307,9 +306,9 @@ class TestHost(unittest.TestCase):
         args = [ "foo", "bar" ]
         kwargs = { "baz" : "potato" }
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = return_vals_then_raise([ 1, ])
-        self.zmq.Context.instance.return_value.socket.return_value.recv.return_value = json.dumps({"function" : "test_function",
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.return_value = {"function" : "test_function",
                                                                                                    "args" : args,
-                                                                                                   "kwargs" : kwargs })
+                                                                                                   "kwargs" : kwargs }
 
         test_function_mock = mock.MagicMock(name="test_function_mock")
         def test_function(*args, **kwargs):
@@ -326,18 +325,14 @@ class TestHost(unittest.TestCase):
                 UUT.start()
             self.assertListEqual(self.zmq.Context.instance.return_value.socket.return_value.poll.mock_calls,
                                  [ mock.call(timeout=UUT.timeout), mock.call(timeout=UUT.timeout) ])
-            self.zmq.Context.instance.return_value.socket.return_value.recv.assert_called_once_with()
+            self.zmq.Context.instance.return_value.socket.return_value.recv_json.assert_called_once_with()
             test_function_mock.assert_called_once_with(*args, **kwargs)
-            self.zmq.Context.instance.return_value.socket.return_value.send.assert_called_once_with(mock.ANY)
-            sentval = self.zmq.Context.instance.return_value.socket.return_value.send.call_args[0][0]
-            self.assertIsInstance(sentval, string_types)
-            try:
-                sentdict = json.loads(sentval)
-            except:
-                self.fail(msg="String sent back to remote client is not valid json")
-            self.assertIn("exc", sentdict)
-            self.assertIsInstance(sentdict["exc"], string_types)
-            self.assertRegexpMatches(sentdict["exc"], r'Exception: This is a test Exception')
+            self.zmq.Context.instance.return_value.socket.return_value.send_json.assert_called_once_with(mock.ANY)
+            sentval = self.zmq.Context.instance.return_value.socket.return_value.send_json.call_args[0][0]
+            self.assertIsInstance(sentval, dict)
+            self.assertIn("exc", sentval)
+            self.assertIsInstance(sentval["exc"], string_types)
+            self.assertRegexpMatches(sentval["exc"], r'Exception: This is a test Exception')
 
     def test_getmethods(self):
         methods = [ mock.MagicMock(__name__="foo", __doc__="foodoc"),
@@ -408,7 +403,7 @@ class TestProxy(unittest.TestCase):
         EXPECTED_RETURN_VALUE = "ejybrvjysdlfhlyguerhli;njk7893ykj"
 
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = [ 1, Exception ]
-        self.zmq.Context.instance.return_value.socket.return_value.recv.side_effect = [ json.dumps({ 'ret' : EXPECTED_RETURN_VALUE }), Exception ]
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.side_effect = [ { 'ret' : EXPECTED_RETURN_VALUE }, Exception ]
 
         with mock.patch('gevent.sleep') as sleep:
             try:
@@ -430,7 +425,7 @@ class TestProxy(unittest.TestCase):
         EXPECTED_RETURN_VALUE = "ejybrvjysdlfhlyguerhli;njk7893ykj"
 
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = [ 0, Exception ]
-        self.zmq.Context.instance.return_value.socket.return_value.recv.side_effect = Exception
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.side_effect = Exception
 
         with mock.patch('gevent.sleep') as sleep:
             with self.assertRaises(LocalException):
@@ -448,7 +443,7 @@ class TestProxy(unittest.TestCase):
         EXPECTED_EXCEPTION_MESSAGE = "ejybrvjysdlfhlyguerhli;njk7893ykj"
 
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = [ 1, Exception ]
-        self.zmq.Context.instance.return_value.socket.return_value.recv.side_effect = [ json.dumps({ 'exc' : EXPECTED_EXCEPTION_MESSAGE }), Exception ]
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.side_effect = [ { 'exc' : EXPECTED_EXCEPTION_MESSAGE }, Exception ]
 
         with mock.patch('gevent.sleep') as sleep:
             with self.assertRaises(RemoteException) as cm:
@@ -471,16 +466,15 @@ class TestMain(unittest.TestCase):
     def test_main(self):
         EXPECTED_RETURN_VALUES = []
 
-        def set_retval(string):
-            d = json.loads(string)
+        def set_retval(d):
             EXPECTED_RETURN_VALUES.append(d)
 
         def get_retval():
-            return json.dumps({ 'ret' : EXPECTED_RETURN_VALUES[0] })
+            return { 'ret' : EXPECTED_RETURN_VALUES[0] }
 
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = [ 1, Exception ]
-        self.zmq.Context.instance.return_value.socket.return_value.send.side_effect = set_retval
-        self.zmq.Context.instance.return_value.socket.return_value.recv.side_effect = get_retval
+        self.zmq.Context.instance.return_value.socket.return_value.send_json.side_effect = set_retval
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.side_effect = get_retval
 
         with mock.patch('sys.stdout', new_callable=StringIO) as mock_stdout:
             main()
@@ -490,15 +484,15 @@ class TestMain(unittest.TestCase):
                            'args' : [ 'foo', 'bar', 'baz' ],
                            'kwargs' : {} })
 
-    @mock.patch('sys.argv', [ "ipc", "ipc://tmp.test", ])        
+    @mock.patch('sys.argv', [ "ipc", "ipc://tmp.test", ])
     def test_main_host(self):
         self.zmq.Context.instance.return_value.socket.return_value.poll.side_effect = [ 1, Exception ]
-        self.zmq.Context.instance.return_value.socket.return_value.recv.side_effect = [ json.dumps({ 'function' : 'hello',
+        self.zmq.Context.instance.return_value.socket.return_value.recv_json.side_effect = [{ 'function' : 'hello',
                                                                                                      'args' : [],
-                                                                                                     'kwargs' : { 'name' : 'TestScript' } }),
+                                                                                                     'kwargs' : { 'name' : 'TestScript' } },
                                                                                         Exception ]
 
         with self.assertRaises(Exception):
             main()
 
-        self.zmq.Context.instance.return_value.socket.return_value.send.assert_called_once_with(json.dumps({ 'ret' : "Hello, TestScript" }))
+        self.zmq.Context.instance.return_value.socket.return_value.send_json.assert_called_once_with({ 'ret' : "Hello, TestScript" })

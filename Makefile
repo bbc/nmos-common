@@ -29,7 +29,7 @@ install:
 	$(PYTHON) setup.py install --root $(DESTDIR) $(COMPILE)
 
 deb_dist: source
-	py2dsc --with-python2=true --with-python3=false dist/$(MODNAME)-$(MODVERSION).tar.gz
+	py2dsc --with-python2=true --with-python3=true dist/$(MODNAME)-$(MODVERSION).tar.gz
 
 deb_dist/$(MODNAME)-$(MODVERSION)/debian/pydist-overrides: debian/pydist-overrides deb_dist
 	ln -s $< $@
@@ -38,7 +38,7 @@ deb_dist/$(MODNAME)-$(MODVERSION)/debian/py3dist-overrides: debian/py3dist-overr
 	ln -s $< $@
 
 deb: deb_dist/$(MODNAME)-$(MODVERSION)/debian/pydist-overrides deb_dist/$(MODNAME)-$(MODVERSION)/debian/py3dist-overrides
-	cd deb_dist/$(MODNAME)-$(MODVERSION)/; debuild -uc -us
+	cd deb_dist/$(MODNAME)-$(MODVERSION)/; DEB_BUILD_OPTIONS=nocheck debuild -uc -us
 	cp deb_dist/*.deb dist
 
 clean:

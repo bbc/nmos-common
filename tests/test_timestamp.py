@@ -453,30 +453,97 @@ class TestTimestamp(unittest.TestCase):
             self.assertTrue(isinstance(ts, Timestamp))
             self.assertEqual(ts, t[1])
 
-    def test_convert_tai_sec_nsec(self):
+    def test_convert_sec_nsec(self):
+        """This tests that the conversion to and from TAI second:nanosecond pairs works as expected."""
+
+        tests_ts = [
+            ("0:0", TimeOffset(0, 0), "0:0"),
+            ("0:1", TimeOffset(0, 1), "0:1"),
+            ("-0:1", TimeOffset(0, 1, -1), "-0:1"),
+            ("5", TimeOffset(5, 0), "5:0"),
+            ("5:1", TimeOffset(5, 1), "5:1"),
+            ("-5:1", TimeOffset(5, 1, -1), "-5:1"),
+            ("5:999999999", TimeOffset(5, 999999999), "5:999999999")
+        ]
+
+        for t in tests_ts:
+            ts = TimeOffset.from_sec_nsec(t[0])
+            self.assertEqual(
+                ts,
+                t[1],
+                msg="Called with {} {} {}".format(t[0], t[1], t[2]))
+            ts_str = ts.to_sec_nsec()
+            self.assertEqual(
+                ts_str,
+                t[2],
+                msg="Called with {} {} {}".format(t[0], t[1], t[2]))
+
+    def test_ts_convert_tai_sec_nsec(self):
         """This tests that the conversion to and from TAI second:nanosecond pairs works as expected."""
 
         tests_ts = [
             ("0:0", Timestamp(0, 0), "0:0"),
+            ("0:1", Timestamp(0, 1), "0:1"),
+            ("-0:1", Timestamp(0, 0), "0:0"),
             ("5", Timestamp(5, 0), "5:0"),
             ("5:1", Timestamp(5, 1), "5:1"),
+            ("-5:1", Timestamp(0, 0), "0:0"),
             ("5:999999999", Timestamp(5, 999999999), "5:999999999")
         ]
 
         for t in tests_ts:
-            ts = Timestamp.from_tai_sec_nsec(t[0])
-            self.assertTrue(isinstance(ts, Timestamp))
-            self.assertEqual(ts, t[1])
-            ts_str = ts.to_tai_sec_nsec()
-            self.assertEqual(ts_str, t[2])
+            ts = Timestamp.from_sec_nsec(t[0])
+            self.assertTrue(
+                isinstance(ts, Timestamp),
+                msg="Called with {} {} {}".format(t[0], t[1], t[2]))
+            self.assertEqual(
+                ts,
+                t[1],
+                msg="Called with {} {} {}".format(t[0], t[1], t[2]))
+            ts_str = ts.to_sec_nsec()
+            self.assertEqual(
+                ts_str,
+                t[2],
+                msg="Called with {} {} {}".format(t[0], t[1], t[2]))
 
-    def test_convert_tai_sec_frac(self):
+    def test_convert_sec_frac(self):
+        """This tests that the conversion to and from TAI seconds with fractional parts works as expected."""
+
+        tests_ts = [
+            ("0.0", TimeOffset(0, 0), "0.0"),
+            ("0.1", TimeOffset(0, 1000000000 // 10), "0.1"),
+            ("-0.1", TimeOffset(0, 1000000000 // 10, -1), "-0.1"),
+            ("5", TimeOffset(5, 0), "5.0"),
+            ("5.1", TimeOffset(5, 1000000000 // 10), "5.1"),
+            ("-5.1", TimeOffset(5, 1000000000 // 10, -1), "-5.1"),
+            ("5.10000000", TimeOffset(5, 1000000000 // 10), "5.1"),
+            ("5.123456789", TimeOffset(5, 123456789), "5.123456789"),
+            ("5.000000001", TimeOffset(5, 1), "5.000000001"),
+            ("5.0000000001", TimeOffset(5, 0), "5.0")
+        ]
+
+        for t in tests_ts:
+            ts = TimeOffset.from_sec_frac(t[0])
+            self.assertEqual(
+                ts,
+                t[1],
+                msg="Called with {} {} {}".format(t[0], t[1], t[2]))
+            ts_str = ts.to_sec_frac()
+            self.assertEqual(
+                ts_str,
+                t[2],
+                msg="Called with {} {} {}".format(t[0], t[1], t[2]))
+
+    def test_ts_convert_tai_sec_frac(self):
         """This tests that the conversion to and from TAI seconds with fractional parts works as expected."""
 
         tests_ts = [
             ("0.0", Timestamp(0, 0), "0.0"),
+            ("0.1", Timestamp(0, 1000000000 // 10), "0.1"),
+            ("-0.1", Timestamp(0, 0), "0.0"),
             ("5", Timestamp(5, 0), "5.0"),
             ("5.1", Timestamp(5, 1000000000 // 10), "5.1"),
+            ("-5.1", Timestamp(0, 0), "0.0"),
             ("5.10000000", Timestamp(5, 1000000000 // 10), "5.1"),
             ("5.123456789", Timestamp(5, 123456789), "5.123456789"),
             ("5.000000001", Timestamp(5, 1), "5.000000001"),
@@ -484,10 +551,19 @@ class TestTimestamp(unittest.TestCase):
         ]
 
         for t in tests_ts:
-            ts = Timestamp.from_tai_sec_frac(t[0])
-            self.assertEqual(ts, t[1])
-            ts_str = ts.to_tai_sec_frac()
-            self.assertEqual(ts_str, t[2])
+            ts = Timestamp.from_sec_frac(t[0])
+            self.assertTrue(
+                isinstance(ts, Timestamp),
+                msg="Called with {} {} {}".format(t[0], t[1], t[2]))
+            self.assertEqual(
+                ts,
+                t[1],
+                msg="Called with {} {} {}".format(t[0], t[1], t[2]))
+            ts_str = ts.to_sec_frac()
+            self.assertEqual(
+                ts_str,
+                t[2],
+                msg="Called with {} {} {}".format(t[0], t[1], t[2]))
 
     def test_convert_iso_utc(self):
         """This tests that conversion to and from ISO date format UTC time works as expected."""

@@ -77,26 +77,26 @@ class Host(object):
         while not self._stop:
             r = self.socket.poll(timeout=self.timeout)
             if r != 0:
-                msg = json.loads(self.socket.recv())
+                msg = self.socket.recv_json()
                 if ('function' not in msg or
                     'args' not in msg or
                     'kwargs' not in msg):
-                    self.socket.send(json.dumps({}))
+                    self.socket.send_json({})
                     continue
 
                 if msg['function'] not in self.methods:
-                    self.socket.send(json.dumps({ 'exc' : 'AttributeError'}))
+                    self.socket.send_json({'exc': 'AttributeError'})
                     continue
 
                 try:
                     r = self.methods[msg['function']](*(msg['args']), **(msg['kwargs']))
                 except Exception as e:
-                    self.socket.send(json.dumps({ 'exc' : traceback.format_exc() }))
+                    self.socket.send_json({'exc': traceback.format_exc()})
                     continue
                 if r is not None:
-                    self.socket.send(json.dumps({ 'ret' : r }))
+                    self.socket.send_json({'ret': r})
                 else:
-                    self.socket.send(json.dumps({}))
+                    self.socket.send_json({})
 
     def ipcmethod(self, name = None):
         def _inner(function):
@@ -135,13 +135,13 @@ class Proxy(object):
                     'args'     : args,
                     'kwargs'   : kwargs }
             gevent.sleep(0)
-            self.socket.send(json.dumps(msg))
+            self.socket.send_json(msg)
             gevent.sleep(0)
 
             if self.socket.poll(timeout=self.timeout) == 0:
                 raise LocalException("Unconnected Socket")
 
-            r = json.loads(self.socket.recv())
+            r = self.socket.recv_json()
             gevent.sleep(0)
             if 'exc' in r:
                 raise RemoteException(r['exc'])
@@ -204,19 +204,22 @@ class Socket(object): # pragma: no cover
         while not self._stop:
             r = self.socket.poll(timeout=100)
             if r != 0:
-                msg = json.loads(self.socket.recv())
+                msg = self.socket.recv_json()
                 if msg["function"] not in self.lmethods:
                     rmsg = None
                 else:
                     rmsg = self.lmethods[msg["function"]](*msg["args"], **msg["kwargs"])
-                self.socket.send(json.dumps({"return" : rmsg}))
+                self.socket.send_json({"return": rmsg})
 
     def request(self, function, *args, **kwargs):
-        self.socket.send(json.dumps({"function" : function, "args" : args, "kwargs" : kwargs }))
+        self.socket.send_json({
+            "function": function,
+            "args": args,
+            "kwargs": kwargs})
         self.socket.poll(timeout=100)
-        rmsg = self.socket.recv()
-        if "return" in json.loads(rmsg):
-            return json.loads(rmsg)["return"]
+        rmsg = self.socket.recv_json()
+        if "return" in rmsg:
+            return rmsg["return"]
 
     def local(self,f):
         self.lmethods[f.__name__] = f

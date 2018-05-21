@@ -113,7 +113,9 @@ packages_required = [
     "jsonschema>=2.3.0",
     "netifaces>=0.10.6",
     "websocket-client>=0.18.0",
-    "pybonjour>=1.1.1"
+    "pybonjour>=1.1.1",
+    "ujson>=1.33",
+    "wsaccel>=0.6.2"
 ]
 
 # The following are included only as the package fails to download from pip

@@ -1,6 +1,9 @@
 # nmoscommon
 --------------
 
+- v0.5.1
+    Use cython acceleration for gevent-websocket
+
 - v0.5.0
     Support for python3 in ipc
 

@@ -30,7 +30,7 @@ class TestLogger(unittest.TestCase):
         PurePythonLogger.logsOpened = False
 
         node_name = "test-logger"
-        
+
         with mock.patch('logging.FileHandler', side_effect=lambda _ : StreamHandler(test_stream)):
             logger = PurePythonLogger(node_name=node_name)
 
@@ -75,7 +75,7 @@ class TestLogger(unittest.TestCase):
         PurePythonLogger.logsOpened = False
 
         node_name = "test-logger"
-        
+
         with mock.patch('logging.FileHandler', side_effect=Exception):
             try:
                 logger = PurePythonLogger(node_name=node_name)

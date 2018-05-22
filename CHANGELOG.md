@@ -1,6 +1,9 @@
 # nmoscommon
 --------------
 
+- v0.6.0
+    Support for configuring logging
+
 - v0.5.1
     Use cython acceleration for gevent-websocket
 

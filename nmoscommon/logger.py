@@ -12,43 +12,65 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import absolute_import
 import logging
 import sys
+from . import nmoscommonconfig
 
 # Check to see if BBC R&D internal logger is present
-try: # pragma: no cover
+try:  # pragma: no cover
     from ipppython.ipplogger import IppLogger
     IPP_LOGGER = True
-except ImportError: # pragma: no cover
+except ImportError:  # pragma: no cover
     IPP_LOGGER = False
 
-from logging import FileHandler
+__all__ = ["Logger"]
 
-__all__ = [ "Logger" ]
 
 class PurePythonLogger:
 
     logsOpened = False
 
     def __init__(self, node_name='nmos-root', _parent=None):
+        logFormat = logging.Formatter(
+            '%(asctime)s : %(name)s : %(levelname)s : %(message)s')
+
+        config = nmoscommonconfig.config
+        logLevel = getattr(
+            logging,
+            config.get("logging", {}).get("level", "DEBUG"))
+        logOutputs = config.get("logging", {}).get("output", ["file", "stdout"])
 
         self.log = logging.getLogger(node_name)
-        self.log.setLevel(logging.DEBUG)
-        logFormat = logging.Formatter('%(asctime)s : %(name)s : %(levelname)s : %(message)s')
-        
+        self.log.setLevel(logLevel)
+
         if not PurePythonLogger.logsOpened:
-            try:
-                fileHandler = logging.FileHandler('/var/log/nmos.log')
-                fileHandler.setLevel(logging.DEBUG)
-                fileHandler.setFormatter(logFormat)
-                self.log.addHandler(fileHandler) 
-            except:
-                pass
-    
-            streamHandler = logging.StreamHandler(sys.stdout)
-            streamHandler.setLevel(logging.DEBUG)
-            streamHandler.setFormatter(logFormat)
-            self.log.addHandler(streamHandler)
+            if "file" in logOutputs:
+                try:
+                    fileLoc = config.get(
+                        "logging", {}).get(
+                        "fileLocation", "/var/log/nmos.log")
+                    fileHandler = logging.FileHandler(fileLoc)
+                    fileHandler.setLevel(logLevel)
+                    fileHandler.setFormatter(logFormat)
+                    self.log.addHandler(fileHandler)
+                except:
+                    pass
+
+            if "stdout" in logOutputs:
+                streamHandler = logging.StreamHandler(sys.stdout)
+                streamHandler.setLevel(logLevel)
+                streamHandler.setFormatter(logFormat)
+                self.log.addHandler(streamHandler)
+
+            if "stderr" in logOutputs:
+                streamHandler = logging.StreamHandler(sys.stderr)
+                streamHandler.setLevel(logLevel)
+                streamHandler.setFormatter(logFormat)
+                self.log.addHandler(streamHandler)
+
+            self.log.propagate = False
+
             PurePythonLogger.logsOpened = True
 
         logging.info("Logging started...")
@@ -68,8 +90,9 @@ class PurePythonLogger:
     def writeDebug(self, message):
         self.log.debug(message)
 
+
 # Use BBC R&D logger in preference to this one
-if True: # pragma: no cover
+if True:  # pragma: no cover
     if IPP_LOGGER:
         Logger = IppLogger
     else:

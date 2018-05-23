@@ -28,7 +28,15 @@ def create_default_conf():
         return
 
     defaultData = {
-        "priority": 0
+        "priority": 0,
+        "logging": {
+          "level": "DEBUG",
+          "fileLocation": "/var/log/nmos.log",
+          "output": [
+            "file",
+            "stdout"
+          ]
+        }
     }
 
     try:
@@ -125,7 +133,7 @@ deps_required = [
 
 
 setup(name="nmoscommon",
-      version="0.5.1",
+      version="0.6.0",
       description="nmos python utilities",
       url='www.nmos.tv',
       author='Peter Brightwell',

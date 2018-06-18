@@ -12,7 +12,7 @@ pipeline{
     }
     stage('Lint') {
       steps {
-	sh 'flake8'
+	      sh 'flake8'
       }
     }
   }

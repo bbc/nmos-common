@@ -7,7 +7,7 @@ pipeline{
   stages {
     stage('Test') {
       steps{
-        sh 'tox --workdir /tmp/$(basename ${WORKSPACE})'
+        sh 'tox --recreate --workdir /tmp/$(basename ${WORKSPACE})'
       }
     }
     stage('Lint') {

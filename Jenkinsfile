@@ -1,3 +1,5 @@
+@Library("rd-apmm-groovy-ci-library@master") _
+
 pipeline{
   agent { label 'ipstudio-deps&&16.04' }
   environment {
@@ -7,7 +9,9 @@ pipeline{
   stages {
     stage('Test') {
       steps{
-        sh 'tox --recreate --workdir /tmp/$(basename ${WORKSPACE})'
+        withBBCRDPythonArtifactory {
+          sh 'tox --recreate --workdir /tmp/$(basename ${WORKSPACE})'
+        }
       }
     }
     stage('Lint') {

@@ -52,7 +52,7 @@ clean:
 	find . -name '*.py,cover' -delete
 
 test:
-	tox -e py27-test-coverage -e py3-test-coverage
+	tox
 
 test-nocover:
 	tox -e py27

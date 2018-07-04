@@ -38,24 +38,6 @@ pipeline {
         }
         stage ("Tests") {
             parallel {
-                stage ("Linting Check") {
-                    steps {
-                        script {
-                            env.lint_result = "FAILURE"
-                        }
-                        bbcGithubNotify(context: "lint/flake8", status: "PENDING")
-                        // Run the linter, excluding build directories (this can also go in the .flake8 config file)
-                        sh 'flake8 --exclude .git,.tox,dist,deb_dist,__pycache__'
-                        script {
-                            env.lint_result = "SUCCESS" // This will only run if the sh above succeeded
-                        }
-                    }
-                    post {
-                        always {
-                            bbcGithubNotify(context: "lint/flake8", status: env.lint_result)
-                        }
-                    }
-                }
                 stage ("Unit Tests") {
                     stages {
                         stage ("Python 2.7 Unit Tests") {

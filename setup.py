@@ -128,6 +128,7 @@ packages_required = [
 ]
 
 # Check if setuptools is recent enough to recognise python_version syntax
+# Pybonjour is only available for Python 2
 if int(setuptools.__version__.split(".", 1)[0]) < 18:
     # Check python version using legacy mechanism
     if sys.version_info[0:2] < (3, 0):

@@ -30,7 +30,6 @@ all:
 	@echo "make rpm_spec- Create the spec file for the rpm"
 	@echo "make wheel   - Create whl package"
 	@echo "make egg     - Create egg package"
-	@echo "make pex     - Create pex package"
 
 source:
 	$(PYTHON) $(topdir)/setup.py sdist $(COMPILE)
@@ -101,7 +100,4 @@ egg:
 	$(PYTHON2) $(topdir)/setup.py bdist_egg --dist-dir=$(topbuilddir)/dist
 	$(PYTHON3) $(topdir)/setup.py bdist_egg --dist-dir=$(topbuilddir)/dist
 
-pex:
-	tox -c $(topdir)/tox.ini -e package
-
-.PHONY: test test2 test3 clean install source deb dsc rpm rpm_spec wheel egg pex testenv all
+.PHONY: test clean install source deb dsc rpm rpm_spec wheel egg pex testenv all

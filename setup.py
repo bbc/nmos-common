@@ -143,7 +143,7 @@ deps_required = [
 
 
 setup(name="nmoscommon",
-      version="0.6.0",
+      version="0.6.1",
       description="nmos python utilities",
       url='www.nmos.tv',
       author='Peter Brightwell',

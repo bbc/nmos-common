@@ -139,6 +139,7 @@ class Proxy(object):
             gevent.sleep(0)
 
             if self.socket.poll(timeout=self.timeout) == 0:
+                self.close()
                 raise LocalException("Unconnected Socket")
 
             r = self.socket.recv_json()
@@ -150,6 +151,14 @@ class Proxy(object):
         except:
             gevent.sleep(0)
             raise
+
+    def close(self):
+        if self.socket:
+            try:
+                self.socket.close()
+            except:
+                pass
+            self.socket = None
 
     def __getattr__(self, name):
         def _invoke(*args, **kwargs):

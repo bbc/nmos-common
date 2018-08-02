@@ -103,6 +103,7 @@ def find_packages(path, base=""):
 packages = find_packages(".")
 package_names = packages.keys()
 
+# REMEMBER: If this list is updated, please also update stdeb.cfg
 packages_required = [
     "gevent>=1.2.2",
     "greenlet>=0.4.13",
@@ -143,7 +144,7 @@ deps_required = [
 
 
 setup(name="nmoscommon",
-      version="0.6.2",
+      version="0.6.3",
       description="nmos python utilities",
       url='www.nmos.tv',
       author='Peter Brightwell',

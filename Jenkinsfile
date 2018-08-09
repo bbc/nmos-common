@@ -32,6 +32,7 @@ pipeline {
         http_proxy = "http://www-cache.rd.bbc.co.uk:8080"
         https_proxy = "http://www-cache.rd.bbc.co.uk:8080"
     }
+<<<<<<< dd81b9f17aee5a1d85c4afc3689877caa0ded8b5
     stages {
         stage ("Build and Test"){
             parallel {
@@ -288,6 +289,9 @@ pipeline {
                 }
             }
         }
+=======
+    stages {       
+>>>>>>> Add step for running integration tests
         stage("Clean Environment") {
             steps {
                 sh 'git clean -dfx'
@@ -347,6 +351,15 @@ pipeline {
                                 expression { params.INTEGRATION_TEST }
                             }
                             stages{
+                                stage ("Clone Down Joint RI"){
+                                    steps{
+					sh 'rm -r nmos-joint-ri || :'
+                                        withBBCGithubSSHAgent{
+                                            sh 'git clone git@github.com:bbc/nmos-joint-ri.git'
+                                        }
+                                        sh 'cd nmos-joint-ri/vagrant'
+                                    }
+                                }
                                 stage ("Clean Environment") {
                                     when {
                                         expression { return params.DESTROY_VAGRANT }
@@ -357,13 +370,7 @@ pipeline {
                                 }
                                 stage ("Start Vagrant VMs") {
                                     steps{
-                                        with bbcGithubNotify{
-                                            sh 'git clone git@github.com:bbc/nmos-joint-ri.git'
-                                        }
-                                        script{
-                                            cd nmos-joint-ri/vagrant
-                                            vagrant up --provision
-                                        }
+                                        sh 'vagrant up --provision'
                                     }
                                 }
                             }
@@ -454,6 +461,77 @@ pipeline {
                         }
                         always {
                             bbcGithubNotify(context: "deb/packageBuild", status: env.pbuilder_result)
+                        }
+                    }
+                }
+            }
+        }
+        stage ("Upload Packages") {
+            // Duplicates the when clause of each upload so blue ocean can nicely display when stage skipped
+            when {
+                anyOf {
+                    expression { return params.FORCE_PYUPLOAD }
+                    expression { return params.FORCE_DEBUPLOAD }
+                    expression {
+                        bbcShouldUploadArtifacts(branches: ["master"])
+                    }
+                }
+            }
+            parallel {
+                stage ("Upload to Artifactory") {
+                    when {
+                        anyOf {
+                            expression { return params.FORCE_PYUPLOAD }
+                            expression {
+                                bbcShouldUploadArtifacts(branches: ["master"])
+                            }
+                        }
+                    }
+                    steps {
+                        script {
+                            env.artifactoryUpload_result = "FAILURE"
+                        }
+                        bbcGithubNotify(context: "artifactory/upload", status: "PENDING")
+                        bbcTwineUpload(toxenv: "py3")
+                        script {
+                            env.artifactoryUpload_result = "SUCCESS" // This will only run if the steps above succeeded
+                        }
+                    }
+                    post {
+                        always {
+                            bbcGithubNotify(context: "artifactory/upload", status: env.artifactoryUpload_result)
+                        }
+                    }
+                }
+                stage ("upload deb") {
+                    when {
+                        anyOf {
+                            expression { return params.FORCE_DEBUPLOAD }
+                            expression {
+                                bbcShouldUploadArtifacts(branches: ["master"])
+                            }
+                        }
+                    }
+                    steps {
+                        script {
+                            env.debUpload_result = "FAILURE"
+                        }
+                        bbcGithubNotify(context: "deb/upload", status: "PENDING")
+                        script {
+                            for (def dist in bbcGetSupportedUbuntuVersions()) {
+                                bbcDebUpload(sourceFiles: "_result/${dist}-amd64/*",
+                                            removePrefix: "_result/${dist}-amd64",
+                                            dist: "${dist}",
+                                            apt_repo: "ap/python")
+                            }
+                        }
+                        script {
+                            env.debUpload_result = "SUCCESS" // This will only run if the steps above succeeded
+                        }
+                    }
+                    post {
+                        always {
+                            bbcGithubNotify(context: "deb/upload", status: env.debUpload_result)
                         }
                     }
                 }

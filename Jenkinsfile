@@ -25,109 +25,194 @@ pipeline {
     parameters {
         booleanParam(name: "FORCE_PYUPLOAD", defaultValue: false, description: "Force Python artifact upload")
         booleanParam(name: "FORCE_DEBUPLOAD", defaultValue: false, description: "Force Debian package upload")
+        booleanParam(name: "INTEGRATION_TEST", defaultValue: true, description: "Run integration test using joint ri?")
+        booleanParam(name: "DESTROY_VAGRANT", defaultValue: false, description: "Destroy integration testing vagrant box before build?")
     }
     environment {
         http_proxy = "http://www-cache.rd.bbc.co.uk:8080"
         https_proxy = "http://www-cache.rd.bbc.co.uk:8080"
     }
     stages {
-        stage("Clean Environment") {
-            steps {
-                sh 'git clean -dfx'
-            }
-        }
-        stage ("Tests") {
+        stage ("Build and Test"){
             parallel {
-                stage ("Unit Tests") {
-                    stages {
-                        stage ("Python 2.7 Unit Tests") {
+                stage ("Unit Test and Build") {
+                    stages{
+                        stage("Clean Environment") {
                             steps {
-                                script {
-                                    env.py27_result = "FAILURE"
-                                }
-                                bbcGithubNotify(context: "tests/py27", status: "PENDING")
-                                // Use a workdirectory in /tmp to avoid shebang length limitation
-                                sh 'tox -e py27 --recreate --workdir /tmp/$(basename ${WORKSPACE})/tox-py27'
-                                script {
-                                    env.py27_result = "SUCCESS" // This will only run if the sh above succeeded
-                                }
+                                sh 'git clean -dfx'
                             }
-                            post {
-                                always {
-                                    bbcGithubNotify(context: "tests/py27", status: env.py27_result)
+                        }
+                        stage ("Tests") {
+                            parallel {
+                                stage ("Unit Tests") {
+                                    stages {
+                                        stage ("Python 2.7 Unit Tests") {
+                                            steps {
+                                                script {
+                                                    env.py27_result = "FAILURE"
+                                                }
+                                                bbcGithubNotify(context: "tests/py27", status: "PENDING")
+                                                // Use a workdirectory in /tmp to avoid shebang length limitation
+                                                sh 'tox -e py27 --recreate --workdir /tmp/$(basename ${WORKSPACE})/tox-py27'
+                                                script {
+                                                    env.py27_result = "SUCCESS" // This will only run if the sh above succeeded
+                                                }
+                                            }
+                                            post {
+                                                always {
+                                                    bbcGithubNotify(context: "tests/py27", status: env.py27_result)
+                                                }
+                                            }
+                                        }
+                                        stage ("Python 3 Unit Tests") {
+                                            steps {
+                                                script {
+                                                    env.py3_result = "FAILURE"
+                                                }
+                                                bbcGithubNotify(context: "tests/py3", status: "PENDING")
+                                                // Use a workdirectory in /tmp to avoid shebang length limitation
+                                                sh 'tox -e py3 --recreate --workdir /tmp/$(basename ${WORKSPACE})/tox-py3'
+                                                script {
+                                                    env.py3_result = "SUCCESS" // This will only run if the sh above succeeded
+                                                }
+                                            }
+                                            post {
+                                                always {
+                                                    bbcGithubNotify(context: "tests/py3", status: env.py3_result)
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
-                        stage ("Python 3 Unit Tests") {
+                        stage ("Debian Source Build") {
                             steps {
                                 script {
-                                    env.py3_result = "FAILURE"
+                                    env.debSourceBuild_result = "FAILURE"
                                 }
-                                bbcGithubNotify(context: "tests/py3", status: "PENDING")
-                                // Use a workdirectory in /tmp to avoid shebang length limitation
-                                sh 'tox -e py3 --recreate --workdir /tmp/$(basename ${WORKSPACE})/tox-py3'
-                                script {
-                                    env.py3_result = "SUCCESS" // This will only run if the sh above succeeded
-                                }
-                            }
-                            post {
-                                always {
-                                    bbcGithubNotify(context: "tests/py3", status: env.py3_result)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        stage ("Debian Source Build") {
-            steps {
-                script {
-                    env.debSourceBuild_result = "FAILURE"
-                }
-                bbcGithubNotify(context: "deb/sourceBuild", status: "PENDING")
+                                bbcGithubNotify(context: "deb/sourceBuild", status: "PENDING")
 
-                sh 'python ./setup.py sdist'
-                sh 'make dsc'
-                bbcPrepareDsc()
-                stash(name: "deb_dist", includes: "deb_dist/*")
-                script {
-                    env.debSourceBuild_result = "SUCCESS" // This will only run if the steps above succeeded
-                }
-            }
-            post {
-                always {
-                    bbcGithubNotify(context: "deb/sourceBuild", status: env.debSourceBuild_result)
-                }
-            }
-        }
-        stage ("Build Packages") {
-            parallel{
-                stage ("Build Deb with pbuilder") {
-                    steps {
-                        script {
-                            env.pbuilder_result = "FAILURE"
+                                sh 'python ./setup.py sdist'
+                                sh 'make dsc'
+                                bbcPrepareDsc()
+                                stash(name: "deb_dist", includes: "deb_dist/*")
+                                script {
+                                    env.debSourceBuild_result = "SUCCESS" // This will only run if the steps above succeeded
+                                }
+                            }
+                            post {
+                                always {
+                                    bbcGithubNotify(context: "deb/sourceBuild", status: env.debSourceBuild_result)
+                                }
+                            }
                         }
-                        bbcGithubNotify(context: "deb/packageBuild", status: "PENDING")
-                        // Build for all supported platforms and extract results into workspace
-                        bbcParallelPbuild(
-                            stashname: "deb_dist",
-                            dists: bbcGetSupportedUbuntuVersions(),
-                            arch: "amd64")
-                        script {
-                            env.pbuilder_result = "SUCCESS" // This will only run if the steps above succeeded
+                        stage ("Build Packages") {
+                            parallel{
+                                stage ("Build wheels") {
+                                    stages {
+                                        stage ("Build py2.7 wheel") {
+                                            steps {
+                                                script {
+                                                    env.py27wheel_result = "FAILURE"
+                                                }
+                                                bbcGithubNotify(context: "wheelBuild/py2.7", status: "PENDING")
+                                                bbcMakeWheel("py27")
+                                                script {
+                                                    env.py27wheel_result = "SUCCESS" // This will only run if the steps above succeeded
+                                                }
+                                            }
+                                            post {
+                                                always {
+                                                    bbcGithubNotify(context: "wheelBuild/py2.7", status: env.py27wheel_result)
+                                                }
+                                            }
+                                        }
+                                        stage ("Build py3 wheel") {
+                                            steps {
+                                                script {
+                                                    env.py3wheel_result = "FAILURE"
+                                                }
+                                                bbcGithubNotify(context: "wheelBuild/py3", status: "PENDING")
+                                                bbcMakeWheel("py3")
+                                                script {
+                                                    env.py3wheel_result = "SUCCESS" // This will only run if the steps above succeeded
+                                                }
+                                            }
+                                            post {
+                                                always {
+                                                    bbcGithubNotify(context: "wheelBuild/py3", status: env.py3wheel_result)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                stage ("Build Deb with pbuilder") {
+                                    steps {
+                                        script {
+                                            env.pbuilder_result = "FAILURE"
+                                        }
+                                        bbcGithubNotify(context: "deb/packageBuild", status: "PENDING")
+                                        // Build for all supported platforms and extract results into workspace
+                                        bbcParallelPbuild(
+                                            stashname: "deb_dist",
+                                            dists: bbcGetSupportedUbuntuVersions(),
+                                            arch: "amd64")
+                                        script {
+                                            env.pbuilder_result = "SUCCESS" // This will only run if the steps above succeeded
+                                        }
+                                    }
+                                    post {
+                                        success {
+                                            archiveArtifacts artifacts: "_result/**"
+                                        }
+                                        always {
+                                            bbcGithubNotify(context: "deb/packageBuild", status: env.pbuilder_result)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                    post {
-                        success {
-                            archiveArtifacts artifacts: "_result/**"
+                }
+            }
+            stage ("Integration Test with Joint RI") {
+                when{
+                    expression { params.INTEGRATION_TEST }
+                }
+                agent{
+                    label "apmm-slave&&baremetal"
+                }
+                stage ("Clean Environment") {
+                    when {
+                        expression { return params.DESTROY_VAGRANT }
+                    }
+                    agent{
+                        label "apmm-slave&&baremetal"
+                    }
+                    stages{
+                        stage ("Clean Environment") {
+                            when {
+                                expression { return params.DESTROY_VAGRANT }
+                            }
+                            steps{
+                                sh 'vagrant destroy -f'
+                            }
                         }
-                        always {
-                            bbcGithubNotify(context: "deb/packageBuild", status: env.pbuilder_result)
+                        stage ("Start Vagrant VMs") {
+                            steps{
+                                with bbcGithubNotify{
+                                    sh 'git clone git@github.com:bbc/nmos-joint-ri.git'
+                                }
+                                script{
+                                    cd nmos-joint-ri/vagrant
+                                    vagrant up --provision
+                                }
+                            }
                         }
                     }
                 }
-            }
+            }            
         }
         stage ("Upload Packages") {
             // Duplicates the when clause of each upload so blue ocean can nicely display when stage skipped
@@ -186,9 +271,9 @@ pipeline {
                         script {
                             for (def dist in bbcGetSupportedUbuntuVersions()) {
                                 bbcDebUpload(sourceFiles: "_result/${dist}-amd64/*",
-                                             removePrefix: "_result/${dist}-amd64",
-                                             dist: "${dist}",
-                                             apt_repo: "ap/python")
+                                            removePrefix: "_result/${dist}-amd64",
+                                            dist: "${dist}",
+                                            apt_repo: "ap/python")
                             }
                         }
                         script {
@@ -198,6 +283,177 @@ pipeline {
                     post {
                         always {
                             bbcGithubNotify(context: "deb/upload", status: env.debUpload_result)
+                        }
+                    }
+                }
+            }
+        }
+        stage("Clean Environment") {
+            steps {
+                sh 'git clean -dfx'
+            }
+        }
+        stage ("Tests") {
+            parallel {
+                stage ("Unit Tests") {
+                    stages {
+                        stage ("Python 2.7 Unit Tests") {
+                            steps {
+                                script {
+                                    env.py27_result = "FAILURE"
+                                }
+                                bbcGithubNotify(context: "tests/py27", status: "PENDING")
+                                // Use a workdirectory in /tmp to avoid shebang length limitation
+                                sh 'tox -e py27 --recreate --workdir /tmp/$(basename ${WORKSPACE})/tox-py27'
+                                script {
+                                    env.py27_result = "SUCCESS" // This will only run if the sh above succeeded
+                                }
+                            }
+                            post {
+                                always {
+                                    bbcGithubNotify(context: "tests/py27", status: env.py27_result)
+                                }
+                            }
+                        }
+                        stage ("Python 3 Unit Tests") {
+                            steps {
+                                script {
+                                    env.py3_result = "FAILURE"
+                                }
+                                bbcGithubNotify(context: "tests/py3", status: "PENDING")
+                                // Use a workdirectory in /tmp to avoid shebang length limitation
+                                sh 'tox -e py3 --recreate --workdir /tmp/$(basename ${WORKSPACE})/tox-py3'
+                                script {
+                                    env.py3_result = "SUCCESS" // This will only run if the sh above succeeded
+                                }
+                            }
+                            post {
+                                always {
+                                    bbcGithubNotify(context: "tests/py3", status: env.py3_result)
+                                }
+                            }
+                        }
+                    }
+                }
+                stage ("Integration Tests") {
+                    stages{
+                        stage ("Integration Tests") {
+                            agent {
+                                node{
+                                    label 'apmm-slave&&baremetal'
+                                }
+                            }
+                            when{
+                                expression { params.INTEGRATION_TEST }
+                            }
+                            stages{
+                                stage ("Clean Environment") {
+                                    when {
+                                        expression { return params.DESTROY_VAGRANT }
+                                    }
+                                    steps{
+                                        sh 'vagrant destroy -f'
+                                    }
+                                }
+                                stage ("Start Vagrant VMs") {
+                                    steps{
+                                        with bbcGithubNotify{
+                                            sh 'git clone git@github.com:bbc/nmos-joint-ri.git'
+                                        }
+                                        script{
+                                            cd nmos-joint-ri/vagrant
+                                            vagrant up --provision
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        stage ("Debian Source Build") {
+            steps {
+                script {
+                    env.debSourceBuild_result = "FAILURE"
+                }
+                bbcGithubNotify(context: "deb/sourceBuild", status: "PENDING")
+
+                sh 'python ./setup.py sdist'
+                sh 'make dsc'
+                bbcPrepareDsc()
+                stash(name: "deb_dist", includes: "deb_dist/*")
+                script {
+                    env.debSourceBuild_result = "SUCCESS" // This will only run if the steps above succeeded
+                }
+            }
+            post {
+                always {
+                    bbcGithubNotify(context: "deb/sourceBuild", status: env.debSourceBuild_result)
+                }
+            }
+        }
+        stage ("Build Packages") {
+            parallel{
+                stage ("Build wheels") {
+                    stages {
+                        stage ("Build py2.7 wheel") {
+                            steps {
+                                script {
+                                    env.py27wheel_result = "FAILURE"
+                                }
+                                bbcGithubNotify(context: "wheelBuild/py2.7", status: "PENDING")
+                                bbcMakeWheel("py27")
+                                script {
+                                    env.py27wheel_result = "SUCCESS" // This will only run if the steps above succeeded
+                                }
+                            }
+                            post {
+                                always {
+                                    bbcGithubNotify(context: "wheelBuild/py2.7", status: env.py27wheel_result)
+                                }
+                            }
+                        }
+                        stage ("Build py3 wheel") {
+                            steps {
+                                script {
+                                    env.py3wheel_result = "FAILURE"
+                                }
+                                bbcGithubNotify(context: "wheelBuild/py3", status: "PENDING")
+                                bbcMakeWheel("py3")
+                                script {
+                                    env.py3wheel_result = "SUCCESS" // This will only run if the steps above succeeded
+                                }
+                            }
+                            post {
+                                always {
+                                    bbcGithubNotify(context: "wheelBuild/py3", status: env.py3wheel_result)
+                                }
+                            }
+                        }
+                    }
+                }
+                stage ("Build Deb with pbuilder") {
+                    steps {
+                        script {
+                            env.pbuilder_result = "FAILURE"
+                        }
+                        bbcGithubNotify(context: "deb/packageBuild", status: "PENDING")
+                        // Build for all supported platforms and extract results into workspace
+                        bbcParallelPbuild(
+                            stashname: "deb_dist",
+                            dists: bbcGetSupportedUbuntuVersions(),
+                            arch: "amd64")
+                        script {
+                            env.pbuilder_result = "SUCCESS" // This will only run if the steps above succeeded
+                        }
+                    }
+                    post {
+                        success {
+                            archiveArtifacts artifacts: "_result/**"
+                        }
+                        always {
+                            bbcGithubNotify(context: "deb/packageBuild", status: env.pbuilder_result)
                         }
                     }
                 }

@@ -125,7 +125,8 @@ packages_required = [
     "netifaces>=0.10.6",
     "websocket-client>=0.18.0",
     "ujson>=1.33",
-    "wsaccel>=0.6.2"
+    "wsaccel>=0.6.2",
+    "mediatimestamp>=1.0.0"
 ]
 
 # Check if setuptools is recent enough to recognise python_version syntax
@@ -144,7 +145,7 @@ deps_required = [
 
 
 setup(name="nmoscommon",
-      version="0.6.3",
+      version="0.6.4",
       description="nmos python utilities",
       url='www.nmos.tv',
       author='Peter Brightwell',

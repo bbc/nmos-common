@@ -1,5 +1,9 @@
 # NMOS Common Library Changelog
 
+## 0.6.5
+- Moved json sublibrary out to mediajson and referenced it
+  here for backwards compatibility.
+
 ## 0.6.4
 - Moved timestamp sublibrary out to mediatimestamp and referenced it
   here for backwards compatibility.

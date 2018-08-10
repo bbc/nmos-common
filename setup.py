@@ -16,7 +16,9 @@
 
 from __future__ import print_function
 from setuptools import setup
+import setuptools
 import os
+import sys
 import json
 from setuptools.command.develop import develop
 from setuptools.command.install import install
@@ -101,6 +103,7 @@ def find_packages(path, base=""):
 packages = find_packages(".")
 package_names = packages.keys()
 
+# REMEMBER: If this list is updated, please also update stdeb.cfg
 packages_required = [
     "gevent>=1.2.2",
     "greenlet>=0.4.13",
@@ -121,11 +124,19 @@ packages_required = [
     "jsonschema>=2.3.0",
     "netifaces>=0.10.6",
     "websocket-client>=0.18.0",
-    "pybonjour>=1.1.1",
     "ujson>=1.33",
     "wsaccel>=0.6.2",
     "mediatimestamp>=1.0.0"
 ]
+
+# Check if setuptools is recent enough to recognise python_version syntax
+# Pybonjour is only available for Python 2
+if int(setuptools.__version__.split(".", 1)[0]) < 18:
+    # Check python version using legacy mechanism
+    if sys.version_info[0:2] < (3, 0):
+        packages_required.append("pybonjour>=1.1.1")
+else:
+    packages_required.append("pybonjour>=1.1.1;python_version<'3.0'")
 
 # The following are included only as the package fails to download from pip
 deps_required = [
@@ -134,7 +145,7 @@ deps_required = [
 
 
 setup(name="nmoscommon",
-      version="0.6.1",
+      version="0.6.4",
       description="nmos python utilities",
       url='www.nmos.tv',
       author='Peter Brightwell',

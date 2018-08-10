@@ -1,4 +1,2 @@
 pyzmq python-zmq
 websocket-client python-websocket
-ujson python-ujson
-wsaccel python-wsaccel

@@ -124,7 +124,7 @@ packages_required = [
     "pybonjour>=1.1.1",
     "ujson>=1.33",
     "wsaccel>=0.6.2",
-    "mediatimestamp>=1.0.0-dev1"
+    "mediatimestamp>=1.0.0"
 ]
 
 # The following are included only as the package fails to download from pip
@@ -134,7 +134,7 @@ deps_required = [
 
 
 setup(name="nmoscommon",
-      version="0.6.1-dev1",
+      version="0.6.1",
       description="nmos python utilities",
       url='www.nmos.tv',
       author='Peter Brightwell',

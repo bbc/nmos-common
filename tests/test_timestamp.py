@@ -21,11 +21,20 @@ from datetime import datetime
 from dateutil import tz
 
 from nmoscommon.timestamp import Timestamp, TimeOffset, TsValueError
+from nmoscommon.timestamp import MAX_NANOSEC, MAX_SECONDS
 
 if PY2:
     BUILTINS = "__builtin__"
 else:
     BUILTINS = "builtins"
+
+
+class TestConstants(unittest.TestCase):
+    def test_MAX_NANOSEC(self):
+        self.assertEqual(MAX_NANOSEC, 1000000000)
+
+    def test_MAX_SECONDS(self):
+        self.assertEqual(MAX_SECONDS, 281474976710656)
 
 
 class TestTimeOffset(unittest.TestCase):

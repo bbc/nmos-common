@@ -15,12 +15,17 @@
 from __future__ import print_function
 
 from mediatimestamp import TsValueError, TimeOffset, Timestamp, TimeRange
-from mediatimestamp import MAX_NANOSEC, MAX_SECONDS, UTC_LEAP  # noqa: F401
 
 __all__ = ["TsValueError", "TimeOffset", "Timestamp", "TimeRange"]
 
 
-if __name__ == '__main__': # pragma: no cover
+# These constants are not part of the library's public interface, but have
+# been included because earlier versions made them available.
+MAX_NANOSEC = TimeOffset.MAX_NANOSEC
+MAX_SECONDS = TimeOffset.MAX_SECONDS
+
+
+if __name__ == '__main__':  # pragma: no cover
     import sys
 
     arg = sys.argv[1]

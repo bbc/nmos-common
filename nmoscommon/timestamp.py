@@ -14,9 +14,10 @@
 
 from __future__ import print_function
 
-from mediatimestamp import TsValueError, TimeOffset, Timestamp
+from mediatimestamp import TsValueError, TimeOffset, Timestamp, TimeRange
+from mediatimestamp import MAX_NANOSEC, MAX_SECONDS, UTC_LEAP  # noqa: F401
 
-__all__ = ["TsValueError", "TimeOffset", "Timestamp"]
+__all__ = ["TsValueError", "TimeOffset", "Timestamp", "TimeRange"]
 
 
 if __name__ == '__main__': # pragma: no cover

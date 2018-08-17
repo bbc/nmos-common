@@ -1,5 +1,9 @@
 # NMOS Common Library Changelog
 
+## 0.6.6
+- Moved json sublibrary out to mediajson and referenced it
+  here for backwards compatibility.
+
 ## 0.6.5
 - Added imports of some constants from mediatimestamp. These should
   not really be used, but some implementations erroneously rely on them

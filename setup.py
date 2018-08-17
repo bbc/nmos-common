@@ -126,7 +126,7 @@ packages_required = [
     "websocket-client>=0.18.0",
     "ujson>=1.33",
     "wsaccel>=0.6.2",
-    "mediatimestamp>=1.0.0",
+    "mediatimestamp>=1.0.1",
     "mediajson>=1.0.0"
 ]
 
@@ -146,7 +146,7 @@ deps_required = [
 
 
 setup(name="nmoscommon",
-      version="0.6.4",
+      version="0.6.6",
       description="nmos python utilities",
       url='www.nmos.tv',
       author='Peter Brightwell',

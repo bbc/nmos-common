@@ -353,11 +353,10 @@ pipeline {
                             stages{
                                 stage ("Clone Down Joint RI"){
                                     steps{
-					sh 'rm -r nmos-joint-ri || :'
+					                    sh 'rm -r nmos-joint-ri || :'
                                         withBBCGithubSSHAgent{
-                                            sh 'git clone git@github.com:bbc/nmos-joint-ri.git'
+                                            sh 'git clone -b simonra-integration-testing git@github.com:bbc/nmos-joint-ri.git'
                                         }
-                                        sh 'cd nmos-joint-ri/vagrant'
                                     }
                                 }
                                 stage ("Clean Environment") {
@@ -365,13 +364,23 @@ pipeline {
                                         expression { return params.DESTROY_VAGRANT }
                                     }
                                     steps{
-                                        sh 'vagrant destroy -f'
+                                        sh './pipelineScripts/vagrantDestroy.sh'
                                     }
                                 }
                                 stage ("Start Vagrant VMs") {
                                     steps{
-                                        sh 'vagrant up --provision'
+					                    sh './pipelineScripts/vagrantUp.sh'
                                     }
+                                }
+                                stage ("Run Integration Tests") {
+                                    steps{
+                                        sh './pipelineSCripts/runIntegrationTests.py'
+                                    }
+                                }
+                            }
+                            post{
+                                always{
+                                    sh './pipelineScripts/vagrantDestroy.sh'
                                 }
                             }
                         }

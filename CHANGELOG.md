@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.6.7
+- Updated stdeb.cfg to include dependencies on mediajson and mediatimestamp
+
 ## 0.6.6
 - Moved json sublibrary out to mediajson and referenced it
   here for backwards compatibility.

@@ -1,5 +1,9 @@
 # NMOS Common Library Changelog
 
+## 0.6.8
+- Resolve issue where interactions of aggregator.py with Registration API
+  failed to set Content-Type
+
 ## 0.6.7
 - Updated stdeb.cfg to include dependencies on mediajson and mediatimestamp
 

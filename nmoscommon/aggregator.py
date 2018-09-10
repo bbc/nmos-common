@@ -290,8 +290,10 @@ class Aggregator(object):
         if self.aggregator == "":
             self.aggregator = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE)
 
+        headers = None
         if data is not None:
             data = json.dumps(data)
+            headers = {"Content-Type": "application/json"}
 
         url = AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url
         for i in range(0, 3):
@@ -308,9 +310,9 @@ class Aggregator(object):
             # majority of the time...
             try:
                 if nmoscommonconfig.config.get('prefer_ipv6',False) == False:
-                    R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0)
+                    R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, headers=headers)
                 else:
-                    R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, proxies={'http':''})
+                    R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, headers=headers, proxies={'http':''})
                 if R is None:
                     # Try another aggregator
                     self.logger.writeWarning("No response from aggregator {}".format(self.aggregator))

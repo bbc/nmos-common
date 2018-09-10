@@ -159,7 +159,7 @@ class TestMDNSUpdater(unittest.TestCase):
         UUT.mdns.update.assert_not_called()
 
     def test_update_mdns(self):
-        """A call to MDNSUpdater.update_mdns when P2P is enabled ought to call mdns.update to increment version numbers for devices. Device 
+        """A call to MDNSUpdater.update_mdns when P2P is enabled ought to call mdns.update to increment version numbers for devices. Device
         version numbers should be 8-bit integers which roll over to 0 when incremented beyond the limits of 1 byte."""
         mappings = {"device": "ver_dvc", "flow": "ver_flw", "source": "ver_src", "sender":"ver_snd", "receiver":"ver_rcv", "self":"ver_slf"}
         mdnstype = "_nmos-node._tcp"
@@ -211,7 +211,7 @@ class TestAggregator(unittest.TestCase):
 #        self.mocks['nmoscommon.aggregator.Logger'].return_value.writeDebug.side_effect = printmsg("DEBUG")
 #        self.mocks['nmoscommon.aggregator.Logger'].return_value.writeError.side_effect = printmsg("ERROR")
 #        self.mocks['nmoscommon.aggregator.Logger'].return_value.writeFatal.side_effect = printmsg("FATAL")
-    
+
     def test_init(self):
         """Test a call to Aggregator()"""
         self.mocks['gevent.spawn'].side_effect = lambda f : mock.MagicMock(thread_function=f)
@@ -299,7 +299,7 @@ class TestAggregator(unittest.TestCase):
     def test_heartbeat_registers(self):
         """The heartbeat thread should trigger a registration of the node if the node is not yet registered when it is run."""
         a = Aggregator(mdns_updater=mock.MagicMock())
-        a._registered["registered"] = False        
+        a._registered["registered"] = False
 
         def killloop(*args, **kwargs):
             a._running = False
@@ -879,7 +879,7 @@ class TestAggregator(unittest.TestCase):
     SEND_ITERATION_2              = 6
     SEND_TOO_MANY_RETRIES         = 7
 
-    def assert_send_runs_correctly(self, method, url, data=None, to_point=SEND_ITERATION_0, initial_aggregator="", aggregator_urls=["http://example0.com/aggregator/", "http://example1.com/aggregator/", "http://example2.com/aggregator/"], request=None, expected_return=None, expected_exception=None, prefer_ipv6=False):
+    def assert_send_runs_correctly(self, method, url, data=None, headers=None, to_point=SEND_ITERATION_0, initial_aggregator="", aggregator_urls=["http://example0.com/aggregator/", "http://example1.com/aggregator/", "http://example2.com/aggregator/"], request=None, expected_return=None, expected_exception=None, prefer_ipv6=False):
         """This method checks that the SEND routine runs through its state machine as expected:
 
         The states are:
@@ -921,23 +921,23 @@ class TestAggregator(unittest.TestCase):
         expected_request_calls = []
         if to_point >= self.SEND_ITERATION_0:
             if not prefer_ipv6:
-                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[0], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, timeout=1.0))
+                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[0], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0))
             else:
-                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[0], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, timeout=1.0, proxies={'http':''}))
+                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[0], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0, proxies={'http':''}))
         if to_point > self.SEND_ITERATION_0:
             expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE))
         if to_point >= self.SEND_ITERATION_1:
             if not prefer_ipv6:
-                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[1], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, timeout=1.0))
+                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[1], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0))
             else:
-                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[1], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, timeout=1.0, proxies={'http':''}))
+                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[1], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0, proxies={'http':''}))
         if to_point > self.SEND_ITERATION_1:
             expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE))
         if to_point >= self.SEND_ITERATION_2:
             if not prefer_ipv6:
-                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[2], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, timeout=1.0))
+                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[2], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0))
             else:
-                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[2], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, timeout=1.0, proxies={'http':''}))
+                expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[2], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0, proxies={'http':''}))
         if to_point > self.SEND_ITERATION_2:
             expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE))
 
@@ -984,7 +984,7 @@ class TestAggregator(unittest.TestCase):
                      "dummy2" : [ "dummy3", "dummy4" ] }
         def request(*args, **kwargs):
             return mock.MagicMock(status_code = 204)
-        self.assert_send_runs_correctly("PUT", "/dummy/url", data=data, to_point=self.SEND_ITERATION_0, request=request, expected_return=None)
+        self.assert_send_runs_correctly("PUT", "/dummy/url", data=data, headers={"Content-Type": "application/json"}, to_point=self.SEND_ITERATION_0, request=request, expected_return=None)
 
     def test_send_get_which_returns_200_returns_content(self):
         """If the first attempt at sending gives a 200 success then the SEND method will return normally with a body."""

@@ -1,4 +1,4 @@
-@Library("rd-apmm-groovy-ci-library@v1.x") _
+@Library("rd-apmm-groovy-ci-library@simonra-vagrant-port-finder") _
 
 /*
  Runs the following steps in parallel and reports results to GitHub:
@@ -31,6 +31,7 @@ pipeline {
     environment {
         http_proxy = "http://www-cache.rd.bbc.co.uk:8080"
         https_proxy = "http://www-cache.rd.bbc.co.uk:8080"
+        NMOS_RI_COMMON_BRANCH = "${env.BRANCH_NAME}"
     }
 <<<<<<< dd81b9f17aee5a1d85c4afc3689877caa0ded8b5
     stages {
@@ -351,36 +352,31 @@ pipeline {
                                 expression { params.INTEGRATION_TEST }
                             }
                             stages{
-                                stage ("Clone Down Joint RI"){
+                                stage ("Start Test Environment") {
                                     steps{
-					                    sh 'rm -r nmos-joint-ri || :'
+                                        sh 'rm -r nmos-joint-ri || :'
                                         withBBCGithubSSHAgent{
                                             sh 'git clone -b simonra-integration-testing git@github.com:bbc/nmos-joint-ri.git'
                                         }
-                                    }
-                                }
-                                stage ("Clean Environment") {
-                                    when {
-                                        expression { return params.DESTROY_VAGRANT }
-                                    }
-                                    steps{
-                                        sh './pipelineScripts/vagrantDestroy.sh'
-                                    }
-                                }
-                                stage ("Start Vagrant VMs") {
-                                    steps{
-					                    sh './pipelineScripts/vagrantUp.sh'
+                                        dir ('nmos-joint-ri/vagrant') {
+					                        sh 'vagrant up --provision'
+                                        }
                                     }
                                 }
                                 stage ("Run Integration Tests") {
                                     steps{
-                                        sh './pipelineSCripts/runIntegrationTests.py'
+                                        dir ('nmos-joint-ri') {
+                                            bbcVagrantFindPorts(vagrantDir: "vagrant")
+                                            sh 'python3 -m unittest discover'
+                                        }
                                     }
                                 }
                             }
                             post{
                                 always{
-                                    sh './pipelineScripts/vagrantDestroy.sh'
+                                    dir ('nmos-joint-ri/vagrant') {
+                                        sh 'vagrant destroy -f'
+                                    }
                                 }
                             }
                         }

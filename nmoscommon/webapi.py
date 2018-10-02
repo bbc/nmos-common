@@ -651,10 +651,10 @@ class WebAPI(object):
                 response = {
                     'code': e.code,
                     'error': e.description,
-                    'debug': {
+                    'debug': str({
                         'traceback': [str(x) for x in traceback.extract_tb(tb)],
                         'exception': [str(x) for x in traceback.format_exception_only(t, v)]
-                    }
+                    })
                 }
 
                 return IppResponse(json.dumps(response), status=e.code, mimetype='application/json')
@@ -662,10 +662,10 @@ class WebAPI(object):
             response = {
                 'code': 500,
                 'error': 'Internal Error',
-                'debug': {
+                'debug': str({
                     'traceback': [str(x) for x in traceback.extract_tb(tb)],
                     'exception': [str(x) for x in traceback.format_exception_only(t, v)]
-                }
+                })
             }
 
             return IppResponse(json.dumps(response), status=500, mimetype='application/json')

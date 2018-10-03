@@ -100,7 +100,7 @@ pipeline {
                                             sh 'git clone -b simonra-integration-testing git@github.com:bbc/nmos-joint-ri.git'	
                                         }	
                                         dir ('nmos-joint-ri/vagrant') {	
-					                        sh 'vagrant up --provision'	
+                                            sh 'vagrant up --provision'	
                                         }	
                                     }	
                                 }	

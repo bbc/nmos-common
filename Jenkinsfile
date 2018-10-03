@@ -1,4 +1,4 @@
-@Library("rd-apmm-groovy-ci-library@simonra-vagrant-port-finder") _
+@Library("rd-apmm-groovy-ci-library@v1.x") _
 
 /*
  Runs the following steps in parallel and reports results to GitHub:

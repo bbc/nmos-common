@@ -127,7 +127,8 @@ packages_required = [
     "ujson>=1.33",
     "wsaccel>=0.6.2",
     "mediatimestamp>=1.0.1",
-    "mediajson>=1.0.0"
+    "mediajson>=1.0.0",
+    "zeroconf<=0.19.0"  # Version locked to preserve Python 2 compatibility
 ]
 
 # Check if setuptools is recent enough to recognise python_version syntax

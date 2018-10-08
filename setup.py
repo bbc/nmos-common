@@ -127,8 +127,7 @@ packages_required = [
     "ujson>=1.33",
     "wsaccel>=0.6.2",
     "mediatimestamp>=1.0.1",
-    "mediajson>=1.0.0",
-    "zeroconf<=0.19.0"  # Version locked to preserve Python 2 compatibility
+    "mediajson>=1.0.0"
 ]
 
 # Check if setuptools is recent enough to recognise python_version syntax
@@ -137,8 +136,13 @@ if int(setuptools.__version__.split(".", 1)[0]) < 18:
     # Check python version using legacy mechanism
     if sys.version_info[0:2] < (3, 0):
         packages_required.append("pybonjour>=1.1.1")
+        packages_required.append("zeroconf<=0.19.1")  # Version locked to preserve Python 2 compatibility
+    else:
+        packages_required.append("zeroconf>=0.21.0")
 else:
     packages_required.append("pybonjour>=1.1.1;python_version<'3.0'")
+    packages_required.append("zeroconf==0.19.1;python_version<'3.0'")
+    packages_required.append("zeroconf>=0.21.0;python_version>='3.0'")
 
 # The following are included only as the package fails to download from pip
 deps_required = [

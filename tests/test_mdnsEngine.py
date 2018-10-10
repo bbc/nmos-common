@@ -103,7 +103,7 @@ class TestDNSListener(unittest.TestCase):
             self.dut.subscriptions.append(MagicMock())
             self.dut.subscriptions[i].close = mocks[i]
         self.dut._close_all_subscriptions()
-        for i in range(0,5):
+        for i in range(0, 5):
             self.assertTrue(mocks[i].called)
         self.assertEqual(self.dut.subscriptions, [])
 
@@ -186,5 +186,3 @@ class TestDNSListener(unittest.TestCase):
         self.dut.advertisedServices = {"type": {"name": "info", "name2": "info2"}}
         self.dut._remove_registration_from_advertised_services("type", "name")
         self.assertDictEqual(self.dut.advertisedServices, {"type": {"name2": "info2"}})
-
-    

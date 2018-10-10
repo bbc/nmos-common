@@ -16,7 +16,7 @@ class MDNSAdvertisementCallbackHandler(object):
         if self.callback is not None:
             self.callback(self._buildMessage("failed"))
 
-    def _buildMessage(self, action):    
+    def _buildMessage(self, action):
         return {
                 "action": action,
                 "name": self.registration.name,

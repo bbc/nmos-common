@@ -9,19 +9,26 @@ class DNSListener(object):
         self.logger = Logger("zeroconf mDNS")
         self.callback = callbackMethod
         self.registerOnly = registerOnly
+        self.records = {}
+        self.nameMap = {}
 
     def add_service(self, zeroconf, type, name):
         action = "add"
-        self._respondToClient(zeroconf, type, name, action)
+        info = zeroconf.get_service_info(type, name)
+        try:
+            self.records[type][name] = info
+        except KeyError:
+            self.records[type] = {}
+            self.records[type][name] = info
+        self._respondToClient(zeroconf, type, name, action, info)
 
     def remove_service(self, zeroconf, type, name):
-        # Called when a new mDNS service is discovered
+        info = self.records[type].pop(name)
         if not self.registerOnly:
             action = "remove"
-            self._respondToClient(zeroconf, type, name, action)
+            self._respondToClient(zeroconf, type, name, action, info)
 
-    def _respondToClient(self, zeroconf, type, name, action):
-        info = zeroconf.get_service_info(type, name)
+    def _respondToClient(self, zeroconf, type, name, action, info):
         callbackData = self._buildClientCallback(action, info)
         self.logger.writeDebug("mDNS Service {}: {}".format(action, callbackData))
         self.callback(callbackData)

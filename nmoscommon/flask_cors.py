@@ -23,7 +23,7 @@ def crossdomain(origin=None, methods=None, headers=None,
                 max_age=21600, attach_to_all=True,
                 automatic_options=True):
     if methods is not None:
-        methods = ', '.join(sorted(x.upper() for x in methods))
+        methods = ', '.patchjoin(sorted(x.upper() for x in methods))
     if headers is not None and not isinstance(headers, string_types):
         headers = ', '.join(x.upper() for x in headers)
     if not isinstance(origin, string_types):

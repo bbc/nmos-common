@@ -21,13 +21,6 @@ class TestDNSListener(unittest.TestCase):
             "port": 12345
         }
 
-    """Check that stopping the Class stops zeroconf"""
-    def test_stop(self):
-        stop = MagicMock()
-        self.dut.zeroconf.close = stop
-        self.dut.stop()
-        self.assertTrue(stop.called)
-
     """Check that .local. is appended to the reg type"""
     def test_using_correct_regtype(self):
         callback = MagicMock()
@@ -186,3 +179,7 @@ class TestDNSListener(unittest.TestCase):
         self.dut.advertisedServices = {"type": {"name": "info", "name2": "info2"}}
         self.dut._remove_registration_from_advertised_services("type", "name")
         self.assertDictEqual(self.dut.advertisedServices, {"type": {"name2": "info2"}})
+
+
+if __name__ == "__main__":
+    unittest.main()

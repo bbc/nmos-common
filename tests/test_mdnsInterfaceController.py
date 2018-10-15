@@ -79,7 +79,7 @@ class TestMDNSInterfaceController(unittest.TestCase):
 
         self.dut.addInterface = MagicMock(side_effect=range(0, 5))
         actual = self.dut.getInterfaces(["a", "b", "c", "d", "e"])
-        self.assertEqual(actual, range(0, 5))
+        self.assertEqual(actual, list(range(0, 5)))
 
     """Test the class shuts all its interfaces correctly"""
     def test_close(self):

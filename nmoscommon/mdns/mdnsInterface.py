@@ -35,5 +35,11 @@ class MDNSInterface(object):
             self.logger.writeError(msg)
             raise InterfaceNotFoundException(msg)
 
+    def registerService(self, info):
+        self.zeroconf.register_service(info)
+
+    def unregisterService(self, info):
+        self.zeroconf.unregister_service(info)
+
     def close(self):
         self.zeroconf.close()

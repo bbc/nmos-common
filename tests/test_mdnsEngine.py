@@ -17,8 +17,8 @@
 import unittest
 import zeroconf
 from nmoscommon.mdns import MDNSEngine
-from nmoscommon.mdns.mdnsExceptions import ServiceAlreadyExistsException
-from mock import MagicMock
+from nmoscommon.mdns.mdnsExceptions import ServiceAlreadyExistsException, InterfaceNotFoundException
+from mock import MagicMock, patch
 
 
 class TestMDNSEngine(unittest.TestCase):
@@ -59,6 +59,18 @@ class TestMDNSEngine(unittest.TestCase):
         callbackHandler = self._helper_build_callback_handler()
         self.dut._add_registration_handle_errors(MagicMock(), callbackHandler)
         self.assertTrue(callbackHandler.entryEstablished.called)
+
+    def test_catch_interface_exception(self):
+        with patch('nmoscommon.mdns.mdnsEngine.MDNSRegistration'):
+            with patch('nmoscommon.mdns.mdnsEngine.MDNSAdvertisementCallbackHandler') as callbackHandler:
+                callback = callbackHandler.return_value = MagicMock()
+                self.dut._add_registration_handle_errors = MagicMock()
+                callback.entryFailed = MagicMock()
+                self.dut.interfaceController = MagicMock()
+                self.dut.interfaceController.getInterfaces = MagicMock()
+                self.dut.interfaceController.getInterfaces.side_effect = InterfaceNotFoundException
+                self.dut.register(None, None, None, None)
+                self.assertTrue(callback.entryFailed.called)
 
 
 if __name__ == "__main__":

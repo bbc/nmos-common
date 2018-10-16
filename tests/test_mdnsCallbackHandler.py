@@ -24,20 +24,26 @@ class TestMDNSCallbackHandler(unittest.TestCase):
 
     def setUp(self):
         self.callback = MagicMock()
-        self.reg = MagicMock()
-        self.reg.name = "testName"
-        self.reg.regtype = "_nmos-test_tcp"
-        self.reg.port = 8080,
-        self.reg.txtRecord = {}
-        self.dut = MDNSAdvertisementCallbackHandler(self.callback, self.reg)
+        self.dut = MagicMock()
+        self.name = "testName"
+        self.regtype = "_nmos-test_tcp"
+        self.port = 8080,
+        self.txtRecord = {}
+        self.dut = MDNSAdvertisementCallbackHandler(
+            self.callback,
+            self.regtype,
+            self.name,
+            self.port,
+            self.txtRecord
+        )
 
     def build_expected(self, action):
         return {
             "action": action,
-            "name": self.reg.name,
-            "regtype": self.reg.regtype,
-            "port": self.reg.port,
-            "txtRecord": self.reg.txtRecord
+            "name": self.name,
+            "regtype": self.regtype,
+            "port": self.port,
+            "txtRecord": self.txtRecord
             }
 
     def check_callback_test(self, action):
@@ -55,7 +61,7 @@ class TestMDNSCallbackHandler(unittest.TestCase):
         self.check_callback_test("failed")
 
     def test_established(self):
-        self.dut.entryEstablisted()
+        self.dut.entryEstablished()
         self.check_callback_test("established")
 
 

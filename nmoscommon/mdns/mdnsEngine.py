@@ -19,7 +19,7 @@ from nmoscommon.logger import Logger
 from .dnsListener import DNSListener
 from .mdnsCallbackHandler import MDNSAdvertisementCallbackHandler
 from .mdnsRegistration import MDNSRegistration
-from .mdnsExceptions import ServiceAlreadyExistsException
+from .mdnsExceptions import ServiceAlreadyExistsException, InterfaceNotFoundException
 from .mdnsInterfaceController import MDNSInterfaceController
 from .mdnsRegistrationController import MDNSRegistrationController
 from .mdnsSubscriptionController import MDNSSubscriptionController
@@ -45,11 +45,15 @@ class MDNSEngine(object):
         pass
 
     def register(self, name, regtype, port, txtRecord="", callback=None, interfaceIps=None):
+        callbackHandler = MDNSAdvertisementCallbackHandler(callback, regtype, name, port, txtRecord)
         if not interfaceIps:
             interfaceIps = []
-        interfaces = self.interfaceController.getInterfaces(interfaceIps)
+        try:
+            interfaces = self.interfaceController.getInterfaces(interfaceIps)
+        except InterfaceNotFoundException:
+            callbackHandler.entryFailed()
+            return
         registration = MDNSRegistration(interfaces, name, regtype, port, txtRecord)
-        callbackHandler = MDNSAdvertisementCallbackHandler(callback, registration)
         self._add_registration_handle_errors(registration, callbackHandler)
 
     def _add_registration_handle_errors(self, registration, callbackHandler):
@@ -66,7 +70,7 @@ class MDNSEngine(object):
 
     def update(self, name, regtype, txtRecord=None):
         self.unregister(name, regtype)
-        self.register(name, type, txtRecord=txtRecord)
+        self.register(name, regtype, txtRecord=txtRecord)
 
     def unregister(self, name, regType):
         self.registrationController.removeRegistration(name, regType)

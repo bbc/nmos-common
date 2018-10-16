@@ -46,8 +46,8 @@ class TestMDNSCallbackHandler(unittest.TestCase):
         actual = argv[0]
         self.assertDictEqual(actual, expected)
 
-    def test_colission(self):
-        self.dut.entryColission()
+    def test_collision(self):
+        self.dut.entryCollision()
         self.check_callback_test("collision")
 
     def test_failed(self):

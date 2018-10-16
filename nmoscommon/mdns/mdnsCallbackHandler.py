@@ -21,7 +21,7 @@ class MDNSAdvertisementCallbackHandler(object):
         self.callback = callback
         self.registration = registration
 
-    def entryColission(self):
+    def entryCollision(self):
         if self.callback is not None:
             self.callback(self._buildMessage("collision"))
 

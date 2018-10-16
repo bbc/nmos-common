@@ -26,7 +26,7 @@ class TestMDNSCallbackHandler(unittest.TestCase):
         self.callback = MagicMock()
         self.dut = MagicMock()
         self.name = "testName"
-        self.regtype = "_nmos-test_tcp"
+        self.regtype = "_nmos-test._tcp"
         self.port = 8080,
         self.txtRecord = {}
         self.dut = MDNSAdvertisementCallbackHandler(

@@ -24,7 +24,7 @@ class TestMDNSEngine(unittest.TestCase):
 
     def setUp(self):
         self.name = "testName"
-        self.regType = "_nmos-test_tcp"
+        self.regType = "_nmos-test._tcp"
         self.port = 8080,
         self.txtRecord = {}
         self.interface = self.build_mock_interface()

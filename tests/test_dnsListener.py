@@ -28,7 +28,7 @@ class TestDNDListener(unittest.TestCase):
         self.address = "192.168.0.1"
         self.port = 8080
         self.txt = {}
-        self.type = "nmos-test_tcp.local."
+        self.type = "nmos-test._tcp.local."
         self.name = "name_" + self.type
 
     def helper_build_info(self):

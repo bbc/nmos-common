@@ -50,6 +50,7 @@ class MDNSRegistration(object):
         else:
             nameList = {}
             for interface in self.interfaces:
+                # Zeroconf cannot deal with "." in names, so have to replace with dashes
                 noDotIp = interface.ip.replace(".", "-")
                 nameList[interface.ip] = self.name + "_{}".format(noDotIp)
             return nameList

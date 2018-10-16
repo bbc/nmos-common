@@ -75,7 +75,7 @@ class MDNSEngine(object):
     def unregister(self, name, regType):
         self.registrationController.removeRegistration(name, regType)
 
-    def callback_on_services(self, regtype, callback, registerOnly=False, domain=None):
+    def callback_on_services(self, regtype, callback, registerOnly=True, domain=None):
         listener = DNSListener(callback, registerOnly)
         self.subscriptionController.addSubscription(listener, regtype)
 

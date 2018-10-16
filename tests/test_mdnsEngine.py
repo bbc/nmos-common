@@ -53,12 +53,12 @@ class TestMDNSEngine(unittest.TestCase):
         thrower.side_effect = zeroconf.Error
         callbackHandler = self._helper_build_callback_handler()
         self.dut._add_registration_handle_errors(MagicMock(), callbackHandler)
-        self.assertTrue(callbackHandler.entryCollision.entryFailed)
+        self.assertTrue(callbackHandler.entryFailed.called)
 
     def test_add_registration_handle_errors_ok(self):
         callbackHandler = self._helper_build_callback_handler()
         self.dut._add_registration_handle_errors(MagicMock(), callbackHandler)
-        self.assertTrue(callbackHandler.entryCollision.entryEstablished)
+        self.assertTrue(callbackHandler.entryEstablished.called)
 
 
 if __name__ == "__main__":

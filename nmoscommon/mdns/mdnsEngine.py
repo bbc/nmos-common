@@ -62,7 +62,7 @@ class MDNSEngine(object):
         except zeroconf.Error as e:
             callbackHandler.entryFailed()
         else:
-            callbackHandler.entryEstablisted()
+            callbackHandler.entryEstablished()
 
     def update(self, name, regtype, txtRecord=None):
         self.unregister(name, regtype)

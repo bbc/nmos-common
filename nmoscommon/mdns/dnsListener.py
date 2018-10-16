@@ -35,15 +35,15 @@ class DNSListener(object):
         except KeyError:
             self.records[type] = {}
             self.records[type][name] = info
-        self._respondToClient(type, name, action, info)
+        self._respondToClient(name, action, info)
 
     def remove_service(self, zeroconf, type, name):
         info = self.records[type].pop(name)
         if not self.registerOnly:
             action = "remove"
-            self._respondToClient(type, name, action, info)
+            self._respondToClient(name, action, info)
 
-    def _respondToClient(self, type, name, action, info):
+    def _respondToClient(self, name, action, info):
         callbackData = self._buildClientCallback(action, info)
         self.logger.writeDebug("mDNS Service {}: {}".format(action, callbackData))
         self.callback(callbackData)

@@ -17,7 +17,7 @@
 import unittest
 from mock import MagicMock
 from nmoscommon.mdns.mdnsRegistrationController import MDNSRegistrationController
-from nmoscommon.mdns.mdnsExceptions import ServiceAlreadyExistsException
+from nmoscommon.mdns.mdnsExceptions import ServiceAlreadyExistsException, ServiceNotFoundException
 
 
 class TestMDNSRegistrationController(unittest.TestCase):
@@ -57,6 +57,11 @@ class TestMDNSRegistrationController(unittest.TestCase):
         self.dut.removeRegistration(self.regName, self.regType)
         self.assertDictEqual(self.dut.registrations, {})
         self.assertTrue(registration.close.called)
+
+    """Controller should raise an exception if asked to remove a non-existant reigstration"""
+    def test_bad_remove_not_found_exception(self):
+        with self.assertRaises(ServiceNotFoundException):
+            self.dut.removeRegistration("not", "here")
 
     """Test closing down the controller"""
     def test_close(self):

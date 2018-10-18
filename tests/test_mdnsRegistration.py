@@ -20,7 +20,7 @@ from mock import MagicMock, patch
 from socket import inet_aton
 
 
-class TestMDNSEngine(unittest.TestCase):
+class TestMDNSRegistration(unittest.TestCase):
 
     def setUp(self):
         self.name = "testName"
@@ -31,7 +31,7 @@ class TestMDNSEngine(unittest.TestCase):
         self.dut = self.build_dut()
 
     def build_dut(self):
-        dut =  MDNSRegistration(
+        dut = MDNSRegistration(
             [self.interface],
             self.name,
             self.regType,
@@ -39,7 +39,7 @@ class TestMDNSEngine(unittest.TestCase):
             self.txtRecord
         )
         dut.info = {"192.168.0.5": "testInfo"}
-
+        return dut
 
     def build_mock_interface(self):
         interface = MagicMock()
@@ -95,7 +95,7 @@ class TestMDNSEngine(unittest.TestCase):
         self.assertTrue(self.dut.interfaces[0].unregisterService.called)
         expected = "info"
         actual = self.dut.interfaces[0].unregisterService.call_args
-        print self.assertEqual(actual[0][0], expected)
+        self.assertEqual(actual[0][0], expected)
 
     def test_update_name(self):
         self.dut.update(name="main")
@@ -106,12 +106,13 @@ class TestMDNSEngine(unittest.TestCase):
         self.assertEqual(self.dut.port, 999)
 
     def test_update_type(self):
-        self.dut.update(regtype="newtype")
-        self.assertEqual(self.dut.type, "newtype")
+        self.dut.update(regtype="_newtype._tcp")
+        self.assertEqual(self.dut.regtype, "_newtype._tcp")
 
     def test_update_txt(self):
         self.dut.update(txtRecord={"text": "yes"})
         self.assertEqual(self.dut.txtRecord, {"text": "yes"})
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -19,7 +19,7 @@ from nmoscommon.logger import Logger
 from .dnsListener import DNSListener
 from .mdnsCallbackHandler import MDNSAdvertisementCallbackHandler
 from .mdnsRegistration import MDNSRegistration
-from .mdnsExceptions import ServiceAlreadyExistsException, InterfaceNotFoundException
+from .mdnsExceptions import ServiceAlreadyExistsException, InterfaceNotFoundException, ServiceNotFoundException
 from .mdnsInterfaceController import MDNSInterfaceController
 from .mdnsRegistrationController import MDNSRegistrationController
 from .mdnsSubscriptionController import MDNSSubscriptionController
@@ -80,8 +80,12 @@ class MDNSEngine(object):
 
     def update(self, name, regtype, txtRecord=None):
         self._autostart_if_required()
-        self.unregister(name, regtype)
-        self.register(name, regtype, txtRecord=txtRecord)
+        try:
+            registration = self.registrationController[regtype][name]
+        except KeyError:
+            self.logger.writeError("Could not update registraton type: {} with name {} - registration not found".format(regtype, name))
+            raise ServiceNotFoundException
+        registration.update(name=name, regtype=regtype, txtRecord=txtRecord)
 
     def unregister(self, name, regType):
         self._autostart_if_required()

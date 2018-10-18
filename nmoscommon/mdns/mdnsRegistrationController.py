@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .mdnsExceptions import ServiceAlreadyExistsException
+from .mdnsExceptions import ServiceAlreadyExistsException, ServiceNotFoundException
 
 
 class MDNSRegistrationController(object):
@@ -34,7 +34,10 @@ class MDNSRegistrationController(object):
         registration.register()
 
     def removeRegistration(self, name, regtype):
-        self.registrations[regtype].pop(name).close()
+        try:
+            self.registrations[regtype].pop(name).close()
+        except KeyError:
+            raise ServiceNotFoundException
         if self.registrations[regtype] == {}:
             self.registrations.pop(regtype)
 

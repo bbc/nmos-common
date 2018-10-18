@@ -8,3 +8,7 @@ class ServiceNotFoundException(Exception):
 
 class InterfaceNotFoundException(Exception):
     pass
+
+
+class RegistrationNotFoundException(Exception):
+    pass

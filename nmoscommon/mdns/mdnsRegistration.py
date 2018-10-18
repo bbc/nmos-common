@@ -16,6 +16,7 @@
 
 from zeroconf import ServiceInfo
 from socket import inet_aton
+import time
 
 
 class MDNSRegistration(object):
@@ -54,6 +55,7 @@ class MDNSRegistration(object):
         if self.txtRecord is not None:
             self.txtRecord = txtRecord
         self.unRegister()
+        time.sleep(1)  # Seems to fail without this sometimes :(
         self.register()
 
     def _makeNamesUnique(self):

@@ -35,7 +35,7 @@ class MDNSRegistrationController(object):
 
     def removeRegistration(self, name, regtype):
         try:
-            self.registrations[regtype].pop(name).close()
+            self.registrations[regtype].pop(name).unRegister()
         except KeyError:
             raise ServiceNotFoundException
         if self.registrations[regtype] == {}:

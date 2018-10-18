@@ -32,7 +32,7 @@ class TestMDNSRegistrationController(unittest.TestCase):
         registration.name = self.regName
         registration.regtype = self.regType
         registration.register = MagicMock()
-        registration.close = MagicMock()
+        registration.unRegister = MagicMock()
         return registration
 
     """Test adding registrations to the controller"""
@@ -56,7 +56,7 @@ class TestMDNSRegistrationController(unittest.TestCase):
         self.dut.registrations[self.regType][self.regName] = registration
         self.dut.removeRegistration(self.regName, self.regType)
         self.assertDictEqual(self.dut.registrations, {})
-        self.assertTrue(registration.close.called)
+        self.assertTrue(registration.unRegister.called)
 
     """Controller should raise an exception if asked to remove a non-existant reigstration"""
     def test_bad_remove_not_found_exception(self):

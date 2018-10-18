@@ -81,9 +81,10 @@ class MDNSEngine(object):
     def update(self, name, regtype, txtRecord=None):
         self._autostart_if_required()
         try:
-            registration = self.registrationController[regtype][name]
+            registration = self.registrationController.registrations[regtype][name]
         except KeyError:
-            self.logger.writeError("Could not update registraton type: {} with name {} - registration not found".format(regtype, name))
+            self.logger.writeError("Could not update registraton type: {} with name {}"
+                                   " - registration not found".format(regtype, name))
             raise ServiceNotFoundException
         registration.update(name=name, regtype=regtype, txtRecord=txtRecord)
 
@@ -111,7 +112,7 @@ if __name__ == "__main__":
         "_nmos-query._tcp",
         8080,
         {
-            'pri': '200',
+            'pri': 200,
             'api_ver': 'v1.0',
             'api_proto': 'https'
         },
@@ -119,9 +120,15 @@ if __name__ == "__main__":
         ["172.29.82.49", "172.29.80.118"]
     )
     try:
-        input("Press enter to exit...\n\n")
+        input("Press enter to update registration...\n\n")
     except Exception:
         pass
     finally:
-        engine.close()
-        engine.stop()
+        engine.update("query_http", "_nmos-query._tcp", {"test": "text"})
+        try:
+            input("Press enter to exit...\n\n")
+        except Exception:
+            pass
+        finally:
+            engine.close()
+            engine.stop()

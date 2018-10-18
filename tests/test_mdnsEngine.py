@@ -18,6 +18,7 @@ import unittest
 import zeroconf
 from nmoscommon.mdns import MDNSEngine
 from nmoscommon.mdns.mdnsExceptions import ServiceAlreadyExistsException, InterfaceNotFoundException
+from nmoscommon.mdns.mdnsExceptions import ServiceNotFoundException
 from mock import MagicMock, patch
 
 
@@ -86,12 +87,33 @@ class TestMDNSEngine(unittest.TestCase):
         )
 
     def test_implicit_start_update(self):
-        with patch('nmoscommon.mdns.mdnsEngine.MDNSRegistrationController') as controller:
+        with patch('nmoscommon.mdns.mdnsEngine.MDNSRegistrationController'):
             self.dut.update(
                 self.name,
                 self.type,
                 txtRecord={}
             )
+
+    def helper_mock_registration_controller(self):
+        registration = MagicMock()
+        registration.update = MagicMock()
+        controller = MagicMock()
+        controller.__getitem__.side_effect = TypeError
+        controller.registrations = {self.type: {self.name: registration}}
+        controller.update = MagicMock()
+        return controller
+
+    def test_update_normal(self):
+        self.dut.start()
+        self.dut.registrationController = self.helper_mock_registration_controller()
+        regMock = self.dut.registrationController.registrations[self.type][self.name]
+        self.dut.update(self.name, self.type, {})
+        self.assertTrue(regMock.update.called)
+
+    def test_update_record_not_found(self):
+        self.dut.start()
+        with self.assertRaises(ServiceNotFoundException):
+            self.dut.update("not", "this")
 
 
 if __name__ == "__main__":

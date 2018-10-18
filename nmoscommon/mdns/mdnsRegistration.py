@@ -17,6 +17,7 @@
 from zeroconf import ServiceInfo
 from socket import inet_aton
 import time
+import six
 
 
 class MDNSRegistration(object):
@@ -48,7 +49,7 @@ class MDNSRegistration(object):
     """TXT record entries must only be strings"""
     def _conformTxtRecord(self, record):
         conformedRecord = {}
-        for key, value in record.iteritems():
+        for key, value in six.iteritems(record):
             conformedRecord[key] = str(value)
         return conformedRecord
 

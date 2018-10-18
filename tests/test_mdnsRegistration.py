@@ -113,6 +113,20 @@ class TestMDNSRegistration(unittest.TestCase):
         self.dut.update(txtRecord={"text": "yes"})
         self.assertEqual(self.dut.txtRecord, {"text": "yes"})
 
+    def test_conform_txt(self):
+        testObject = {
+            "int": 200,
+            "boolean": True,
+            "string": "world"
+        }
+        expected = {
+            "int": "200",
+            "boolean": "True",
+            "string": "world"
+        }
+        actual = self.dut._conformTxtRecord(testObject)
+        self.assertDictEqual(actual, expected)
+
 
 if __name__ == "__main__":
     unittest.main()

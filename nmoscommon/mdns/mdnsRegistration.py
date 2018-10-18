@@ -27,7 +27,7 @@ class MDNSRegistration(object):
         self.name = name.replace(".", "-")
         self.regtype = regtype
         self.port = port
-        self.txtRecord = txtRecord
+        self.txtRecord = self._conformTxtRecord(txtRecord)
         self.interfaces = interfaces
         self.info = {}
 
@@ -45,6 +45,13 @@ class MDNSRegistration(object):
             )
             interface.registerService(self.info[interface.ip])
 
+    """TXT record entries must only be strings"""
+    def _conformTxtRecord(self, record):
+        conformedRecord = {}
+        for key, value in record.iteritems():
+            conformedRecord[key] = str(value)
+        return conformedRecord
+
     def update(self, name=None, regtype=None, port=None, txtRecord=None):
         if name is not None:
             self.name = name
@@ -52,8 +59,8 @@ class MDNSRegistration(object):
             self.regtype = regtype
         if port is not None:
             self.port = port
-        if self.txtRecord is not None:
-            self.txtRecord = txtRecord
+        if txtRecord is not None:
+            self.txtRecord = self._conformTxtRecord(txtRecord)
         self.unRegister()
         time.sleep(1)  # Seems to fail without this sometimes :(
         self.register()

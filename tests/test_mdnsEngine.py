@@ -26,6 +26,9 @@ class TestMDNSEngine(unittest.TestCase):
     def setUp(self):
         self.dut = MDNSEngine()
         self.dut.registrationController = MagicMock()
+        self.name = "192.168.0.1_nmos-node._tcp.local."
+        self.type = "_nmos-node._tcp"
+        self.port = 8080
 
     def _helper_build_callback_handler(self):
         callbackHandler = MagicMock()
@@ -63,6 +66,7 @@ class TestMDNSEngine(unittest.TestCase):
     def test_catch_interface_exception(self):
         with patch('nmoscommon.mdns.mdnsEngine.MDNSRegistration'):
             with patch('nmoscommon.mdns.mdnsEngine.MDNSAdvertisementCallbackHandler') as callbackHandler:
+                self.dut._autostart_if_required = MagicMock()
                 callback = callbackHandler.return_value = MagicMock()
                 self.dut._add_registration_handle_errors = MagicMock()
                 callback.entryFailed = MagicMock()
@@ -71,6 +75,23 @@ class TestMDNSEngine(unittest.TestCase):
                 self.dut.interfaceController.getInterfaces.side_effect = InterfaceNotFoundException
                 self.dut.register(None, None, None, None)
                 self.assertTrue(callback.entryFailed.called)
+
+    """The class should roll with it if not explicitly started before registering"""
+    def test_implicit_start_register(self):
+        self.dut.register(
+            self.name,
+            self.type,
+            self.port,
+            {}
+        )
+
+    def test_implicit_start_update(self):
+        with patch('nmoscommon.mdns.mdnsEngine.MDNSRegistrationController') as controller:
+            self.dut.update(
+                self.name,
+                self.type,
+                txtRecord={}
+            )
 
 
 if __name__ == "__main__":

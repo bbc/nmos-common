@@ -44,6 +44,18 @@ class MDNSRegistration(object):
             )
             interface.registerService(self.info[interface.ip])
 
+    def update(self, name=None, regtype=None, port=None, txtRecord=None):
+        if name is not None:
+            self.name = name
+        if regtype is not None:
+            self.regtype = regtype
+        if port is not None:
+            self.port = port
+        if self.txtRecord is not None:
+            self.txtRecord = txtRecord
+        self.unRegister()
+        self.register()
+
     def _makeNamesUnique(self):
         if len(self.interfaces) == 1:
             return {self.interfaces[0].ip: self.name}

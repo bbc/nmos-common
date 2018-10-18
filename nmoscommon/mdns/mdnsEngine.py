@@ -27,11 +27,15 @@ from .mdnsSubscriptionController import MDNSSubscriptionController
 
 class MDNSEngine(object):
 
+    def __init__(self):
+        self.running = False
+
     def start(self):
         self.subscriptionController = MDNSSubscriptionController()
         self.registrationController = MDNSRegistrationController()
         self.interfaceController = MDNSInterfaceController()
         self.logger = Logger('mdns-engine')
+        self.running = True
 
     def stop(self):
         self.close()
@@ -40,11 +44,17 @@ class MDNSEngine(object):
         self.subscriptionController.close()
         self.registrationController.close()
         self.interfaceController.close()
+        self.running = False
 
     def run(self):
         pass
 
+    def _autostart_if_required(self):
+        if not self.running:
+            self.start()
+
     def register(self, name, regtype, port, txtRecord="", callback=None, interfaceIps=None):
+        self._autostart_if_required()
         callbackHandler = MDNSAdvertisementCallbackHandler(callback, regtype, name, port, txtRecord)
         if not interfaceIps:
             interfaceIps = []
@@ -63,19 +73,22 @@ class MDNSEngine(object):
             callbackHandler.entryCollision()
         except ServiceAlreadyExistsException:
             callbackHandler.entryCollision()
-        except zeroconf.Error as e:
+        except zeroconf.Error:
             callbackHandler.entryFailed()
         else:
             callbackHandler.entryEstablished()
 
     def update(self, name, regtype, txtRecord=None):
+        self._autostart_if_required()
         self.unregister(name, regtype)
         self.register(name, regtype, txtRecord=txtRecord)
 
     def unregister(self, name, regType):
+        self._autostart_if_required()
         self.registrationController.removeRegistration(name, regType)
 
     def callback_on_services(self, regtype, callback, registerOnly=True, domain=None):
+        self._autostart_if_required()
         listener = DNSListener(callback, registerOnly)
         self.subscriptionController.addSubscription(listener, regtype)
 

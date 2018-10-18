@@ -31,13 +31,15 @@ class TestMDNSEngine(unittest.TestCase):
         self.dut = self.build_dut()
 
     def build_dut(self):
-        return MDNSRegistration(
+        dut =  MDNSRegistration(
             [self.interface],
             self.name,
             self.regType,
             self.port,
             self.txtRecord
         )
+        dut.info = {"192.168.0.5": "testInfo"}
+
 
     def build_mock_interface(self):
         interface = MagicMock()
@@ -87,6 +89,29 @@ class TestMDNSEngine(unittest.TestCase):
         }
         self.assertEqual(actual, expected)
 
+    def test_unregiester_on_update(self):
+        self.dut.info = {"192.168.0.5": "info"}
+        self.dut.update(port=999)
+        self.assertTrue(self.dut.interfaces[0].unregisterService.called)
+        expected = "info"
+        actual = self.dut.interfaces[0].unregisterService.call_args
+        print self.assertEqual(actual[0][0], expected)
+
+    def test_update_name(self):
+        self.dut.update(name="main")
+        self.assertEqual(self.dut.name, "main")
+
+    def test_update_port(self):
+        self.dut.update(port=999)
+        self.assertEqual(self.dut.port, 999)
+
+    def test_update_type(self):
+        self.dut.update(regtype="newtype")
+        self.assertEqual(self.dut.type, "newtype")
+
+    def test_update_txt(self):
+        self.dut.update(txtRecord={"text": "yes"})
+        self.assertEqual(self.dut.txtRecord, {"text": "yes"})
 
 if __name__ == "__main__":
     unittest.main()

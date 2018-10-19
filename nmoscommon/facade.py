@@ -209,6 +209,15 @@ class Facade(object):
     def get_node_self(self, api_version="v1.1"):
         return self._call_ipc_method("self_get", api_version)
 
+    def addClock(self, clk_data):
+        self._call_ipc_method("clk_register", clk_data)
+
+    def updateClock(self, clk_data):
+        self._call_ipc_method("clk_update", clk_data)
+
+    def delClock(self, clk_name):
+        self._call_ipc_method("clk_unregister", clk_name)
+
     def debug_message(self, code):
         msg =  {FAC_SUCCESS:"Success!",
                 FAC_EXISTS:"Service already exists",

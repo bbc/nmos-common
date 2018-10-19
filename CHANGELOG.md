@@ -1,5 +1,11 @@
 # NMOS Common Library Changelog
 
+## 0.7.0
+- Add mechanism to register clocks with the Node API via Facade class
+
+## 0.6.9
+- Resolve mismatch with schemas for webapi error responses
+
 ## 0.6.8
 - Resolve issue where interactions of aggregator.py with Registration API
   failed to set Content-Type

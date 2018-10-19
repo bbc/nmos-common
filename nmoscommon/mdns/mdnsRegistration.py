@@ -38,8 +38,8 @@ class MDNSRegistration(object):
         for interface in self.interfaces:
             name = nameList[interface.ip] + "." + self.regtype + ".local."
             self.info[interface.ip] = ServiceInfo(
-                type_=regtype,
-                name=name,
+                regtype,
+                name,
                 port=self.port,
                 properties=self.txtRecord,
                 address=inet_aton(interface.ip)

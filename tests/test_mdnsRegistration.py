@@ -58,14 +58,17 @@ class TestMDNSRegistration(unittest.TestCase):
             self.dut.register()
             self.assertTrue(regFunc.called)
             argv, kwargs = info.call_args
-        expected = {
-            "address": inet_aton(self.interface.ip),
-            "type_": self.regType + '.local.',
-            "name": self.name + "." + self.regType + '.local.',
+        expectedKwargs = {
             "port": self.port,
-            "properties": self.txtRecord
+            "properties": self.txtRecord,
+            "address": inet_aton(self.interface.ip)
         }
-        self.assertDictEqual(expected, kwargs)
+        self.assertDictEqual(expectedKwargs, kwargs)
+        expectedArgv = (
+            self.regType + '.local.',
+            self.name + "." + self.regType + '.local.'
+        )
+        self.assertEqual(argv, expectedArgv)
 
     """Test registrations are removed from the interfaces correctly"""
     def test_unregister(self):

@@ -23,6 +23,10 @@ from .mdnsExceptions import ServiceAlreadyExistsException, InterfaceNotFoundExce
 from .mdnsInterfaceController import MDNSInterfaceController
 from .mdnsRegistrationController import MDNSRegistrationController
 from .mdnsSubscriptionController import MDNSSubscriptionController
+from .mdnsServiceTypeName import service_type_name
+
+# This is required to make the over-long nmos-registratin service name pass vaidation
+zeroconf.service_type_name = service_type_name
 
 
 class MDNSEngine(object):
@@ -73,8 +77,9 @@ class MDNSEngine(object):
             callbackHandler.entryCollision()
         except ServiceAlreadyExistsException:
             callbackHandler.entryCollision()
-        except zeroconf.Error:
+        except zeroconf.Error as e:
             callbackHandler.entryFailed()
+            print(str(e))
         else:
             callbackHandler.entryEstablished()
 
@@ -108,23 +113,23 @@ if __name__ == "__main__":
     engine.start()
     engine.callback_on_services("_nmos-node._tcp", callback)
     engine.register(
-        "query_http",
-        "_nmos-query._tcp",
+        "registration_http",
+        "_nmos-registration._tcp",
         8080,
         {
             'pri': 200,
             'api_ver': 'v1.0',
             'api_proto': 'https'
         },
-        callback
-        # ["172.29.82.49", "172.29.80.118"]
+        callback,
+        ["172.29.82.49", "172.29.80.118", "127.0.0.1"]
     )
     try:
         input("Press enter to update registration...\n\n")
     except Exception:
         pass
     finally:
-        engine.update("query_http", "_nmos-query._tcp", {"test": "text"})
+        engine.update("registration_http", "_nmos-registration._tcp", {"test": "text"})
         try:
             input("Press enter to exit...\n\n")
         except Exception:

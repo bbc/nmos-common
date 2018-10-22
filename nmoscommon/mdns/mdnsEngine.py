@@ -26,7 +26,10 @@ from .mdnsSubscriptionController import MDNSSubscriptionController
 from .mdnsServiceTypeName import service_type_name
 
 # This is required to make the over-long nmos-registratin service name pass vaidation
-zeroconf.service_type_name = service_type_name
+try:
+    zeroconf.service_type_name = service_type_name
+except AttributeError:
+    pass
 
 
 class MDNSEngine(object):

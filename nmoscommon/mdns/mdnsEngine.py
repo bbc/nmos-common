@@ -31,10 +31,10 @@ class MDNSEngine(object):
         self.running = False
 
     def start(self):
+        self.logger = Logger('mdns-engine')
         self.subscriptionController = MDNSSubscriptionController()
         self.registrationController = MDNSRegistrationController()
-        self.interfaceController = MDNSInterfaceController()
-        self.logger = Logger('mdns-engine')
+        self.interfaceController = MDNSInterfaceController(self.logger)
         self.running = True
 
     def stop(self):
@@ -116,8 +116,8 @@ if __name__ == "__main__":
             'api_ver': 'v1.0',
             'api_proto': 'https'
         },
-        callback,
-        ["172.29.82.49", "172.29.80.118"]
+        callback
+        # ["172.29.82.49", "172.29.80.118"]
     )
     try:
         input("Press enter to update registration...\n\n")

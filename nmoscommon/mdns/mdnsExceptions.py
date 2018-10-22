@@ -12,3 +12,7 @@ class InterfaceNotFoundException(Exception):
 
 class RegistrationNotFoundException(Exception):
     pass
+
+
+class NoNetworkInterfacesFoundException(Exception):
+    pass

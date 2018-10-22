@@ -16,25 +16,100 @@
 
 import unittest
 from nmoscommon.mdns.mdnsInterfaceController import MDNSInterfaceController
+from nmoscommon.mdns.mdnsExceptions import NoNetworkInterfacesFoundException
 from mock import MagicMock, patch
 
 
 class TestMDNSInterfaceController(unittest.TestCase):
 
     def setUp(self):
-        self.dut = MDNSInterfaceController()
+        self.logger = MagicMock()
+        self.dut = MDNSInterfaceController(self.logger)
+
+    """Check logic in default interface selection on file based return"""
+    def test_get_default_interfaces_file(self):
+        self.helper_prepare_interface_finders(["192.168.0.5"])
+        self.helper_test_default_interface_logic()
+
+    def test_get_default_interface_routing(self):
+        self.helper_prepare_interface_finders(False, ["192.168.0.5"])
+        self.helper_test_default_interface_logic()
+
+    def test_get_default_interface_gateway(self):
+        self.helper_prepare_interface_finders(False, False, ["192.168.0.5"])
+        self.helper_test_default_interface_logic()
+
+    def test_get_default_interface_none(self):
+        self.helper_prepare_interface_finders(False, False, False)
+        with self.assertRaises(NoNetworkInterfacesFoundException):
+            self.helper_test_default_interface_logic()
+
+    def test_get_default_interface_all(self):
+        self.helper_prepare_interface_finders(False, False, False, ["192.168.0.5"])
+        self.helper_test_default_interface_logic()
+
+    def helper_test_default_interface_logic(self):
+        self.dut.defaultInterfaces = []
+        self.dut._get_default_interfaces()
+        actual = self.dut.defaultInterfaces
+        expected = ["192.168.0.5"]
+        self.assertEqual(actual, expected)
+
+    def helper_prepare_interface_finders(self, file, routing=False, gateway=False, all=False):
+        self.dut._get_default_interface_from_file = MagicMock()
+        self.dut._get_default_interface_from_file.return_value = file
+        self.dut._get_default_interface_from_gateway = MagicMock()
+        self.dut._get_default_interface_from_gateway.return_value = gateway
+        self.dut._get_default_interface_from_routing_rules = MagicMock()
+        self.dut._get_default_interface_from_routing_rules.return_value = routing
+        self.dut._get_all_interfaces = MagicMock()
+        self.dut._get_all_interfaces.return_value = all
+
+        def mockMethod(param):
+            return param
+        self.dut.addInterface = MagicMock()
+        self.dut.addInterface.side_effect = mockMethod
+
+    """Check the controller can fall back to getting all interfaces"""
+    def test_get_default_all_interface(self):
+        with patch('nmoscommon.mdns.mdnsInterfaceController.netifaces') as netifaces:
+            netifaces.ifaddresses = self.helper_netiface_interface()
+            netifaces.AF_INET = 2
+            netifaces.interfaces.return_value = ["eno1", "ens4f0"]
+            expected = ["192.168.0.5", "192.168.0.4"]
+            actual = self.dut._get_all_interfaces()
+            self.assertEqual(actual, expected)
+
+    """Check the controller can use ipphostname to get the local ip"""
+    def test_get_default_interface_from_routing_rule(self):
+        with patch('nmoscommon.mdns.mdnsInterfaceController.ipphostname') as hostname:
+            getFunc = hostname.getLocalIP = MagicMock()
+            getFunc.return_value = "192.168.0.5"
+            with patch('nmoscommon.mdns.mdnsInterfaceController.ippUtilsAvailable') as available:
+                available = True  # noqa: F841
+                expected = ["192.168.0.5"]
+                actual = self.dut._get_default_interface_from_routing_rules()
+                self.assertEqual(actual, expected)
+
+    """Check the controller can use nmoscommonconfig to get the default interface"""
+    def test_get_default_interface_from_file(self):
+        with patch('nmoscommon.mdns.mdnsInterfaceController.netifaces') as netifaces:
+            netifaces.ifaddresses = self.helper_netiface_interface()
+            netifaces.AF_INET = 2
+            with patch('nmoscommon.mdns.mdnsInterfaceController.nmoscommonconfig') as config:
+                config.config = {"interfaces": ["eno1"]}
+                expected = ["192.168.0.5"]
+                actual = self.dut._get_default_interface_from_file()
+                self.assertEqual(actual, expected)
 
     """Check the controller can automatically find the default interface using netifaces"""
-    def test_find_default_interface(self):
+    def test_get_default_interface_from_gateway(self):
         with patch('nmoscommon.mdns.mdnsInterfaceController.netifaces') as netifaces:
-            self.dut.addInterface = MagicMock()
             netifaces.gateways = self.helper_netiface_gateways()
             netifaces.ifaddresses = self.helper_netiface_interface()
             netifaces.AF_INET = 2
-            self.dut.addInterface = MagicMock()
-            self.dut._findDefaultInterface()
-            actual = self.dut.addInterface.call_args[0][0]
-            expected = "192.168.0.5"
+            actual = self.dut._get_default_interface_from_gateway()
+            expected = ["192.168.0.5"]
             self.assertEqual(actual, expected)
 
     def helper_netiface_gateways(self):
@@ -50,11 +125,24 @@ class TestMDNSInterfaceController(unittest.TestCase):
         interfaceMethod = MagicMock()
 
         def mockMethod(interface):
-            returnValue = {17: [{'broadcast': u'ff:ff:ff:ff:ff:ff', 'addr': u'64:51:06:2a:d8:9a'}],
-                           2: [{'broadcast': u'192.168.0.255', 'netmask': u'255.255.255.0', 'addr': u'192.168.0.5'}],
-                           10: [{'netmask': u'ffff:ffff:ffff:ffff::/64', 'addr': u'fe80::6651:6ff:fe2a:d89a%eno1'}]}
+            returnValueEno1 = {17: [{'broadcast': u'ff:ff:ff:ff:ff:ff',
+                                     'addr': u'64:51:06:2a:d8:9a'}],
+                               2: [{'broadcast': u'192.168.0.255',
+                                    'netmask': u'255.255.255.0',
+                                    'addr': u'192.168.0.5'}],
+                               10: [{'netmask': u'ffff:ffff:ffff:ffff::/64',
+                                     'addr': u'fe80::6651:6ff:fe2a:d89a%eno1'}]}
+            returnValueEns4f0 = {17: [{'broadcast': u'ff:ff:ff:ff:ff:ff',
+                                       'addr': u'64:51:06:2a:d8:9a'}],
+                                 2: [{'broadcast': u'192.168.0.255',
+                                      'netmask': u'255.255.255.0',
+                                      'addr': u'192.168.0.4'}],
+                                 10: [{'netmask': u'ffff:ffff:ffff:ffff::/64',
+                                       'addr': u'fe80::6651:6ff:fe2a:d89a%eno1'}]}
             if interface == "eno1":
-                return returnValue
+                return returnValueEno1
+            elif interface == "ens4f0":
+                return returnValueEns4f0
             else:
                 raise Exception(interface)
         interfaceMethod.side_effect = mockMethod
@@ -73,9 +161,9 @@ class TestMDNSInterfaceController(unittest.TestCase):
 
     """Check interfaces can be retrieved"""
     def test_get_interfaces(self):
-        expected = self.dut.defaultInterface = "default"
+        expected = self.dut.defaultInterfaces = ["default"]
         actual = self.dut.getInterfaces([])
-        self.assertEqual([expected], actual)
+        self.assertEqual(expected, actual)
 
         self.dut.addInterface = MagicMock(side_effect=range(0, 5))
         actual = self.dut.getInterfaces(["a", "b", "c", "d", "e"])

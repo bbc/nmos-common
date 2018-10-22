@@ -110,6 +110,8 @@ class MDNSInterfaceController(object):
         try:
             interfaces = []
             interfaceNames = nmoscommonconfig.config['interfaces']
+            if interfaceNames == "*":
+                return self._get_all_interfaces()
             for interfaceName in interfaceNames:
                 interfaces.append(netifaces.ifaddresses(interfaceName)[netifaces.AF_INET][0]['addr'])
             self.logger.writeDebug("Choosing mDNS interface from /etc/nmoscommon/config.json "

@@ -97,10 +97,10 @@ pipeline {
                                     steps{	
                                         sh 'rm -r nmos-joint-ri || :'	
                                         withBBCGithubSSHAgent{	
-                                            sh 'git clone -b simonra-integration-testing git@github.com:bbc/nmos-joint-ri.git'	
+                                            sh 'git clone git@github.com:bbc/nmos-joint-ri.git'
                                         }	
                                         dir ('nmos-joint-ri/vagrant') {	
-                                            sh 'vagrant up --provision'	
+                                            sh 'vagrant up --provision'
                                         }	
                                     }	
                                 }	
@@ -108,7 +108,7 @@ pipeline {
                                     steps{	
                                         dir ('nmos-joint-ri') {	
                                             bbcVagrantFindPorts(vagrantDir: "vagrant")	
-                                            sh 'python3 -m unittest discover'	
+                                            sh 'python3 -m unittest discover'
                                         }	
                                     }	
                                 }	
@@ -116,7 +116,7 @@ pipeline {
                             post{	
                                 always{	
                                     dir ('nmos-joint-ri/vagrant') {	
-                                        sh 'vagrant destroy -f'	
+                                        sh 'vagrant destroy -f'
                                     }	
                                 }	
                             }	

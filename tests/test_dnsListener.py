@@ -37,8 +37,7 @@ class TestDNDListener(unittest.TestCase):
         info.port = self.port
         info.type = self.type
         info.name = self.name
-        info.properties = MagicMock()
-        info.properties.return_value = {}
+        info.properties = {}
         return info
 
     """Test adding a service when none is already present"""

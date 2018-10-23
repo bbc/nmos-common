@@ -55,5 +55,5 @@ class DNSListener(object):
             "name": info.name,
             "port": info.port,
             "address": inet_ntoa(info.address),
-            "txt": info.properties()
+            "txt": info.properties
         }

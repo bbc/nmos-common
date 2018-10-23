@@ -37,6 +37,8 @@ class TestDNDListener(unittest.TestCase):
         info.port = self.port
         info.type = self.type
         info.name = self.name
+        info.properties = MagicMock()
+        info.properties.return_value = {}
         return info
 
     """Test adding a service when none is already present"""
@@ -58,7 +60,8 @@ class TestDNDListener(unittest.TestCase):
             "name": self.name,
             "type": self.type,
             "port": self.port,
-            "ip": self.address
+            "address": self.address,
+            "txt": {}
         }
 
     def helper_add_service(self):

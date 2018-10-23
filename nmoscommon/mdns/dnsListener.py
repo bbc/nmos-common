@@ -51,8 +51,9 @@ class DNSListener(object):
     def _buildClientCallback(self, action, info):
         return {
             "action": action,
-            "ip": inet_ntoa(info.address),
             "type": info.type,
             "name": info.name,
-            "port": info.port
+            "port": info.port,
+            "address": inet_ntoa(info.address),
+            "txt": info.properties()
         }

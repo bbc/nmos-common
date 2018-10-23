@@ -1,10 +1,12 @@
-from zeroconf import BadTypeInNameException, _HAS_A_TO_Z, _HAS_ONLY_A_TO_Z_NUM_HYPHEN, _HAS_ASCII_CONTROL_CHARS
+from zeroconf import BadTypeInNameException, _HAS_A_TO_Z
+from zeroconf import _HAS_ONLY_A_TO_Z_NUM_HYPHEN, _HAS_ASCII_CONTROL_CHARS
+
 
 # This file exists because we need to over-ride the original implementation in
 # python-zeroconf, because nmos-registration breaks the RFC6763 rules on length
 
 
-def service_type_name(type_):
+def service_type_name(type_, allow_underscores=False):
     """
     Validate a fully qualified service name, instance or subtype. [rfc6763]
     Returns fully qualified service name.
@@ -53,10 +55,6 @@ def service_type_name(type_):
 
     # remove leading underscore
     name = name[1:]
-
-    # if len(name) > 15:
-    #     raise BadTypeInNameException(
-    #         "Service name (%s) must be <= 15 bytes" % name)
 
     if '--' in name:
         raise BadTypeInNameException(

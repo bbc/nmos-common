@@ -14,46 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from socket import inet_ntoa
-from ..logger import Logger
-
 
 class DNSListener(object):
 
-    def __init__(self, callbackMethod, registerOnly):
-        self.logger = Logger("zeroconf mDNS")
-        self.callback = callbackMethod
+    def __init__(self, callback, registerOnly):
         self.registerOnly = registerOnly
-        self.records = {}
-        self.nameMap = {}
+        self.callback = callback
 
-    def add_service(self, zeroconf, type, name):
-        action = "add"
-        info = zeroconf.get_service_info(type, name)
-        try:
-            self.records[type][name] = info
-        except KeyError:
-            self.records[type] = {}
-            self.records[type][name] = info
-        self._respondToClient(name, action, info)
-
-    def remove_service(self, zeroconf, type, name):
-        info = self.records[type].pop(name)
-        if not self.registerOnly:
-            action = "remove"
-            self._respondToClient(name, action, info)
-
-    def _respondToClient(self, name, action, info):
-        callbackData = self._buildClientCallback(action, info)
-        self.logger.writeDebug("mDNS Service {}: {}".format(action, callbackData))
+    def addListener(self, subscription):
+        callbackData = self._prepareCallback("add", subscription)
         self.callback(callbackData)
 
-    def _buildClientCallback(self, action, info):
-        return {
-            "action": action,
-            "type": info.type,
-            "name": info.name,
-            "port": info.port,
-            "address": inet_ntoa(info.address),
-            "txt": info.properties
-        }
+    def removeListener(self, subscription):
+        if not self.registerOnly:
+            callbackData = self._prepareCallback("remove", subscription)
+            self.callback(callbackData)
+
+    def _prepareCallback(self, action, subscription):
+        toReturn = {}
+        toReturn['action'] = action
+        toReturn['addr'] = subscription.address
+        toReturn['port'] = subscription.port
+        toReturn['type'] = subscription.type
+        toReturn['txt'] = subscription.textRecord
+        toReturn['name'] = subscription.name
+        return toReturn

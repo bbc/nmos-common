@@ -16,7 +16,7 @@
 
 import zeroconf
 from nmoscommon.logger import Logger
-from .dnsListener import DNSListener
+from .mdnsListener import MDNSListener
 from .mdnsCallbackHandler import MDNSAdvertisementCallbackHandler
 from .mdnsRegistration import MDNSRegistration
 from .mdnsExceptions import ServiceAlreadyExistsException, InterfaceNotFoundException, ServiceNotFoundException
@@ -102,7 +102,7 @@ class MDNSEngine(object):
 
     def callback_on_services(self, regtype, callback, registerOnly=True, domain=None):
         self._autostart_if_required()
-        listener = DNSListener(callback, registerOnly)
+        listener = MDNSListener(callback, registerOnly)
         self.subscriptionController.addSubscription(listener, regtype)
 
 

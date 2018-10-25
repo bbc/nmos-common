@@ -15,83 +15,62 @@
 # limitations under the License.
 
 import unittest
-from nmoscommon.mdns.dnsListener import DNSListener
 from mock import MagicMock
-import socket
+from nmoscommon.mdns.dnsListener import DNSListener
 
 
-class TestDNDListener(unittest.TestCase):
+class TestDNSListener(unittest.TestCase):
 
     def setUp(self):
-        self.callback = MagicMock()
-        self.dut = DNSListener(self.callback, False)
-        self.address = "192.168.0.1"
-        self.port = 8080
+        self.addr = "192.168.0.1"
+        self.port = "8080"
+        self.type = "_nmos-registration._tcp"
+        self.name = "registration_http_nmos-registration._tcp"
         self.txt = {}
-        self.type = "nmos-test._tcp.local."
-        self.name = "name_" + self.type
+        self.callbackMethod = MagicMock()
+        registerOnly = False
+        self.dut = DNSListener(self.callbackMethod, registerOnly)
 
-    def helper_build_info(self):
+    def helper_generate_service_info(self):
         info = MagicMock()
-        info.address = socket.inet_aton(self.address)
+        info.address = self.addr
         info.port = self.port
-        info.type = self.type
         info.name = self.name
-        info.properties = {}
+        info.type = self.type
+        info.textRecord = self.txt
         return info
 
-    """Test adding a service when none is already present"""
-    def test_add_service_empty(self):
-        self.helper_add_service()
-
-    """Test adding a service when one is already present of the smae type"""
-    def test_add_service_existing(self):
-        self.dut.records = {
-            self.type: {
-                "otherName": "otherInfo"
-            }
-        }
-        self.helper_add_service()
-
-    def helper_build_expected_callback(self, action):
+    def helper_generate_callback_message(self, action):
         return {
-            "action": action,
-            "name": self.name,
-            "type": self.type,
-            "port": self.port,
-            "address": self.address,
-            "txt": {}
+            'action': action,
+            'addr': self.addr,
+            'txt': self.txt,
+            'name': self.name,
+            'type': self.type,
+            'port': self.port
         }
 
-    def helper_add_service(self):
-        zeroconf = MagicMock()
-        getService = zeroconf.get_service_info = MagicMock()
-        getService.return_value = self.helper_build_info()
-        self.dut.add_service(zeroconf, self.type, self.name)
-        self.assertTrue(self.callback.called)
-        argv, vargs = self.callback.call_args
-        actual = argv[0]
-        expected = self.helper_build_expected_callback("add")
-        self.assertDictEqual(actual, expected)
+    def test_register_service(self):
+        info = self.helper_generate_service_info()
+        self.dut.addListener(info)
+        self.helper_test_callback("add")
 
-    """Test we are not notified of removals in register only mode"""
-    def test_remove_service_reg_only(self):
-        self.dut = DNSListener(self.callback, True)
-        self.helper_remove_service()
-        self.assertFalse(self.callback.called)
-
-    """Test correct removals callback when not in register only mode"""
     def test_remove_service(self):
-        self.helper_remove_service()
-        argv, vargs = self.callback.call_args
-        actual = argv[0]
-        expected = self.helper_build_expected_callback("remove")
-        self.assertEqual(actual, expected)
+        info = self.helper_generate_service_info()
+        self.dut.removeListener(info)
+        self.helper_test_callback("remove")
 
-    def helper_remove_service(self):
-        self.dut.records[self.type] = {}
-        self.dut.records[self.type][self.name] = self.helper_build_info()
-        self.dut.remove_service(None, self.type, self.name)
+    def helper_test_callback(self, action):
+        self.assertTrue(self.callbackMethod.called)
+        actual, _ = self.callbackMethod.call_args
+        expected = self.helper_generate_callback_message(action)
+        self.assertDictEqual(expected, actual[0])
+
+    def test_register_only(self):
+        self.dut = DNSListener(self.callbackMethod, True)
+        info = self.helper_generate_service_info()
+        self.dut.removeListener(info)
+        self.assertFalse(self.callbackMethod.called)
 
 
 if __name__ == "__main__":

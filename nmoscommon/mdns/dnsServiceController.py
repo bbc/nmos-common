@@ -17,6 +17,15 @@
 from nmoscommon.mdns.dnsListener import DNSListener
 from nmoscommon.mdns.dnsService import DNSService
 from nmoscommon.mdns import dnsUtils
+from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
+from threading import Timer
+
+
+"""This class uses the DNSUtils class to check that the current domain
+has the PTR record for DNS-SD, and then finds all the available services
+and creates instances of dnsService to watch them. It then checks back to
+see if there are new services at least twice in the duration of the shortest
+TTL of any found service, or no less than once an hour, whichever is shorter"""
 
 
 class DNSServiceController(object):
@@ -24,24 +33,59 @@ class DNSServiceController(object):
     def __init__(self, type, callback, logger, registerOnly):
         self.logger = logger
         self.type = type
-        self.services = []
+        self.services = {}
         self.listener = DNSListener(callback, registerOnly)
 
     def start(self):
         services = self._getDNSServices()
         self._populateServices(services)
+        self._scheduleCallback()
+
+    def _scheduleCallback(self):
+        interval = self._findServiceRefreshInterval()
+        Timer(interval, self._checkForServiceUpdatesCallback)
+
+    def _findServiceRefreshInterval(self):
+        accumulator = 3600  # 3600 seconds = 1 hour
+        for service in self.services.values():
+            target = service.ttl/2
+            if target < accumulator:
+                accumulator = target
+        return accumulator
 
     def _getDNSServices(self):
         if not dnsUtils.checkDNSSDActive():
             self.logger.writeError("DNS-SD pointer record not found on current domain")
             return
-        return dnsUtils.getServiceTypes()
+        try:
+            return dnsUtils.discoverService(self.type)
+        except DNSRecordNotFound:
+            return []
 
     def _populateServices(self, pointerRecords):
         for record in pointerRecords:
-            service = DNSService(record, self.listener, self.logger)
-            self.services.append(service)
+            service = DNSService(
+                record,
+                self.type,
+                self.listener,
+                self._removeServiceCallback,
+                self.logger
+            )
+            self.services[service.type] = service
+            service.start()
+
+    def _removeServiceCallback(self, serviceToRemove):
+        serviceToRemove.close()
+        self.services.pop(serviceToRemove.type)
+
+    def _checkForServiceUpdatesCallback(self):
+        serviceRecords = self._getDNSServices()
+        for record in serviceRecords:
+            service = DNSService(record)
+            if service.type not in self.services:
+                self.services[service.type] = service
+                service.start()
 
     def close(self):
-        for service in self.services:
+        for _, service in self.services.items():
             service.close()

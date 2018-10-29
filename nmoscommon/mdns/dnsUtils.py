@@ -15,7 +15,8 @@
 # limitations under the License.
 
 import dns
-from mdnsExceptions import DNSRecordNotFound
+from dns import resolver
+from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
 
 
 def _appendDomain(record):

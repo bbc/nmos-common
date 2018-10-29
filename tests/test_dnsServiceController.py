@@ -18,6 +18,7 @@
 import unittest
 from mock import MagicMock, patch
 from nmoscommon.mdns.dnsServiceController import DNSServiceController
+from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
 
 
 class TestDNSServiceController(unittest.TestCase):
@@ -27,15 +28,11 @@ class TestDNSServiceController(unittest.TestCase):
         self.logger = MagicMock()
         self.type = "_test_service_type_.tcp_"
         self.dut = DNSServiceController(self.type, self.callback, self.logger, False)
-        self.services = ["service1", "service2", "service3"]
+        self.services = {"type1": "service1", "type2": "service2", "type3": "service3"}
 
     def helper_setup_utils(self):
-        def discoverService(service):
-            return {'serviceRecord': service}
-
         self.utils.checkDNSSDActive.return_value = True
-        self.utils.getServiceTypes.return_value = self.services
-        self.utils.discoverService = discoverService
+        self.utils.discoverService.return_value = self.services
 
     def test_find_dns_service(self):
         with patch('nmoscommon.mdns.dnsServiceController.dnsUtils') as utils:
@@ -52,30 +49,97 @@ class TestDNSServiceController(unittest.TestCase):
             self.dut._getDNSServices()
             self.assertTrue(self.dut.logger.writeError.called)
 
+    def helper_check_service_creation(self, call):
+        ptr = call[0][0]
+        self.assertIn(ptr, self.services)
+        type = call[0][1]
+        self.assertEqual(type, self.dut.type)
+        listener = call[0][2]
+        self.assertEqual(listener, self.dut.listener)
+        callback = call[0][3]
+        self.assertEqual(callback, self.dut._removeServiceCallback)        
+        logger = call[0][4]
+        self.assertEqual(logger, self.dut.logger)
+
     def test_create_service_instances(self):
         with patch('nmoscommon.mdns.dnsServiceController.DNSListener'):
             with patch('nmoscommon.mdns.dnsServiceController.DNSService') as service:
+                instance = service.return_value = MagicMock()
                 self.dut._populateServices(self.services)
                 self.assertTrue(service.called)
                 for call in service.call_args_list:
-                    ptr = call[0][0]
-                    self.assertIn(ptr, self.services)
+                    self.helper_check_service_creation(call)
+                self.assertTrue(instance.start.called)
 
     def test_start(self):
         get = self.dut._getDNSServices = MagicMock()
         populate = self.dut._populateServices = MagicMock()
-        expected = ["service1","service2"]
+        expected = ["service1", "service2", "service3"]
         get.return_value = expected
-        self.dut.start()
+        with patch('nmoscommon.mdns.dnsServiceController.DNSService') as service:
+            service.type.side_effect = ["type1", "type2", "type3"]
+            self.dut.start()
         actual = populate.call_args[0][0]
         self.assertEqual(actual, expected)
 
     def test_close(self):
         for i in range(0, 3):
-            self.dut.services.append(MagicMock())
+            self.dut.services[i] = MagicMock()
         self.dut.close()
-        for service in self.dut.services:
+        for _, service in self.dut.services.items():
             self.assertTrue(service.close.called)
+
+    def test_remove_service_callback(self):
+        self.dut.services = {"type1": MagicMock(), "type2": MagicMock(), "type3": MagicMock()}
+        toRemove = self.dut.services["type2"]
+        toRemove.type = "type2"
+        self.dut._removeServiceCallback(toRemove)
+        with self.assertRaises(KeyError):
+            self.dut.services["type2"]
+        self.assertTrue(toRemove.close.called)
+
+    def test_check_for_service_updates_callback(self):
+        with patch('nmoscommon.mdns.dnsServiceController.dnsUtils') as utils:
+            with patch('nmoscommon.mdns.dnsServiceController.DNSService') as service:
+                returnValues = ["type1", "type2", "type3"]
+                mocks = {}
+                for value in returnValues:
+                    newMock = MagicMock()
+                    newMock.type = value
+                    mocks[value] = newMock
+                
+                service.side_effect = mocks.values()
+                self.utils = utils
+                self.helper_setup_utils()
+                self.dut.services = {"type1": mocks["type1"]}
+                self.dut._checkForServiceUpdatesCallback()
+                self.assertDictEqual(mocks, self.dut.services)
+
+    def test_find_callback_duration(self):
+        mockServices = []
+        for i in range(6, 10):
+            key = "type{}".format(i)
+            mockService = MagicMock()
+            mockService.ttl = i
+            mockService.type = key
+            mockServices.append(mockService)
+        with patch('nmoscommon.mdns.dnsServiceController.DNSService') as service:
+            with patch('nmoscommon.mdns.dnsServiceController.dnsUtils') as utils:
+                self.utils = utils
+                self.helper_setup_utils()
+                service.side_effect = mockServices
+                with patch('nmoscommon.mdns.dnsServiceController.Timer') as timer:
+                    self.dut.start()
+                    time, _ = timer.call_args[0]
+                    self.assertEqual(time, 3)
+
+    def test_no_services(self):
+        with patch('nmoscommon.mdns.dnsServiceController.dnsUtils') as utils:
+            utils.discoverService.side_effect = DNSRecordNotFound
+            with patch('nmoscommon.mdns.dnsServiceController.Timer') as timer:
+                self.dut.start()
+                time, _ = timer.call_args[0]
+                self.assertEqual(time, 3600)
 
 
 if __name__ == "__main__":

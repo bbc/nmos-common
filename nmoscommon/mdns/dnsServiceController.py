@@ -60,6 +60,7 @@ class DNSServiceController(object):
         try:
             return dnsUtils.discoverService(self.type)
         except DNSRecordNotFound:
+            self.logger.writeDebug("Could not find any DNS services of type {}".format(self.type))
             return []
 
     def _populateServices(self, pointerRecords):
@@ -71,7 +72,8 @@ class DNSServiceController(object):
                 self._removeServiceCallback,
                 self.logger
             )
-            self.services[service.type] = service
+            self.services[service.name] = service
+            self.logger.writeDebug("Added DNS service of name {}".format(service.name))
             service.start()
 
     def _removeServiceCallback(self, serviceToRemove):
@@ -83,7 +85,7 @@ class DNSServiceController(object):
         for record in serviceRecords:
             service = DNSService(record)
             if service.type not in self.services:
-                self.services[service.type] = service
+                self.services[service.name] = service
                 service.start()
 
     def close(self):

@@ -30,12 +30,13 @@ class MDNSListener(object):
     def add_service(self, zeroconf, type, name):
         action = "add"
         info = zeroconf.get_service_info(type, name)
-        try:
-            self.records[type][name] = info
-        except KeyError:
-            self.records[type] = {}
-            self.records[type][name] = info
-        self._respondToClient(name, action, info)
+        if info is not None:
+            try:
+                self.records[type][name] = info
+            except KeyError:
+                self.records[type] = {}
+                self.records[type][name] = info
+            self._respondToClient(name, action, info)
 
     def remove_service(self, zeroconf, type, name):
         info = self.records[type].pop(name)

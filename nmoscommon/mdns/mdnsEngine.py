@@ -16,6 +16,7 @@
 
 import zeroconf
 from nmoscommon.logger import Logger
+from .dnsServiceController import DNSServiceController
 from .mdnsListener import MDNSListener
 from .mdnsCallbackHandler import MDNSAdvertisementCallbackHandler
 from .mdnsRegistration import MDNSRegistration
@@ -36,6 +37,7 @@ class MDNSEngine(object):
 
     def __init__(self):
         self.running = False
+        self.dnsServiceControllers = []
 
     def start(self):
         self.logger = Logger('mdns-engine')
@@ -51,6 +53,8 @@ class MDNSEngine(object):
         self.subscriptionController.close()
         self.registrationController.close()
         self.interfaceController.close()
+        for controller in self.dnsServiceControllers:
+            controller.close()
         self.running = False
 
     def run(self):
@@ -102,19 +106,30 @@ class MDNSEngine(object):
 
     def callback_on_services(self, regtype, callback, registerOnly=True, domain=None):
         self._autostart_if_required()
-        listener = MDNSListener(callback, registerOnly)
-        self.subscriptionController.addSubscription(listener, regtype)
+        if domain == ".local" or domain is None:
+            listener = MDNSListener(callback, registerOnly)
+            self.subscriptionController.addSubscription(listener, regtype)
+        if domain != '.local':
+            dnsServiceController = DNSServiceController(
+                regtype,
+                callback,
+                self.logger,
+                registerOnly
+            )
+            dnsServiceController.start()
+            self.dnsServiceControllers.append(dnsServiceController)
 
 
 if __name__ == "__main__":
     __package__ = "nmoscommon.mdns.zeroconfEngine"
 
     def callback(callbackObject):
+        print("----------------")
         print(callbackObject)
         # pass
     engine = MDNSEngine()
     engine.start()
-    engine.callback_on_services("_nmos-node._tcp", callback)
+    engine.callback_on_services("_nmos-query._tcp", callback)
     engine.register(
         "registration_http",
         "_nmos-registration._tcp",

@@ -36,6 +36,6 @@ class DNSListener(object):
         toReturn['addr'] = subscription.address
         toReturn['port'] = subscription.port
         toReturn['type'] = subscription.type
-        toReturn['txt'] = subscription.textRecord
+        toReturn['txt'] = subscription.txt
         toReturn['name'] = subscription.name
         return toReturn

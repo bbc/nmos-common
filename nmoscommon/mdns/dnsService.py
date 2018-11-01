@@ -33,30 +33,46 @@ class DNSService(object):
         pointerRecord,
         type,
         dnsListener,
-        removeCallback
+        removeCallback,
+        logger
     ):
         self.pointerRecord = pointerRecord
         self.dnsListener = dnsListener
         self.removeCallback = removeCallback
         self.type = type
         self.name = self.pointerRecord.to_text()
+        self.logger = logger
         self._initialiseFromDNS()
+        self.running = False
 
     def _initialiseFromDNS(self):
         self.serviceRecord = dnsUtils.getSRVRecord(self.pointerRecord.to_text())
         self.txtRecord = dnsUtils.getTXTRecord(self.pointerRecord.to_text())
         self.ttl = self.txtRecord.rrset.ttl
-        self.txt = self.txtRecord[0]
+        self.txt = self._makeTXTDict(self.txtRecord[0])
         self._parseSRVRecord()
 
+    def _makeTXTDict(self, record):
+        toReturn = {}
+        bits = record.to_text().split(" ")
+        for bit in bits:
+            fragments = bit.split("=")
+            toReturn[fragments[0]] = fragments[1]
+        return toReturn
+
     def _parseSRVRecord(self):
-        self.addr = self.serviceRecord[3]
-        self.port = self.serviceRecord[2]
+        for value in self.serviceRecord:
+            entries = value.to_text().split(" ")
+            self.address = entries[3]
+            self.port = int(entries[2])
 
     def _removeService(self):
         self.removeCallback(self.name)
-        self.dnsListener.remove_service(self)
+        self.dnsListener.removeListener(self)
         self.timer = None
+
+    def _addService(self):
+        self.dnsListener.addListener(self)
 
     def _ttlTimerCallback(self):
         try:
@@ -72,10 +88,14 @@ class DNSService(object):
 
     def start(self):
         self._startTimer()
+        self.running = True
+        self._addService()
 
     def stop(self):
-        self.ttlTimer.cancel()
+        if self.running:
+            self.ttlTimer.cancel()
+        self.running = False
 
     def close(self):
-        self.dnsListener.remove_service(self)
+        self.dnsListener.removeListener(self)
         self.stop()

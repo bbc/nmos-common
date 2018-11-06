@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import unittest
-from mock import MagicMock
+from mock import MagicMock, patch
 from nmoscommon.mdns.dnsListener import DNSListener
 
 
@@ -37,7 +37,7 @@ class TestDNSListener(unittest.TestCase):
         info.port = self.port
         info.name = self.name
         info.type = self.type
-        info.textRecord = self.txt
+        info.txt = self.txt
         return info
 
     def helper_generate_callback_message(self, action):
@@ -51,14 +51,18 @@ class TestDNSListener(unittest.TestCase):
         }
 
     def test_register_service(self):
-        info = self.helper_generate_service_info()
-        self.dut.addListener(info)
-        self.helper_test_callback("add")
+        with patch('nmoscommon.mdns.dnsListener.socket') as socket:
+            socket.gethostbyname.return_value = self.addr
+            info = self.helper_generate_service_info()
+            self.dut.addListener(info)
+            self.helper_test_callback("add")
 
     def test_remove_service(self):
-        info = self.helper_generate_service_info()
-        self.dut.removeListener(info)
-        self.helper_test_callback("remove")
+        with patch('nmoscommon.mdns.dnsListener.socket') as socket:
+            socket.gethostbyname.return_value = self.addr
+            info = self.helper_generate_service_info()
+            self.dut.removeListener(info)
+            self.helper_test_callback("remove")
 
     def helper_test_callback(self, action):
         self.assertTrue(self.callbackMethod.called)
@@ -67,10 +71,12 @@ class TestDNSListener(unittest.TestCase):
         self.assertDictEqual(expected, actual[0])
 
     def test_register_only(self):
-        self.dut = DNSListener(self.callbackMethod, True)
-        info = self.helper_generate_service_info()
-        self.dut.removeListener(info)
-        self.assertFalse(self.callbackMethod.called)
+        with patch('nmoscommon.mdns.dnsListener.socket') as socket:
+            socket.gethostbyname.return_value = self.addr
+            self.dut = DNSListener(self.callbackMethod, True)
+            info = self.helper_generate_service_info()
+            self.dut.removeListener(info)
+            self.assertFalse(self.callbackMethod.called)
 
 
 if __name__ == "__main__":

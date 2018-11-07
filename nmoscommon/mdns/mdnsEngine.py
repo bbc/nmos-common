@@ -129,7 +129,7 @@ if __name__ == "__main__":
         # pass
     engine = MDNSEngine()
     engine.start()
-    engine.callback_on_services("_nmos-query._tcp", callback)
+    engine.callback_on_services("_nmos-query._tcp", callback, domain='rd.bbc.co.uk')
     engine.register(
         "registration_http",
         "_nmos-registration._tcp",

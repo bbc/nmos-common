@@ -57,7 +57,7 @@ class DNSService(object):
         bits = record.to_text().split(" ")
         for bit in bits:
             fragments = bit.split("=")
-            toReturn[fragments[0]] = fragments[1]
+            toReturn[fragments[0][1:]] = fragments[1][:-1]
         return toReturn
 
     def _parseSRVRecord(self):

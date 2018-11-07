@@ -29,7 +29,7 @@ class testDNSService(unittest.TestCase):
         self.ttl = 6
         self.addr = "hostname.example.com."
         self.srvRecord = "0 0 {} {}".format(self.port, self.addr)
-        self.txtRecord = "api_ver=v1.0,v1.1,v1.2 api_proto=http"
+        self.txtRecord = '"api_ver=v1.0,v1.1,v1.2" "api_proto=http"'
         self.ptrRecord = self.helper_mock_prtRecord()
         self.listener = MagicMock()
         self.removeCallback = MagicMock()

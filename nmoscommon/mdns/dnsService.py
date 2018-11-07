@@ -21,6 +21,7 @@ time to ensure it is still there. If it is not, it notifies the DNS listener, th
 dnsServiceController to destroy it using a callback passed to it"""
 
 
+import signal
 from nmoscommon.mdns import dnsUtils
 from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
 from threading import Timer
@@ -44,6 +45,8 @@ class DNSService(object):
         self.logger = logger
         self._initialiseFromDNS()
         self.running = False
+        signal.signal(signal.SIGINT, self.close)
+        signal.signal(signal.SIGTERM, self.close)
 
     def _initialiseFromDNS(self):
         self.serviceRecord = dnsUtils.getSRVRecord(self.pointerRecord.to_text())

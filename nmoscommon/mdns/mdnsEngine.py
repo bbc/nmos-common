@@ -39,6 +39,9 @@ class MDNSEngine(object):
         self.running = False
         self.dnsServiceControllers = []
 
+    def __del__(self):
+        self.close()
+
     def start(self):
         self.logger = Logger('mdns-engine')
         self.subscriptionController = MDNSSubscriptionController()
@@ -129,8 +132,8 @@ if __name__ == "__main__":
         # pass
     engine = MDNSEngine()
     engine.start()
-    engine.callback_on_services("_nmos-query._tcp", callback, domain='rd.bbc.co.uk')
-    engine.register(
+    engine.callback_on_services("_nmos-query._tcp", callback, domain=None)
+    """engine.register(
         "registration_http",
         "_nmos-registration._tcp",
         8080,
@@ -141,13 +144,13 @@ if __name__ == "__main__":
         },
         callback,
         ["172.29.82.49", "172.29.80.118", "127.0.0.1"]
-    )
+    )"""
     try:
         input("Press enter to update registration...\n\n")
     except Exception:
         pass
     finally:
-        engine.update("registration_http", "_nmos-registration._tcp", {"test": "text"})
+        # engine.update("registration_http", "_nmos-registration._tcp", {"test": "text"})
         try:
             input("Press enter to exit...\n\n")
         except Exception:

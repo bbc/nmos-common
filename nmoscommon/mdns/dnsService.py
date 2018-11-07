@@ -22,6 +22,7 @@ dnsServiceController to destroy it using a callback passed to it"""
 
 
 import signal
+import socket
 from nmoscommon.mdns import dnsUtils
 from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
 from threading import Timer
@@ -67,7 +68,7 @@ class DNSService(object):
     def _parseSRVRecord(self):
         for value in self.serviceRecord:
             entries = value.to_text().split(" ")
-            self.address = entries[3]
+            self.address = socket.gethostbyname(entries[3][:-1])
             self.port = int(entries[2])
 
     def _removeService(self):

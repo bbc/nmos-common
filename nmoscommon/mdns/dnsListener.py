@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import socket
-
 
 class DNSListener(object):
 
@@ -35,7 +33,7 @@ class DNSListener(object):
     def _prepareCallback(self, action, subscription):
         toReturn = {}
         toReturn['action'] = action
-        toReturn['addr'] = socket.gethostbyname(subscription.address[:-1])
+        toReturn['addr'] = subscription.address
         toReturn['port'] = subscription.port
         toReturn['type'] = subscription.type
         toReturn['txt'] = subscription.txt

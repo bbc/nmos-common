@@ -28,6 +28,7 @@ class testDNSService(unittest.TestCase):
         self.port = 80
         self.ttl = 6
         self.addr = "hostname.example.com."
+        self.ip = "192.168.0.1"
         self.srvRecord = "0 0 {} {}".format(self.port, self.addr)
         self.txtRecord = '"api_ver=v1.0,v1.1,v1.2" "api_proto=http"'
         self.ptrRecord = self.helper_mock_prtRecord()
@@ -35,14 +36,16 @@ class testDNSService(unittest.TestCase):
         self.removeCallback = MagicMock()
         self.logger = MagicMock()
         with patch('nmoscommon.mdns.dnsService.dnsUtils') as dns:
-            self.helper_mock_dns_utils(dns)
-            self.dut = DNSService(
-                self.ptrRecord,
-                self.type,
-                self.listener,
-                self.removeCallback,
-                self.logger
-            )
+            with patch('nmoscommon.mdns.dnsService.socket') as socket:
+                self.helper_mock_socket(socket)
+                self.helper_mock_dns_utils(dns)
+                self.dut = DNSService(
+                    self.ptrRecord,
+                    self.type,
+                    self.listener,
+                    self.removeCallback,
+                    self.logger
+                )
 
     def tearDown(self):
         self.dut.close()
@@ -61,6 +64,15 @@ class testDNSService(unittest.TestCase):
         record = MagicMock()
         record.to_text.return_value = self.serviceName
         return record
+
+    def helper_mock_socket(self, socket):
+        self.socket = socket
+
+        def gethostbyname(name):
+            if name == self.addr[:-1]:
+                return self.ip
+
+        self.socket.gethostbyname = gethostbyname
 
     def helper_mock_dns_utils(self, dns):
         self.dns = dns
@@ -102,7 +114,7 @@ class testDNSService(unittest.TestCase):
         self.assertEqual(self.ttl, self.dut.ttl)
 
     def test_initialise_addr(self):
-        self.assertEqual(self.addr, self.dut.address)
+        self.assertEqual(self.ip, self.dut.address)
 
     def test_ttl_callback_duration(self):
         with patch('nmoscommon.mdns.dnsService.Timer') as timer:
@@ -116,12 +128,14 @@ class testDNSService(unittest.TestCase):
         self.srvRecord = "0 0 9000 {}".format("hostname.example.com")
         with patch('nmoscommon.mdns.dnsService.Timer') as timer:
             with patch('nmoscommon.mdns.dnsService.dnsUtils') as dns:
-                self.helper_mock_dns_utils(dns)
-                self.helper_mock_timer(timer)
-                self.dut.start()
-                args, _ = self.timer.call_args
-                args[1]()
-                self.assertEqual(self.port, self.dut.port)
+                with patch('nmoscommon.mdns.dnsService.socket') as socket:
+                    self.helper_mock_socket(socket)
+                    self.helper_mock_dns_utils(dns)
+                    self.helper_mock_timer(timer)
+                    self.dut.start()
+                    args, _ = self.timer.call_args
+                    args[1]()
+                    self.assertEqual(self.port, self.dut.port)
 
     def helper_remove_service(self):
         with patch('nmoscommon.mdns.dnsService.dnsUtils') as dns:

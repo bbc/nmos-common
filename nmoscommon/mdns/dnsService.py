@@ -45,6 +45,7 @@ class DNSService(object):
         self.logger = logger
         self._initialiseFromDNS()
         self.running = False
+        # Stop all timers on termination
         signal.signal(signal.SIGINT, self.close)
         signal.signal(signal.SIGTERM, self.close)
 
@@ -99,6 +100,6 @@ class DNSService(object):
             self.ttlTimer.cancel()
         self.running = False
 
-    def close(self):
+    def close(self, signum=None, frame=None):
         self.dnsListener.removeListener(self)
         self.stop()

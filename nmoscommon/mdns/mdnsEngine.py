@@ -39,9 +39,6 @@ class MDNSEngine(object):
         self.running = False
         self.dnsServiceControllers = []
 
-    def __del__(self):
-        self.close()
-
     def start(self):
         self.logger = Logger('mdns-engine')
         self.subscriptionController = MDNSSubscriptionController()

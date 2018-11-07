@@ -105,7 +105,7 @@ class TestDNSServiceController(unittest.TestCase):
                 mocks = {}
                 for value in returnValues:
                     newMock = MagicMock()
-                    newMock.type = value
+                    newMock.name = value
                     mocks[value] = newMock
                 
                 service.side_effect = mocks.values()

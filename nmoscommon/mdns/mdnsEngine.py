@@ -50,6 +50,7 @@ class MDNSEngine(object):
         self.close()
 
     def close(self):
+        self.logger.writeDebug("MDNS Engine Closed")
         self.subscriptionController.close()
         self.registrationController.close()
         self.interfaceController.close()
@@ -153,5 +154,4 @@ if __name__ == "__main__":
         except Exception:
             pass
         finally:
-            engine.close()
             engine.stop()

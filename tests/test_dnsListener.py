@@ -43,7 +43,7 @@ class TestDNSListener(unittest.TestCase):
     def helper_generate_callback_message(self, action):
         return {
             'action': action,
-            'addr': self.addr,
+            'address': self.addr,
             'txt': self.txt,
             'name': self.name,
             'type': self.type,

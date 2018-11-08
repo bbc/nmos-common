@@ -30,6 +30,9 @@ class TestDNSServiceController(unittest.TestCase):
         self.dut = DNSServiceController(self.type, self.callback, self.logger, False)
         self.services = {"type1": "service1", "type2": "service2", "type3": "service3"}
 
+    def tearDown(self):
+        self.dut.close()
+
     def helper_setup_utils(self):
         self.utils.checkDNSSDActive.return_value = True
         self.utils.discoverService.return_value = self.services
@@ -70,17 +73,6 @@ class TestDNSServiceController(unittest.TestCase):
                 for call in service.call_args_list:
                     self.helper_check_service_creation(call)
                 self.assertTrue(instance.start.called)
-
-    def test_start(self):
-        get = self.dut._getDNSServices = MagicMock()
-        populate = self.dut._populateServices = MagicMock()
-        expected = ["service1", "service2", "service3"]
-        get.return_value = expected
-        with patch('nmoscommon.mdns.dnsServiceController.DNSService') as service:
-            service.type.side_effect = ["type1", "type2", "type3"]
-            self.dut.start()
-        actual = populate.call_args[0][0]
-        self.assertEqual(actual, expected)
 
     def test_close(self):
         for i in range(0, 3):
@@ -129,7 +121,8 @@ class TestDNSServiceController(unittest.TestCase):
                 self.helper_setup_utils()
                 service.side_effect = mockServices
                 with patch('nmoscommon.mdns.dnsServiceController.Timer') as timer:
-                    self.dut.start()
+                    self.dut.running = True
+                    self.dut._checkForServiceUpdatesCallback()
                     time, _ = timer.call_args[0]
                     self.assertEqual(time, 3)
 
@@ -139,7 +132,7 @@ class TestDNSServiceController(unittest.TestCase):
             with patch('nmoscommon.mdns.dnsServiceController.Timer') as timer:
                 self.dut.start()
                 time, _ = timer.call_args[0]
-                self.assertEqual(time, 3600)
+                self.assertEqual(time, 1)
 
 
 if __name__ == "__main__":

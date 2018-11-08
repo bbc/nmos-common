@@ -16,3 +16,4 @@ class MDNSSubscriptionController(object):
         for sub in self.subscriptions:
             sub.close()
         self.subscriptions = []
+        self.zeroconf.close()

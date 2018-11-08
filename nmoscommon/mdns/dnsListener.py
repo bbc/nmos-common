@@ -33,7 +33,7 @@ class DNSListener(object):
     def _prepareCallback(self, action, subscription):
         toReturn = {}
         toReturn['action'] = action
-        toReturn['addr'] = subscription.address
+        toReturn['address'] = subscription.address
         toReturn['port'] = subscription.port
         toReturn['type'] = subscription.type
         toReturn['txt'] = subscription.txt

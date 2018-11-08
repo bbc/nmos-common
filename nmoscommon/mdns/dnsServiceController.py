@@ -31,19 +31,24 @@ TTL of any found service, or no less than once an hour, whichever is shorter"""
 class DNSServiceController(object):
 
     def __init__(self, type, callback, logger, registerOnly):
+        self.running = False
         self.logger = logger
         self.type = type
         self.services = {}
         self.listener = DNSListener(callback, registerOnly)
+        self.timer = None
 
     def start(self):
-        services = self._getDNSServices()
-        self._populateServices(services)
         self._scheduleCallback()
+        self.running = True
 
     def _scheduleCallback(self):
-        interval = self._findServiceRefreshInterval()
-        Timer(interval, self._checkForServiceUpdatesCallback)
+        if self.running:
+            interval = self._findServiceRefreshInterval()
+        else:
+            interval = 1
+        self.timer = Timer(interval, self._checkForServiceUpdatesCallback)
+        self.timer.start()
 
     def _findServiceRefreshInterval(self):
         accumulator = 3600  # 3600 seconds = 1 hour
@@ -72,9 +77,9 @@ class DNSServiceController(object):
                 self._removeServiceCallback,
                 self.logger
             )
-            self.services[service.name] = service
-            self.logger.writeDebug("Added DNS service of name {}".format(service.name))
-            service.start()
+            if service.type not in self.services:
+                self.services[service.name] = service
+                service.start()
 
     def _removeServiceCallback(self, serviceToRemove):
         serviceToRemove.close()
@@ -82,12 +87,11 @@ class DNSServiceController(object):
 
     def _checkForServiceUpdatesCallback(self):
         serviceRecords = self._getDNSServices()
-        for record in serviceRecords:
-            service = DNSService(record)
-            if service.type not in self.services:
-                self.services[service.name] = service
-                service.start()
+        self._populateServices(serviceRecords)
+        self._scheduleCallback()
 
     def close(self):
         for _, service in self.services.items():
             service.close()
+        if self.timer:
+            self.timer.cancel()

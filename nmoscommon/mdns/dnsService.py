@@ -84,7 +84,7 @@ class DNSService(object):
             self._initialiseFromDNS()
             self._updateService()
         except DNSRecordNotFound:
-            self.removeCallback(self.name)
+            self.removeCallback(self)
         else:
             self._startTimer()
 

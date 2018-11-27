@@ -68,9 +68,12 @@ class DNSService(object):
             self.port = int(entries[2])
 
     def _removeService(self):
-        self.removeCallback(self.name)
         self.dnsListener.removeListener(self)
         self.ttlTimer.cancel()
+
+    def _updateService(self):
+        self.dnsListener.removeListener(self)
+        self.dnsListener.addListener(self)
 
     def _addService(self):
         self.dnsListener.addListener(self)
@@ -79,10 +82,9 @@ class DNSService(object):
     def _ttlTimerCallback(self):
         try:
             self._initialiseFromDNS()
-            self._removeService()
-            self._addService()
+            self._updateService()
         except DNSRecordNotFound:
-            self._removeService()
+            self.removeCallback(self.name)
         else:
             self._startTimer()
 

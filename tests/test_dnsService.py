@@ -164,15 +164,6 @@ class testDNSService(unittest.TestCase):
         callbackArgs, _ = self.removeCallback.call_args
         self.assertEqual(callbackArgs[0], self.serviceName)
 
-    def test_remove_dnsListener_call(self):
-        self.helper_remove_service()
-        self.assertTrue(self.dut.dnsListener.removeListener.called)
-
-    def test_remove_dnsListener_call_args(self):
-        self.helper_remove_service()
-        args, _ = self.dut.dnsListener.removeListener.call_args
-        self.assertEqual(args[0], self.dut)
-
     def test_stop_timer(self):
         with patch('nmoscommon.mdns.dnsService.Timer') as timer:
             self.helper_mock_timer(timer)

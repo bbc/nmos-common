@@ -77,13 +77,13 @@ class DNSServiceController(object):
                 self._removeServiceCallback,
                 self.logger
             )
-            if service.type not in self.services:
+            if service.name not in self.services:
                 self.services[service.name] = service
                 service.start()
 
     def _removeServiceCallback(self, serviceToRemove):
         serviceToRemove.close()
-        self.services.pop(serviceToRemove.type)
+        self.services.pop(serviceToRemove.name)
 
     def _checkForServiceUpdatesCallback(self):
         serviceRecords = self._getDNSServices()

@@ -84,7 +84,7 @@ class TestDNSServiceController(unittest.TestCase):
     def test_remove_service_callback(self):
         self.dut.services = {"type1": MagicMock(), "type2": MagicMock(), "type3": MagicMock()}
         toRemove = self.dut.services["type2"]
-        toRemove.type = "type2"
+        toRemove.name = "type2"
         self.dut._removeServiceCallback(toRemove)
         with self.assertRaises(KeyError):
             self.dut.services["type2"]

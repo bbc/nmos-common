@@ -79,6 +79,8 @@ class DNSService(object):
     def _ttlTimerCallback(self):
         try:
             self._initialiseFromDNS()
+            self._removeService()
+            self._addService()
         except DNSRecordNotFound:
             self._removeService()
         else:

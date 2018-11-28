@@ -60,7 +60,7 @@ class TestDNSServiceController(unittest.TestCase):
         listener = call[0][2]
         self.assertEqual(listener, self.dut.listener)
         callback = call[0][3]
-        self.assertEqual(callback, self.dut._removeServiceCallback)        
+        self.assertEqual(callback, self.dut._removeServiceCallback)
         logger = call[0][4]
         self.assertEqual(logger, self.dut.logger)
 
@@ -99,7 +99,7 @@ class TestDNSServiceController(unittest.TestCase):
                     newMock = MagicMock()
                     newMock.name = value
                     mocks[value] = newMock
-                
+
                 service.side_effect = mocks.values()
                 self.utils = utils
                 self.helper_setup_utils()

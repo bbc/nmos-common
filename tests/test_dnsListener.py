@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import unittest
-from mock import MagicMock, patch
+from mock import MagicMock
 from nmoscommon.mdns.dnsListener import DNSListener
 
 

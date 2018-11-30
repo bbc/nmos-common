@@ -545,7 +545,7 @@ class WebAPI(object):
                             methods=["GET", "POST", "HEAD", "OPTIONS"])(crossdomain(
                                 origin='*',
                                 methods=['GET', 'POST', 'HEAD'],
-                                headers=['Content-Type',])(returns_response(value)))
+                                headers=['Content-Type, Authorization',])(returns_response(value)))
                     elif hasattr(value, "app_route"):
                         if value.app_auto_json:
                             self.app.route(

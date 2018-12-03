@@ -493,13 +493,13 @@ class WebAPI(object):
         self._authorize = self.default_authorize
         self._authenticate = self.default_authenticate
 
-        self.add_routes(self, basepath='')
+        self.add_routes(basepath='')
 
         # Enable ProxyFix middleware if required
         if config.get('fix_proxy', 'disabled') == 'enabled':
             self.app.wsgi_app = ProxyFix(self.app.wsgi_app)
 
-    def add_routes(self, cl, basepath):
+    def add_routes(self, basepath):
 
         assert not basepath.endswith('/'), "basepath must not end with a slash"
 
@@ -509,15 +509,15 @@ class WebAPI(object):
                 return f(*args, **kwargs)
             return inner
 
-        def getbases(cl):
-            bases = list(cl.__bases__)
-            for x in cl.__bases__:
+        def getbases(self):
+            bases = list(self.__bases__)
+            for x in self.__bases__:
                 bases += getbases(x)
             return bases
 
-        for klass in [cl.__class__,] + getbases(cl.__class__):
+        for klass in [self.__class__,] + getbases(self.__class__):
             for name in klass.__dict__.keys():
-                value = getattr(cl, name)
+                value = getattr(self, name)
                 if callable(value):
                     endpoint = "{}_{}".format(basepath.replace('/', '_'), value.__name__)
                     if hasattr(value, 'app_methods') and value.app_methods is not None:
@@ -536,7 +536,7 @@ class WebAPI(object):
                                 origin=value.app_origin,
                                 methods=methods,
                                 headers=headers +
-                                ['Content-Type',
+                                ['Content-Type', 'Authorization',
                                  'token',])(returns_requires_auth(value)))
                     elif hasattr(value, "response_route"):
                         self.app.route(
@@ -545,7 +545,7 @@ class WebAPI(object):
                             methods=["GET", "POST", "HEAD", "OPTIONS"])(crossdomain(
                                 origin='*',
                                 methods=['GET', 'POST', 'HEAD'],
-                                headers=['Content-Type, Authorization',])(returns_response(value)))
+                                headers=['Content-Type', 'Authorization',])(returns_response(value)))
                     elif hasattr(value, "app_route"):
                         if value.app_auto_json:
                             self.app.route(
@@ -556,7 +556,7 @@ class WebAPI(object):
                                         origin=value.app_origin,
                                         methods=methods,
                                         headers=headers +
-                                        ["Content-Type",])(returns_json(value)))
+                                        ['Content-Type', 'Authorization',])(returns_json(value)))
                         else:
                             self.app.route(
                                     basepath + value.app_route,
@@ -565,7 +565,7 @@ class WebAPI(object):
                                     ["OPTIONS",])(crossdomain(
                                         origin=value.app_origin,
                                         methods=methods,
-                                        headers=headers + ["Content-Type",])(dummy(value)))
+                                        headers=headers + ['Content-Type', 'Authorization',])(dummy(value)))
                     elif hasattr(value, "app_file_route"):
                         self.app.route(
                             basepath + value.app_file_route,
@@ -573,12 +573,12 @@ class WebAPI(object):
                             methods=methods + ["OPTIONS"])(crossdomain(
                                 origin='*',
                                 methods=methods,
-                                headers=headers + ["Content-Type",])(returns_file(value)))
+                                headers=headers + ['Content-Type', 'Authorization',])(returns_file(value)))
                     elif hasattr(value, "app_resource_route"):
                         f = crossdomain(origin='*',
                                             methods=methods,
-                                            headers=headers + ["Content-Type",
-                                                     "api-key",])(returns_json(
+                                            headers=headers + ['Content-Type', 'Authorization',
+                                                     'api-key',])(returns_json(
                                                          obj_path_access(value)))
                         self.app.route(basepath + value.app_resource_route,
                                            methods=methods + ["OPTIONS",],
@@ -589,7 +589,7 @@ class WebAPI(object):
                                 methods=methods + ["OPTIONS",],
                                 endpoint=f.__name__)(f)
                     elif hasattr(value, "sockets_on"):
-                        socket_recv_gen = getattr(cl, "on_websocket_connect", None)
+                        socket_recv_gen = getattr(self, "on_websocket_connect", None)
                         if socket_recv_gen is None:
                             f = self.handle_sock(expects_json(value), self.socks)
                         else:

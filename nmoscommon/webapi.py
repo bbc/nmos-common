@@ -493,13 +493,13 @@ class WebAPI(object):
         self._authorize = self.default_authorize
         self._authenticate = self.default_authenticate
 
-        self.add_routes(basepath='')
+        self.add_routes(self, basepath='')
 
         # Enable ProxyFix middleware if required
         if config.get('fix_proxy', 'disabled') == 'enabled':
             self.app.wsgi_app = ProxyFix(self.app.wsgi_app)
 
-    def add_routes(self, basepath):
+     def add_routes(self, routesObject, basepath):
 
         assert not basepath.endswith('/'), "basepath must not end with a slash"
 
@@ -509,15 +509,15 @@ class WebAPI(object):
                 return f(*args, **kwargs)
             return inner
 
-        def getbases(self):
-            bases = list(self.__bases__)
-            for x in self.__bases__:
+        def getbases(cl):
+            bases = list(cl.__bases__)
+            for x in cl.__bases__:
                 bases += getbases(x)
             return bases
 
-        for klass in [self.__class__,] + getbases(self.__class__):
+        for klass in [routesObject.__class__,] + getbases(routesObject.__class__):
             for name in klass.__dict__.keys():
-                value = getattr(self, name)
+                value = getattr(routesObject, name)
                 if callable(value):
                     endpoint = "{}_{}".format(basepath.replace('/', '_'), value.__name__)
                     if hasattr(value, 'app_methods') and value.app_methods is not None:
@@ -589,7 +589,7 @@ class WebAPI(object):
                                 methods=methods + ["OPTIONS",],
                                 endpoint=f.__name__)(f)
                     elif hasattr(value, "sockets_on"):
-                        socket_recv_gen = getattr(self, "on_websocket_connect", None)
+                        socket_recv_gen = getattr(routesObject, "on_websocket_connect", None)
                         if socket_recv_gen is None:
                             f = self.handle_sock(expects_json(value), self.socks)
                         else:

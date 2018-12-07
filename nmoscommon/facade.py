@@ -15,7 +15,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 import os
-import traceback
 from .ipc import Proxy
 import gevent
 from threading import Lock
@@ -29,29 +28,31 @@ FAC_UNAUTHORISED = 3
 FAC_UNSUPPORTED = 4
 FAC_OTHERERROR = 5
 
+
 class Facade(object):
     """This class serves as a proxy for the Facade running on the same machine if it exists. If no facade exists
     on this machine then it will do nothing, but calls will still function without throwing any exceptions."""
-    def __init__(self, srv_type, address="ipc:///tmp/ips-nodefacade",logger=None):
-        self.logger          = Logger("facade_proxy", logger)
-        self.ipc             = None
-        self.srv_registered  = False # Flag whether service is registered
-        self.reregister      = False # Flag whether resources are correctly registered
-        self.address         = address
-        self.srv_type        = srv_type.lower()
-        self.srv_type_urn    = "urn:x-ipstudio:service:" + self.srv_type
-        self.pid             = os.getpid()
-        self.resources       = {}
-        self.controls        = {}
-        self.href            = None
-        self.proxy_path      = None
-        self.lock            = Lock() # Protect access to IPC socket
+    def __init__(self, srv_type, address="ipc:///tmp/ips-nodefacade", logger=None):
+
+        self.logger = Logger("facade_proxy", logger)
+        self.ipc = None
+        self.srv_registered = False  # Flag whether service is registered
+        self.reregister = False  # Flag whether resources are correctly registered
+        self.address = address
+        self.srv_type = srv_type.lower()
+        self.srv_type_urn = "urn:x-ipstudio:service:" + self.srv_type
+        self.pid = os.getpid()
+        self.resources = {}
+        self.controls = {}
+        self.href = None
+        self.proxy_path = None
+        self.lock = Lock()  # Protect access to IPC socket
 
     def setup_ipc(self):
         with self.lock:
             try:
                 self.ipc = Proxy(self.address)
-            except:
+            except Exception:
                 self.ipc = None
 
     def register_service(self, href, proxy_path):
@@ -221,10 +222,10 @@ class Facade(object):
         self._call_ipc_method("clk_unregister", clk_name)
 
     def debug_message(self, code):
-        msg =  {FAC_SUCCESS:"Success!",
-                FAC_EXISTS:"Service already exists",
-                FAC_UNREGISTERED:"Service isn't yet registered",
-                FAC_UNAUTHORISED:"Unauthorised",
-                FAC_UNSUPPORTED:"Unsupported",
-                FAC_OTHERERROR:"Other error"} [code]
+        msg = {FAC_SUCCESS: "Success!",
+               FAC_EXISTS: "Service already exists",
+               FAC_UNREGISTERED: "Service isn't yet registered",
+               FAC_UNAUTHORISED: "Unauthorised",
+               FAC_UNSUPPORTED: "Unsupported",
+               FAC_OTHERERROR: "Other error"}[code]
         return msg

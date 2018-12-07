@@ -173,12 +173,14 @@ class Facade(object):
             self.reregister = True
 
     def addResource(self, type, key, value):
+        value = deepcopy(value)
         if type not in self.resources:
             self.resources[type] = {}
         self.resources[type][key] = value
         self._call_ipc_method("res_register", type, key, value)
 
     def updateResource(self, type, key, value):
+        value = deepcopy(value)
         if type not in self.resources:
             self.resources[type] = {}
         self.resources[type][key] = value

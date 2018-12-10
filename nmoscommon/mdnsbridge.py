@@ -28,7 +28,7 @@ class IppmDNSBridge(object):
     def __init__(self, logger=None):
         self.logger = Logger("mdnsbridge", logger)
         self.services = {}
-        self.config = {"priority": 0}
+        self.config = {"priority": 0, "https_mode": "disabled"}
         self.config.update(_config)
 
     def _checkLocalQueryServiceExists(self):
@@ -94,7 +94,7 @@ class IppmDNSBridge(object):
         return href
 
     def _createHref(self, service):
-        proto = service['txt'].get('api_proto', 'http')
+        proto = service['protocol']
         address = service['address']
         port = service['port']
         if ":" in address:
@@ -108,7 +108,12 @@ class IppmDNSBridge(object):
             r = requests.get(req_url, timeout=0.5, proxies={'http': ''})
             if r is not None and r.status_code == 200:
                 # If any results, put them in self.services
-                self.services[srv_type] = r.json()["representation"]
+                self.services[srv_type] = []
+                for dns_data in r.json()["representation"]:
+                    if self.config["https_mode"] == "enabled" and dns_data["protocol"] == "https":
+                        self.services[srv_type].append(dns_data)
+                    elif self.config["https_mode"] != "enabled" and dns_data["protocol"] == "http":
+                        self.services[srv_type].append(dns_data)
         except Exception as e:
             self.logger.writeWarning("Exception updating services: {}".format(e))
 

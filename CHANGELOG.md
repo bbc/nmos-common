@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.7.1
+- Check http/https mode when retrieving mDNS bridge results
+
 ## 0.7.0
 - Add mechanism to register clocks with the Node API via Facade class
 

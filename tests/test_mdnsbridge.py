@@ -38,100 +38,142 @@ class TestIppmDNSBridge(unittest.TestCase):
     def test_gethref_returns_first_service_with_matching_priority(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 100, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 100, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 100, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
             ]
 
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[0]["txt"]["api_proto"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
+        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
     def test_gethref_returns_first_service_with_matching_priority_including_ipv6(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 100, "txt" : { "api_proto" : "https" }, "address" : "CAFE:FACE:BBC1:BBC2:BBC4:1337:DEED:2323", "port" : 12345 },
-            { "priority" : 100, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 100, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 100, "protocol" : "http", "address" : "CAFE:FACE:BBC1:BBC2:BBC4:1337:DEED:2323", "port" : 12345 },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
             ]
 
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[0]["txt"]["api_proto"] + "://[" + services[0]["address"] + "]:" + str(services[0]["port"]))
+        self.assertEqual(href, services[0]["protocol"] + "://[" + services[0]["address"] + "]:" + str(services[0]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
     def test_gethref_returns_first_service_with_matching_priority(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 100, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
             ]
 
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[2]["txt"]["api_proto"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
+        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
+
+    @mock.patch('requests.get')
+    @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
+    def test_gethref_returns_first_service_with_matching_priority_https(self, rand, get):
+        srv_type = "potato"
+        self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "enabled"
+
+        services = [
+            { "priority" : 97, "protocol" : "https", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 13, "protocol" : "https", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 100, "protocol" : "https", "address" : "service_address2", "port" : 12347 },
+            ]
+
+        get.return_value.status_code=200
+        get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
+        href = self.UUT.getHref(srv_type)
+        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
     def test_gethref_returns_lowest_priority_service_when_none_match(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 99
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 53, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
             ]
 
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[1]["txt"]["api_proto"] + "://" + services[1]["address"] + ":" + str(services[1]["port"]))
+        self.assertEqual(href, services[1]["protocol"] + "://" + services[1]["address"] + ":" + str(services[1]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=3) # guaranteed random, chosen by roll of fair die
     def test_gethref_when_multiple_services_have_same_priority_return_one_at_random(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 99
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 53, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpv" }, "address" : "service_address3", "port" : 12348 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpw" }, "address" : "service_address4", "port" : 12349 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpx" }, "address" : "service_address5", "port" : 12350 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpy" }, "address" : "service_address6", "port" : 12351 },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address3", "port" : 12348 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address4", "port" : 12349 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address5", "port" : 12350 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address6", "port" : 12351 },
             ]
 
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[5]["txt"]["api_proto"] + "://" + services[5]["address"] + ":" + str(services[5]["port"]))
+        self.assertEqual(href, services[5]["protocol"] + "://" + services[5]["address"] + ":" + str(services[5]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
     def test_gethref_returns_empty_string_when_no_matching_services(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 53, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 100, "protocol" : "https", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
+            ]
+
+        get.return_value.status_code=200
+        get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
+        href = self.UUT.getHref(srv_type)
+        self.assertEqual(href, "")
+
+    @mock.patch('requests.get')
+    @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
+    def test_gethref_returns_empty_string_when_no_matching_services_https(self, rand, get):
+        srv_type = "potato"
+        self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "enabled"
+
+        services = [
+            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 53, "protocol" : "https", "address" : "service_address2", "port" : 12347 },
             ]
 
         get.return_value.status_code=200
@@ -144,11 +186,12 @@ class TestIppmDNSBridge(unittest.TestCase):
     def test_gethref_returns_local_service_when_no_matching_query_service(self, rand, get):
         srv_type = "nmos-query"
         self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 53, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
             ]
 
         get.return_value.status_code=200
@@ -161,11 +204,12 @@ class TestIppmDNSBridge(unittest.TestCase):
     def test_gethref_returns_empty_string_when_no_matching_query_service_including_local(self, rand, get):
         srv_type = "nmos-query"
         self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 53, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
             ]
 
         get.side_effect = [ mock.DEFAULT, Exception ]
@@ -179,11 +223,12 @@ class TestIppmDNSBridge(unittest.TestCase):
     def test_gethref_returns_empty_string_when_request_fails(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 53, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
             ]
 
         get.side_effect=Exception
@@ -196,23 +241,24 @@ class TestIppmDNSBridge(unittest.TestCase):
     def test_gethref_second_call_uses_cache(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 99
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 13, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
             ]
 
         get.side_effect = [ mock.DEFAULT, Exception ]
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[1]["txt"]["api_proto"] + "://" + services[1]["address"] + ":" + str(services[1]["port"]))
+        self.assertEqual(href, services[1]["protocol"] + "://" + services[1]["address"] + ":" + str(services[1]["port"]))
 
         get.reset_mock()
         href = self.UUT.getHref(srv_type)
         get.assert_not_called()
-        self.assertEqual(href, services[2]["txt"]["api_proto"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
+        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
 
 
     @mock.patch('requests.get')
@@ -220,41 +266,43 @@ class TestIppmDNSBridge(unittest.TestCase):
     def test_gethref_second_call_uses_cache_at_high_priority(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 100, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 100, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 100, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
             ]
 
         get.side_effect = [ mock.DEFAULT, Exception ]
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[0]["txt"]["api_proto"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
+        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
 
         get.reset_mock()
         href = self.UUT.getHref(srv_type)
         get.assert_not_called()
-        self.assertEqual(href, services[0]["txt"]["api_proto"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
+        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
     def test_gethref_second_call_rechecks_if_only_low_priority_servers_exist(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 200, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 300, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 400, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
+            { "priority" : 200, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 300, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 400, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
             ]
 
         second_services = [
-            { "priority" : 200, "txt" : { "api_proto" : "https" }, "address" : "service_address0", "port" : 12345 },
-            { "priority" : 300, "txt" : { "api_proto" : "httpt" }, "address" : "service_address1", "port" : 12346 },
-            { "priority" : 400, "txt" : { "api_proto" : "httpu" }, "address" : "service_address2", "port" : 12347 },
-            { "priority" : 100, "txt" : { "api_proto" : "httpv" }, "address" : "service_address3", "port" : 12348 },
+            { "priority" : 200, "protocol" : "http", "address" : "service_address0", "port" : 12345 },
+            { "priority" : 300, "protocol" : "http", "address" : "service_address1", "port" : 12346 },
+            { "priority" : 400, "protocol" : "http", "address" : "service_address2", "port" : 12347 },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address3", "port" : 12348 },
             ]
 
         getmocks = [ mock.MagicMock(name="get1()"), mock.MagicMock(name="get2()") ]
@@ -270,4 +318,4 @@ class TestIppmDNSBridge(unittest.TestCase):
         get.reset_mock()
         href = self.UUT.getHref(srv_type)
         get.assert_called_once_with("http://127.0.0.1/x-ipstudio/mdnsbridge/v1.0/" + srv_type + "/", timeout=0.5, proxies={'http': ''})
-        self.assertEqual(href, second_services[3]["txt"]["api_proto"] + "://" + second_services[3]["address"] + ":" + str(second_services[3]["port"]))
+        self.assertEqual(href, second_services[3]["protocol"] + "://" + second_services[3]["address"] + ":" + str(second_services[3]["port"]))

@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import socket
-from zeroconf import Zeroconf
+from zeroconf_monkey import Zeroconf
 from nmoscommon.logger import Logger
 from .mdnsExceptions import InterfaceNotFoundException
 

@@ -128,7 +128,8 @@ packages_required = [
     "wsaccel>=0.6.2",
     "mediatimestamp>=1.0.1",
     "mediajson>=1.0.0",
-    "dnspython>=1.12.0"
+    "dnspython>=1.12.0",
+    "zeroconf-monkey>=0.1.0"
 ]
 
 # Check if setuptools is recent enough to recognise python_version syntax
@@ -143,10 +144,7 @@ else:
     packages_required.append("zeroconf==0.19.1;python_version<'3.0'")
     packages_required.append("zeroconf>=0.21.0;python_version>='3.0'")
 
-# The following are included only as the package fails to download from pip
-deps_required = [
-    "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/pybonjour/pybonjour-1.1.1.tar.gz#egg=pybonjour-1.1.1"  # NOQA: E501
-]
+deps_required = []
 
 
 setup(name="nmoscommon",

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from zeroconf import ServiceBrowser
+from zeroconf_monkey import ServiceBrowser
 
 
 class MDNSSubscription(object):

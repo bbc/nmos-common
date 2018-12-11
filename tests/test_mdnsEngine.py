@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import unittest
-import zeroconf
+import zeroconf_monkey as zeroconf
 from nmoscommon.mdns import MDNSEngine
 from nmoscommon.mdns.mdnsExceptions import ServiceAlreadyExistsException, InterfaceNotFoundException
 from nmoscommon.mdns.mdnsExceptions import ServiceNotFoundException

@@ -1,4 +1,4 @@
-from zeroconf import Zeroconf
+from zeroconf_monkey import Zeroconf
 from .mdnsSubscription import MDNSSubscription
 
 

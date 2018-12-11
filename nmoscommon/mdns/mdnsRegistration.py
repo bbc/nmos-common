@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zeroconf import ServiceInfo
+from zeroconf_monkey import ServiceInfo
 from socket import inet_aton
 import time
 import six

@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import zeroconf
+import zeroconf_monkey as zeroconf
 from nmoscommon.logger import Logger
 from .dnsServiceController import DNSServiceController
 from .mdnsListener import MDNSListener
@@ -24,13 +24,6 @@ from .mdnsExceptions import ServiceAlreadyExistsException, InterfaceNotFoundExce
 from .mdnsInterfaceController import MDNSInterfaceController
 from .mdnsRegistrationController import MDNSRegistrationController
 from .mdnsSubscriptionController import MDNSSubscriptionController
-from .mdnsServiceTypeName import service_type_name
-
-# This is required to make the over-long nmos-registratin service name pass vaidation
-try:
-    zeroconf.service_type_name = service_type_name
-except AttributeError:
-    pass
 
 
 class MDNSEngine(object):

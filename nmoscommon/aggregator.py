@@ -25,11 +25,10 @@ import gevent.queue
 from nmoscommon.logger import Logger
 from nmoscommon.mdnsbridge import IppmDNSBridge
 
-from nmoscommon import nmoscommonconfig
-from nmoscommon import config as _config
+from nmoscommon.nmoscommonconfig import config as _config
 import traceback
 
-AGGREGATOR_APIVERSION = _config.get('nodefacade', {}).get('NODE_REGVERSION', 'v1.2')
+AGGREGATOR_APIVERSION = _config.get('nodefacade').get('NODE_REGVERSION')
 AGGREGATOR_APINAMESPACE = "x-nmos"
 AGGREGATOR_APINAME = "registration"
 
@@ -309,7 +308,7 @@ class Aggregator(object):
             # to web clients - so, sacrifice a little timeliness for things working as designed the
             # majority of the time...
             try:
-                if nmoscommonconfig.config.get('prefer_ipv6',False) == False:
+                if _config.get('prefer_ipv6') is False:
                     R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, headers=headers)
                 else:
                     R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, headers=headers, proxies={'http':''})

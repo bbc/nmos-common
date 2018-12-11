@@ -15,7 +15,7 @@
 from __future__ import absolute_import
 import logging
 import sys
-from . import nmoscommonconfig
+from nmoscommon.nmoscommonconfig import config as _config
 
 # Check to see if BBC R&D internal logger is present
 try:  # pragma: no cover
@@ -35,11 +35,10 @@ class PurePythonLogger:
         logFormat = logging.Formatter(
             '%(asctime)s : %(name)s : %(levelname)s : %(message)s')
 
-        config = nmoscommonconfig.config
         logLevel = getattr(
             logging,
-            config.get("logging", {}).get("level", "DEBUG"))
-        logOutputs = config.get("logging", {}).get("output", ["file", "stdout"])
+            _config.get("logging").get("level"))
+        logOutputs = _config.get("logging").get("output")
 
         self.log = logging.getLogger(node_name)
         self.log.setLevel(logLevel)
@@ -47,9 +46,9 @@ class PurePythonLogger:
         if not PurePythonLogger.logsOpened:
             if "file" in logOutputs:
                 try:
-                    fileLoc = config.get(
-                        "logging", {}).get(
-                        "fileLocation", "/var/log/nmos.log")
+                    fileLoc = _config.get(
+                        "logging").get(
+                        "fileLocation")
                     fileHandler = logging.FileHandler(fileLoc)
                     fileHandler.setLevel(logLevel)
                     fileHandler.setFormatter(logFormat)

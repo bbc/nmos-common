@@ -1330,7 +1330,7 @@ Differences:
         UUT = StubWebAPI()
         self.assertFalse(UUT.default_authenticate(None))
 
-    @mock.patch('nmoscommon.webapi.config', {'node_hostname' : 'example.com', 'https_mode' : 'enabled'})
+    @mock.patch('nmoscommon.webapi._config', {'node_hostname' : 'example.com', 'https_mode' : 'enabled'})
     @mock.patch('nmoscommon.webapi.request', headers={ 'X-Forwarded-Path' : '/dummy/path', 'X-Forwarded-Proto' : 'ftp' }, url="ntp://bad_site.com/man/in/the/middle/")
     def test_htmlify(self, request):
         """The method htmlify should covert json into html."""

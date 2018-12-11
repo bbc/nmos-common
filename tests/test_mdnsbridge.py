@@ -71,7 +71,7 @@ class TestIppmDNSBridge(unittest.TestCase):
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
-    def test_gethref_returns_first_service_with_matching_priority(self, rand, get):
+    def test_gethref_returns_only_service_with_matching_priority(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 100
         self.UUT.config['https_mode'] = "disabled"
@@ -89,7 +89,7 @@ class TestIppmDNSBridge(unittest.TestCase):
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
-    def test_gethref_returns_first_service_with_matching_priority_https(self, rand, get):
+    def test_gethref_returns_only_service_with_matching_priority_https(self, rand, get):
         srv_type = "potato"
         self.UUT.config['priority'] = 100
         self.UUT.config['https_mode'] = "enabled"

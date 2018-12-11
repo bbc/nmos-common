@@ -114,6 +114,9 @@ class IppmDNSBridge(object):
                         self.services[srv_type].append(dns_data)
                     elif self.config["https_mode"] != "enabled" and dns_data["protocol"] == "http":
                         self.services[srv_type].append(dns_data)
+                    else:
+                        self.logger.writeDebug(("Ignoring service with IP {} as protocol '{}' doesn't match the "
+                                                "current mode").format(dns_data["address"], dns_data["protocol"]))
         except Exception as e:
             self.logger.writeWarning("Exception updating services: {}".format(e))
 

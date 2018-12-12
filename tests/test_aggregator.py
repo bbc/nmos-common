@@ -946,7 +946,7 @@ class TestAggregator(unittest.TestCase):
         elif to_point == self.SEND_TOO_MANY_RETRIES:
             expected_exception = TooManyRetries
 
-        with mock.patch.dict(nmoscommon.aggregator.nmoscommonconfig.config, { 'prefer_ipv6' : prefer_ipv6 }):
+        with mock.patch.dict(nmoscommon.aggregator._config, { 'prefer_ipv6' : prefer_ipv6 }):
             with mock.patch("requests.request", side_effect=request) as _request:
                 R = None
                 if expected_exception is not None:

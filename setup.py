@@ -29,15 +29,23 @@ def create_default_conf():
     if os.path.isfile(fname):
         return
 
+    # Defaults defined in nmoscommonconfig.py
     defaultData = {
         "priority": 0,
+        "https_mode": "disabled",
+        "prefer_ipv6": False,
+        "node_hostname": None,
+        "fix_proxy": "disabled",
         "logging": {
-          "level": "DEBUG",
-          "fileLocation": "/var/log/nmos.log",
-          "output": [
-            "file",
-            "stdout"
-          ]
+            "level": "DEBUG",
+            "fileLocation": "/var/log/nmos.log",
+            "output": [
+                "file",
+                "stdout"
+            ]
+        },
+        "nodefacade": {
+            "NODE_REGVERSION": "v1.2"
         }
     }
 
@@ -146,7 +154,7 @@ deps_required = [
 
 
 setup(name="nmoscommon",
-      version="0.7.2",
+      version="0.7.3",
       description="Common components for the BBC's NMOS implementations",
       url='https://github.com/bbc/nmos-common',
       author='Peter Brightwell',

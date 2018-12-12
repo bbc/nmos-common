@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.7.3
+- Define config defaults in nmoscommonconfig
+
 ## 0.7.2
 - Check http/https mode when retrieving mDNS bridge results
 

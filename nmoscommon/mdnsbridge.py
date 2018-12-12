@@ -17,18 +17,17 @@ from __future__ import absolute_import
 
 import requests
 import random
-import os
-import json
 
-from .nmoscommonconfig import config as _config
+from nmoscommon.nmoscommonconfig import config as _config
 
 from .logger import Logger
+
 
 class IppmDNSBridge(object):
     def __init__(self, logger=None):
         self.logger = Logger("mdnsbridge", logger)
         self.services = {}
-        self.config = {"priority": 0, "https_mode": "disabled"}
+        self.config = {}
         self.config.update(_config)
 
     def _checkLocalQueryServiceExists(self):
@@ -45,10 +44,10 @@ class IppmDNSBridge(object):
         return ""
 
     def getHref(self, srv_type, priority=None):
-        if priority == None:
+        if priority is None:
             priority = self.config["priority"]
 
-        if self.logger != None:
+        if self.logger is not None:
             self.logger.writeDebug("IppmDNSBridge priority = {}".format(priority))
 
         # Check if type is in services. If not add it

@@ -16,13 +16,37 @@ from __future__ import absolute_import
 from __future__ import print_function
 import os
 import json
+import copy
+
+# If updating the defaults, please change them in setup.py too!
+config_defaults = {
+    "priority": 0,
+    "https_mode": "disabled",
+    "prefer_ipv6": False,
+    "node_hostname": None,
+    "fix_proxy": "disabled",
+    "logging": {
+        "level": "DEBUG",
+        "fileLocation": "/var/log/nmos.log",
+        "output": [
+            "file",
+            "stdout"
+        ]
+    },
+    "nodefacade": {
+        "NODE_REGVERSION": "v1.2"
+    }
+}
 
 config = {}
+config.update(copy.deepcopy(config_defaults))
 
 try:
     config_file = "/etc/nmoscommon/config.json"
     if os.path.isfile(config_file):
         f = open(config_file, 'r')
-        config = json.loads(f.read())
+        config_load = json.loads(f.read())
+        # Note: This will override objects within the config object in full!
+        config.update(config_load)
 except Exception as e:
     print("Exception loading config: {}".format(e))

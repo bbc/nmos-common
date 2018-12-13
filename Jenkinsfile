@@ -7,7 +7,7 @@
  - Run Python 3 unit tests in tox
  - Build Debian packages for supported Ubuntu versions
 
- If these steps succeed and the master branch is being built, wheels and debs are uploaded to Artifactory and the
+ If these steps succeed and the master branch is being built, wheels and debs are uploaded to PyPI and the
  R&D Debian mirrors.
 
  Optionally you can set FORCE_PYUPLOAD to force upload to Artifactory, and FORCE_DEBUPLOAD to force Debian package
@@ -25,10 +25,13 @@ pipeline {
     parameters {
         booleanParam(name: "FORCE_PYUPLOAD", defaultValue: false, description: "Force Python artifact upload")
         booleanParam(name: "FORCE_DEBUPLOAD", defaultValue: false, description: "Force Debian package upload")
+        booleanParam(name: "INTEGRATION_TEST", defaultValue: true, description: "Run integration test using joint ri?")	
+        booleanParam(name: "DESTROY_VAGRANT", defaultValue: false, description: "Destroy integration testing vagrant box before build?")
     }
     environment {
         http_proxy = "http://www-cache.rd.bbc.co.uk:8080"
         https_proxy = "http://www-cache.rd.bbc.co.uk:8080"
+        NMOS_RI_COMMON_BRANCH = "${env.BRANCH_NAME}"
     }
     stages {
         stage("Clean Environment") {
@@ -78,6 +81,48 @@ pipeline {
                         }
                     }
                 }
+                stage ("Integration Tests") {	
+                    stages{	
+                        stage ("Integration Tests") {	
+                            agent {	
+                                node{	
+                                    label 'apmm-slave&&baremetal'	
+                                }	
+                            }	
+                            when{	
+                                expression { params.INTEGRATION_TEST }	
+                            }	
+                            stages{	
+                                stage ("Start Test Environment") {	
+                                    steps{	
+                                        sh 'rm -r nmos-joint-ri || :'	
+                                        withBBCGithubSSHAgent{	
+                                            sh 'git clone git@github.com:bbc/nmos-joint-ri.git'
+                                        }	
+                                        dir ('nmos-joint-ri/vagrant') {	
+                                            sh 'vagrant up --provision'
+                                        }	
+                                    }	
+                                }	
+                                stage ("Run Integration Tests") {	
+                                    steps{	
+                                        dir ('nmos-joint-ri') {	
+                                            bbcVagrantFindPorts(vagrantDir: "vagrant")	
+                                            sh 'python3 -m unittest discover'
+                                        }	
+                                    }	
+                                }	
+                            }	
+                            post{	
+                                always{	
+                                    dir ('nmos-joint-ri/vagrant') {	
+                                        sh 'vagrant destroy -f'
+                                    }	
+                                }	
+                            }	
+                        }	
+                    }	
+                }
             }
         }
         stage ("Debian Source Build") {
@@ -103,44 +148,6 @@ pipeline {
         }
         stage ("Build Packages") {
             parallel{
-                stage ("Build wheels") {
-                    stages {
-                        stage ("Build py2.7 wheel") {
-                            steps {
-                                script {
-                                    env.py27wheel_result = "FAILURE"
-                                }
-                                bbcGithubNotify(context: "wheelBuild/py2.7", status: "PENDING")
-                                bbcMakeWheel("py27")
-                                script {
-                                    env.py27wheel_result = "SUCCESS" // This will only run if the steps above succeeded
-                                }
-                            }
-                            post {
-                                always {
-                                    bbcGithubNotify(context: "wheelBuild/py2.7", status: env.py27wheel_result)
-                                }
-                            }
-                        }
-                        stage ("Build py3 wheel") {
-                            steps {
-                                script {
-                                    env.py3wheel_result = "FAILURE"
-                                }
-                                bbcGithubNotify(context: "wheelBuild/py3", status: "PENDING")
-                                bbcMakeWheel("py3")
-                                script {
-                                    env.py3wheel_result = "SUCCESS" // This will only run if the steps above succeeded
-                                }
-                            }
-                            post {
-                                always {
-                                    bbcGithubNotify(context: "wheelBuild/py3", status: env.py3wheel_result)
-                                }
-                            }
-                        }
-                    }
-                }
                 stage ("Build Deb with pbuilder") {
                     steps {
                         script {
@@ -179,7 +186,7 @@ pipeline {
                 }
             }
             parallel {
-                stage ("Upload to Artifactory") {
+                stage ("Upload to PyPI") {
                     when {
                         anyOf {
                             expression { return params.FORCE_PYUPLOAD }
@@ -190,17 +197,20 @@ pipeline {
                     }
                     steps {
                         script {
-                            env.artifactoryUpload_result = "FAILURE"
+                            env.pypiUpload_result = "FAILURE"
                         }
-                        bbcGithubNotify(context: "artifactory/upload", status: "PENDING")
-                        bbcTwineUpload(toxenv: "py3")
+                        bbcGithubNotify(context: "pypi/upload", status: "PENDING")
+                        sh 'rm -rf dist/*'
+                        bbcMakeGlobalWheel("py27")
+                        bbcMakeGlobalWheel("py3")
+                        bbcTwineUpload(toxenv: "py3", pypi: true)
                         script {
-                            env.artifactoryUpload_result = "SUCCESS" // This will only run if the steps above succeeded
+                            env.pypiUpload_result = "SUCCESS" // This will only run if the steps above succeeded
                         }
                     }
                     post {
                         always {
-                            bbcGithubNotify(context: "artifactory/upload", status: env.artifactoryUpload_result)
+                            bbcGithubNotify(context: "pypi/upload", status: env.pypiUpload_result)
                         }
                     }
                 }

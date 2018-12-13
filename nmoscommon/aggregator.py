@@ -25,11 +25,10 @@ import gevent.queue
 from nmoscommon.logger import Logger
 from nmoscommon.mdnsbridge import IppmDNSBridge
 
-from nmoscommon import nmoscommonconfig
-from nmoscommon import config as _config
+from nmoscommon.nmoscommonconfig import config as _config
 import traceback
 
-AGGREGATOR_APIVERSION = _config.get('nodefacade', {}).get('NODE_REGVERSION', 'v1.2')
+AGGREGATOR_APIVERSION = _config.get('nodefacade').get('NODE_REGVERSION')
 AGGREGATOR_APINAMESPACE = "x-nmos"
 AGGREGATOR_APINAME = "registration"
 
@@ -290,8 +289,10 @@ class Aggregator(object):
         if self.aggregator == "":
             self.aggregator = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE)
 
+        headers = None
         if data is not None:
             data = json.dumps(data)
+            headers = {"Content-Type": "application/json"}
 
         url = AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url
         for i in range(0, 3):
@@ -307,10 +308,10 @@ class Aggregator(object):
             # to web clients - so, sacrifice a little timeliness for things working as designed the
             # majority of the time...
             try:
-                if nmoscommonconfig.config.get('prefer_ipv6',False) == False:
-                    R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0)
+                if _config.get('prefer_ipv6') is False:
+                    R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, headers=headers)
                 else:
-                    R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, proxies={'http':''})
+                    R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, headers=headers, proxies={'http':''})
                 if R is None:
                     # Try another aggregator
                     self.logger.writeWarning("No response from aggregator {}".format(self.aggregator))

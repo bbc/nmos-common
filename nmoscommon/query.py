@@ -27,10 +27,9 @@ import itertools
 
 from nmoscommon.logger import Logger
 
-from nmoscommon import nmoscommonconfig
-from nmoscommon import config as _config
+from nmoscommon.nmoscommonconfig import config as _config
 
-QUERY_APIVERSION = _config.get('nodefacade', {}).get('NODE_REGVERSION', 'v1.2')
+QUERY_APIVERSION = _config.get('nodefacade').get('NODE_REGVERSION')
 QUERY_APINAMESPACE = "x-nmos"
 QUERY_APINAME = "query"
 QUERY_MDNSTYPE = "nmos-query"

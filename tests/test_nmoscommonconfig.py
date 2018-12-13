@@ -38,7 +38,9 @@ class TestNMOSCommonConfig(unittest.TestCase):
                 reload_module(nmoscommon.nmoscommonconfig)
                 from nmoscommon.nmoscommonconfig import config
                 isfile.assert_called_with('/etc/nmoscommon/config.json')
-                self.assertEqual(config, test_data)
+                for test_key in test_data.keys():
+                    self.assertIn(test_key, config)
+                    self.assertEqual(test_data[test_key], config[test_key])
 
     def test_import_exception(self):
         test_data = { "foo" : "bar",
@@ -46,9 +48,9 @@ class TestNMOSCommonConfig(unittest.TestCase):
         with mock.patch('os.path.isfile', return_value=True) as isfile:
             with mock.patch(BUILTINS + '.open', create=True, side_effect=Exception) as _open:
                 reload_module(nmoscommon.nmoscommonconfig)
-                from nmoscommon.nmoscommonconfig import config
+                from nmoscommon.nmoscommonconfig import config, config_defaults
                 isfile.assert_called_with('/etc/nmoscommon/config.json')
-                self.assertEqual(config, {})
+                self.assertEqual(config, config_defaults)
 
     def test_import_when_no_file(self):
         test_data = { "foo" : "bar",
@@ -56,6 +58,6 @@ class TestNMOSCommonConfig(unittest.TestCase):
         with mock.patch('os.path.isfile', return_value=False) as isfile:
             with mock.patch(BUILTINS + '.open', create=True) as _open:
                 reload_module(nmoscommon.nmoscommonconfig)
-                from nmoscommon.nmoscommonconfig import config
+                from nmoscommon.nmoscommonconfig import config, config_defaults
                 isfile.assert_called_with('/etc/nmoscommon/config.json')
-                self.assertEqual(config, {})
+                self.assertEqual(config, config_defaults)

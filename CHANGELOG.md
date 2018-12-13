@@ -1,5 +1,27 @@
 # NMOS Common Library Changelog
 
+## 0.7.3
+- Define config defaults in nmoscommonconfig
+
+## 0.7.2
+- Check http/https mode when retrieving mDNS bridge results
+
+## 0.7.1
+- Deep copy objects when registered using the Facade class
+
+## 0.7.0
+- Add mechanism to register clocks with the Node API via Facade class
+
+## 0.6.9
+- Resolve mismatch with schemas for webapi error responses
+
+## 0.6.8
+- Resolve issue where interactions of aggregator.py with Registration API
+  failed to set Content-Type
+
+## 0.6.7
+- Updated stdeb.cfg to include dependencies on mediajson and mediatimestamp
+
 ## 0.6.6
 - Moved json sublibrary out to mediajson and referenced it
   here for backwards compatibility.

@@ -1,5 +1,14 @@
 # NMOS Common Library Changelog
 
+## 0.7.3
+- Define config defaults in nmoscommonconfig
+
+## 0.7.2
+- Check http/https mode when retrieving mDNS bridge results
+
+## 0.7.1
+- Deep copy objects when registered using the Facade class
+
 ## 0.7.0
 - Add mechanism to register clocks with the Node API via Facade class
 

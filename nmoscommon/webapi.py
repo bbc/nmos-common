@@ -53,7 +53,7 @@ except:  # pragma: no cover
     from urllib import request as http
     from urllib.parse import urlparse
 
-from nmoscommon.nmoscommonconfig import config
+from nmoscommon.nmoscommonconfig import config as _config
 
 HOST = None
 itt = 0
@@ -95,8 +95,10 @@ def htmlify(r, mimetype, status=200):
     # additional external proxies could cause an issue here, so we can override the hostname
     # in the config to an externally-defined one if there are multiple reverse proxies
     path = request.headers.get('X-Forwarded-Path', request.path)
-    host = config.get('node_hostname', request.headers.get('X-Forwarded-Host', request.host))
-    if config.get('https_mode', 'disabled') == 'enabled':
+    host = _config.get('node_hostname')
+    if host is None:
+        host = request.headers.get('X-Forwarded-Host', request.host)
+    if _config.get('https_mode') == 'enabled':
         scheme = 'https'
     else:
         scheme = request.headers.get('X-Forwarded-Proto', urlparse(request.url).scheme)
@@ -496,7 +498,7 @@ class WebAPI(object):
         self.add_routes(self, basepath='')
 
         # Enable ProxyFix middleware if required
-        if config.get('fix_proxy', 'disabled') == 'enabled':
+        if _config.get('fix_proxy') == 'enabled':
             self.app.wsgi_app = ProxyFix(self.app.wsgi_app)
 
      def add_routes(self, routesObject, basepath):

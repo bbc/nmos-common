@@ -501,7 +501,7 @@ class WebAPI(object):
         if _config.get('fix_proxy') == 'enabled':
             self.app.wsgi_app = ProxyFix(self.app.wsgi_app)
 
-     def add_routes(self, routesObject, basepath):
+    def add_routes(self, routesObject, basepath):
 
         assert not basepath.endswith('/'), "basepath must not end with a slash"
 

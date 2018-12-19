@@ -16,7 +16,7 @@
 
 from socket import inet_ntoa
 from ..logger import Logger
-from queue import Queue
+from six.moves import queue
 from threading import Thread
 
 
@@ -28,7 +28,7 @@ class MDNSListener(object):
         self.registerOnly = registerOnly
         self.records = {}
         self.nameMap = {}
-        self._resolve_queue = Queue()
+        self._resolve_queue = queue.Queue()
 
     def add_service(self, zeroconf, srv_type, name):
         self._resolve_queue.put((srv_type, name, zeroconf))

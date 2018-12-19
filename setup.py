@@ -46,7 +46,8 @@ def create_default_conf():
         },
         "nodefacade": {
             "NODE_REGVERSION": "v1.2"
-        }
+        },
+        "oauth_mode": False
     }
 
     try:

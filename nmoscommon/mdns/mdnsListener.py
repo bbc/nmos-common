@@ -16,6 +16,8 @@
 
 from socket import inet_ntoa
 from ..logger import Logger
+from queue import Queue
+from threading import Thread
 
 
 class MDNSListener(object):
@@ -26,17 +28,31 @@ class MDNSListener(object):
         self.registerOnly = registerOnly
         self.records = {}
         self.nameMap = {}
+        self._resolve_queue = Queue()
 
-    def add_service(self, zeroconf, type, name):
-        action = "add"
-        info = zeroconf.get_service_info(type, name)
+    def add_service(self, zeroconf, srv_type, name):
+        self._resolve_queue.put((srv_type, name, zeroconf))
+        resolveThread = Thread(target=self._resolve_service_details)
+        resolveThread.daemon = True
+        resolveThread.start()
+
+    def _resolve_service_details(self):
+        threadParameters = self._resolve_queue.get()
+        srv_type = threadParameters[0]
+        name = threadParameters[1]
+        zeroconf = threadParameters[2]
+        info = zeroconf.get_service_info(srv_type, name)
         if info is not None:
-            try:
-                self.records[type][name] = info
-            except KeyError:
-                self.records[type] = {}
-                self.records[type][name] = info
-            self._respondToClient(name, action, info)
+            self._update_record(srv_type, name, info)
+            self._respondToClient(name, "add", info)
+        self._resolve_queue.task_done()
+
+    def _update_record(self, srv_type, name, info):
+        try:
+            self.records[type][name] = info
+        except KeyError:
+            self.records[type] = {}
+            self.records[type][name] = info
 
     def remove_service(self, zeroconf, type, name):
         info = self.records[type].pop(name)

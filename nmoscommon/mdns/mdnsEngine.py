@@ -123,7 +123,7 @@ if __name__ == "__main__":
         # pass
     engine = MDNSEngine()
     engine.start()
-    engine.callback_on_services("_nmos-query._tcp", callback, domain=None)
+    engine.callback_on_services("_nmos-node._tcp", callback, domain=None)
     """engine.register(
         "registration_http",
         "_nmos-registration._tcp",

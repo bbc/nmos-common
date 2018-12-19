@@ -43,6 +43,7 @@ from requests.structures import CaseInsensitiveDict
 
 import flask_oauthlib
 import flask_oauthlib.client
+from authlib.common.errors import AuthlibBaseError, AuthlibHTTPError
 
 from .utils import getLocalIP
 

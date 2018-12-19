@@ -135,7 +135,9 @@ packages_required = [
     "ujson>=1.33",
     "wsaccel>=0.6.2",
     "mediatimestamp>=1.0.1",
-    "mediajson>=1.0.0"
+    "mediajson>=1.0.0",
+    "dnspython>=1.12.0",
+    "zeroconf-monkey>=0.1.0"
 ]
 
 # Check if setuptools is recent enough to recognise python_version syntax
@@ -143,18 +145,18 @@ packages_required = [
 if int(setuptools.__version__.split(".", 1)[0]) < 18:
     # Check python version using legacy mechanism
     if sys.version_info[0:2] < (3, 0):
-        packages_required.append("pybonjour>=1.1.1")
+        packages_required.append("zeroconf<=0.19.1")  # Version locked to preserve Python 2 compatibility
+    else:
+        packages_required.append("zeroconf>=0.21.0")
 else:
-    packages_required.append("pybonjour>=1.1.1;python_version<'3.0'")
+    packages_required.append("zeroconf==0.19.1;python_version<'3.0'")
+    packages_required.append("zeroconf>=0.21.0;python_version>='3.0'")
 
-# The following are included only as the package fails to download from pip
-deps_required = [
-    "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/pybonjour/pybonjour-1.1.1.tar.gz#egg=pybonjour-1.1.1"  # NOQA: E501
-]
+deps_required = []
 
 
 setup(name="nmoscommon",
-      version="0.7.3",
+      version="0.8.0",
       description="Common components for the BBC's NMOS implementations",
       url='https://github.com/bbc/nmos-common',
       author='Peter Brightwell',

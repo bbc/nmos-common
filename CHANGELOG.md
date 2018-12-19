@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.8.0
+- Switch to using Zeroconf for mDNS resolution and Python-DNS for unicast DNS discovery.
+
 ## 0.7.3
 - Define config defaults in nmoscommonconfig
 

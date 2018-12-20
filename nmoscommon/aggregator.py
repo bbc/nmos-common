@@ -32,7 +32,8 @@ AGGREGATOR_APIVERSION = _config.get('nodefacade').get('NODE_REGVERSION')
 AGGREGATOR_APINAMESPACE = "x-nmos"
 AGGREGATOR_APINAME = "registration"
 
-REGISTRATION_MDNSTYPE = "nmos-registration"
+LEGACY_REG_MDNSTYPE = "nmos-registration"
+REGISTRATION_MDNSTYPE = "nmos-register"
 
 class NoAggregator(Exception):
     def __init__(self, mdns_updater = None):
@@ -284,10 +285,16 @@ class Aggregator(object):
         self.heartbeat_thread.join()
         self.queue_thread.join()
 
+    def _get_api_href(self):
+        api_href = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE)
+        if api_href == "":
+            api_href = self.mdnsbridge.getHref(LEGACY_REG_MDNSTYPE)
+        return api_href
+
     # Handle sending all requests to the Registration API, and searching for a new 'aggregator' if one fails
     def _SEND(self, method, url, data=None):
         if self.aggregator == "":
-            self.aggregator = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE)
+            self.aggregator = self._get_api_href()
 
         headers = None
         if data is not None:
@@ -337,7 +344,7 @@ class Aggregator(object):
                 self.logger.writeWarning("{} from aggregator {}".format(ex, self.aggregator))
 
             # This aggregator is non-functional
-            self.aggregator = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE)
+            self.aggregator = self._get_api_href()
             self.logger.writeInfo("Updated aggregator to {} (try {})".format(self.aggregator, i))
 
         raise TooManyRetries(self._mdns_updater)

@@ -943,8 +943,10 @@ class TestAggregator(unittest.TestCase):
 
         if to_point in (self.SEND_AGGREGATOR_EMPTY_CHECK_0, self.SEND_AGGREGATOR_EMPTY_CHECK_1, self.SEND_AGGREGATOR_EMPTY_CHECK_2):
             expected_exception = NoAggregator
+            expected_gethref_calls.append(mock.call(LEGACY_REG_MDNSTYPE))
         elif to_point == self.SEND_TOO_MANY_RETRIES:
             expected_exception = TooManyRetries
+            expected_gethref_calls.append(mock.call(LEGACY_REG_MDNSTYPE))
 
         with mock.patch.dict(nmoscommon.aggregator._config, { 'prefer_ipv6' : prefer_ipv6 }):
             with mock.patch("requests.request", side_effect=request) as _request:

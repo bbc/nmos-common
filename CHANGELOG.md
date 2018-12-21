@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.9.0
+- Prefer new nmos-register mDNS type, with fallback to nmos-registration
+
 ## 0.8.0
 - Switch to using Zeroconf for mDNS resolution and Python-DNS for unicast DNS discovery.
 

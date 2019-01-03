@@ -24,6 +24,7 @@ import gevent.queue
 
 from nmoscommon.logger import Logger
 from nmoscommon.mdnsbridge import IppmDNSBridge
+from nmoscommon.mdns.mdnsExceptions import ServiceNotFoundException
 
 from nmoscommon.nmoscommonconfig import config as _config
 import traceback
@@ -380,7 +381,11 @@ class MDNSUpdater:
             if (action == "register") or (action == "update") or (action == "unregister"):
                 self.logger.writeDebug("mDNS action: {} {}".format(action, type))
                 self._increment_service_version(type)
-                self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
+                try:
+                    self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
+                except ServiceNotFoundException:
+                    self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
+                                                                                                        self.mdns_name))
 
     def _increment_service_version(self, type):
         self.service_versions[self.mappings[type]] = self.service_versions[self.mappings[type]]+1
@@ -401,14 +406,22 @@ class MDNSUpdater:
         if not self.p2p_enable:
             self.logger.writeInfo("Enabling P2P Discovery");
             self.p2p_enable = True
-            self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
+            try:
+                self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
+            except ServiceNotFoundException:
+                self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
+                                                                                                    self.mdns_name))
 
     def P2P_disable(self):
         if self.p2p_enable:
             self.logger.writeInfo("Disabling P2P Discovery");
             self.p2p_enable = False
             self._reset_P2P_enable_count()
-            self.mdns.update(self.mdns_name, self.mdns_type, self.txt_rec_base)
+            try:
+                self.mdns.update(self.mdns_name, self.mdns_type, self.txt_rec_base)
+            except ServiceNotFoundException:
+                self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
+                                                                                                    self.mdns_name))
         else:
             self._reset_P2P_enable_count()
 

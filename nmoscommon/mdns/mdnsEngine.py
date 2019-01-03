@@ -33,11 +33,12 @@ class MDNSEngine(object):
         self.dnsServiceControllers = []
 
     def start(self):
-        self.logger = Logger('mdns-engine')
-        self.subscriptionController = MDNSSubscriptionController()
-        self.registrationController = MDNSRegistrationController()
-        self.interfaceController = MDNSInterfaceController(self.logger)
-        self.running = True
+        if not self.running:
+            self.logger = Logger('mdns-engine')
+            self.subscriptionController = MDNSSubscriptionController()
+            self.registrationController = MDNSRegistrationController()
+            self.interfaceController = MDNSInterfaceController(self.logger)
+            self.running = True
 
     def stop(self):
         self.close()

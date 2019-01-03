@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.9.1
+- Handle uncaught mDNS exceptions and manage double calls to start mDNSEngine
+
 ## 0.9.0
 - Prefer new nmos-register mDNS type, with fallback to nmos-registration
 

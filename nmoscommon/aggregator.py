@@ -286,6 +286,11 @@ class Aggregator(object):
         self.heartbeat_thread.join()
         self.queue_thread.join()
 
+    def status(self):
+        return {"api_href": self.aggregator,
+                "api_version": AGGREGATOR_APIVERSION,
+                "registered": self._registered["registered"]}
+
     def _get_api_href(self):
         api_href = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE)
         if api_href == "":

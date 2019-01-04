@@ -25,7 +25,7 @@ class TestDNSListener(unittest.TestCase):
         self.addr = "192.168.0.1"
         self.port = "8080"
         self.type = "_nmos-registration._tcp"
-        self.name = "registration_http_nmos-registration._tcp"
+        self.name = "registration_http._nmos-registration._tcp"
         self.txt = {}
         self.callbackMethod = MagicMock()
         registerOnly = False

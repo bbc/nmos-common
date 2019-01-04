@@ -101,15 +101,16 @@ class MDNSEngine(object):
 
     def callback_on_services(self, regtype, callback, registerOnly=True, domain=None):
         self._autostart_if_required()
-        if domain == ".local" or domain is None:
+        if domain == "local" or domain is None:
             listener = MDNSListener(callback, registerOnly)
             self.subscriptionController.addSubscription(listener, regtype)
-        if domain != '.local':
+        if domain != 'local':
             dnsServiceController = DNSServiceController(
                 regtype,
                 callback,
                 self.logger,
-                registerOnly
+                registerOnly,
+                domain
             )
             dnsServiceController.start()
             self.dnsServiceControllers.append(dnsServiceController)

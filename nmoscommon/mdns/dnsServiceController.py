@@ -30,11 +30,12 @@ TTL of any found service, or no less than once an hour, whichever is shorter"""
 
 class DNSServiceController(object):
 
-    def __init__(self, type, callback, logger, registerOnly):
+    def __init__(self, type, callback, logger, registerOnly, domain=None):
         self.running = False
         self.logger = logger
         self.type = type
         self.services = {}
+        self.domain = domain
         self.listener = DNSListener(callback, registerOnly)
         self.timer = None
 
@@ -59,11 +60,11 @@ class DNSServiceController(object):
         return accumulator
 
     def _getDNSServices(self):
-        if not dnsUtils.checkDNSSDActive():
+        if not dnsUtils.checkDNSSDActive(self.domain):
             self.logger.writeError("DNS-SD pointer record not found on current domain")
             return []
         try:
-            return dnsUtils.discoverService(self.type)
+            return dnsUtils.discoverService(self.type, self.domain)
         except DNSRecordNotFound:
             self.logger.writeDebug("Could not find any DNS services of type {}".format(self.type))
             return []

@@ -212,6 +212,9 @@ class Facade(object):
     def get_node_self(self, api_version="v1.1"):
         return self._call_ipc_method("self_get", api_version)
 
+    def get_reg_status(self):
+        return self._call_ipc_method("status_get")
+
     def addClock(self, clk_data):
         self._call_ipc_method("clock_register", clk_data)
 

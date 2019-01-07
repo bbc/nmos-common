@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.9.2
+- Correctly retry query API lookup on HTTP error
+
 ## 0.9.1
 - Handle uncaught mDNS exceptions and manage double calls to start mDNSEngine
 

@@ -62,12 +62,15 @@ class QueryService(object):
         backoff = [0.3, 0.7, 1.0]
         for try_i in xrange(len(backoff)):
             try:
-                return requests.get("{}/{}/{}/{}{}".format(self._query_url, QUERY_APINAMESPACE, QUERY_APINAME, self.apiversion, url))
+                response = requests.get("{}/{}/{}/{}{}".format(self._query_url, QUERY_APINAMESPACE, QUERY_APINAME, self.apiversion, url))
+                response.raise_for_status()
+                return response
             except Exception as e:
                 self.logger.writeWarning("Could not GET from query service at {}{}: {}".format(self._query_url, url, e))
                 if try_i == len(backoff) - 1:
                     raise QueryNotFoundError(e)
 
+                # TODO: sleep between requests to back off
                 self._query_url = self.mdns_bridge.getHref(QUERY_MDNSTYPE, self.priority)
                 self.logger.writeInfo("Trying query at: {}".format(self._query_url))
 

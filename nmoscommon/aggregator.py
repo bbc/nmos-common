@@ -24,6 +24,7 @@ import gevent.queue
 
 from nmoscommon.logger import Logger
 from nmoscommon.mdnsbridge import IppmDNSBridge
+from nmoscommon.mdns.mdnsExceptions import ServiceNotFoundException
 
 from nmoscommon.nmoscommonconfig import config as _config
 import traceback
@@ -32,7 +33,8 @@ AGGREGATOR_APIVERSION = _config.get('nodefacade').get('NODE_REGVERSION')
 AGGREGATOR_APINAMESPACE = "x-nmos"
 AGGREGATOR_APINAME = "registration"
 
-REGISTRATION_MDNSTYPE = "nmos-registration"
+LEGACY_REG_MDNSTYPE = "nmos-registration"
+REGISTRATION_MDNSTYPE = "nmos-register"
 
 class NoAggregator(Exception):
     def __init__(self, mdns_updater = None):
@@ -284,10 +286,16 @@ class Aggregator(object):
         self.heartbeat_thread.join()
         self.queue_thread.join()
 
+    def _get_api_href(self):
+        api_href = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE)
+        if api_href == "":
+            api_href = self.mdnsbridge.getHref(LEGACY_REG_MDNSTYPE)
+        return api_href
+
     # Handle sending all requests to the Registration API, and searching for a new 'aggregator' if one fails
     def _SEND(self, method, url, data=None):
         if self.aggregator == "":
-            self.aggregator = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE)
+            self.aggregator = self._get_api_href()
 
         headers = None
         if data is not None:
@@ -337,7 +345,7 @@ class Aggregator(object):
                 self.logger.writeWarning("{} from aggregator {}".format(ex, self.aggregator))
 
             # This aggregator is non-functional
-            self.aggregator = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE)
+            self.aggregator = self._get_api_href()
             self.logger.writeInfo("Updated aggregator to {} (try {})".format(self.aggregator, i))
 
         raise TooManyRetries(self._mdns_updater)
@@ -373,7 +381,11 @@ class MDNSUpdater:
             if (action == "register") or (action == "update") or (action == "unregister"):
                 self.logger.writeDebug("mDNS action: {} {}".format(action, type))
                 self._increment_service_version(type)
-                self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
+                try:
+                    self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
+                except ServiceNotFoundException:
+                    self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
+                                                                                                        self.mdns_name))
 
     def _increment_service_version(self, type):
         self.service_versions[self.mappings[type]] = self.service_versions[self.mappings[type]]+1
@@ -394,14 +406,22 @@ class MDNSUpdater:
         if not self.p2p_enable:
             self.logger.writeInfo("Enabling P2P Discovery");
             self.p2p_enable = True
-            self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
+            try:
+                self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
+            except ServiceNotFoundException:
+                self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
+                                                                                                    self.mdns_name))
 
     def P2P_disable(self):
         if self.p2p_enable:
             self.logger.writeInfo("Disabling P2P Discovery");
             self.p2p_enable = False
             self._reset_P2P_enable_count()
-            self.mdns.update(self.mdns_name, self.mdns_type, self.txt_rec_base)
+            try:
+                self.mdns.update(self.mdns_name, self.mdns_type, self.txt_rec_base)
+            except ServiceNotFoundException:
+                self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
+                                                                                                    self.mdns_name))
         else:
             self._reset_P2P_enable_count()
 

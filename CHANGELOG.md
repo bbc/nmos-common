@@ -1,5 +1,14 @@
 # NMOS Common Library Changelog
 
+## 0.9.1
+- Handle uncaught mDNS exceptions and manage double calls to start mDNSEngine
+
+## 0.9.0
+- Prefer new nmos-register mDNS type, with fallback to nmos-registration
+
+## 0.8.0
+- Switch to using Zeroconf for mDNS resolution and Python-DNS for unicast DNS discovery.
+
 ## 0.7.3
 - Define config defaults in nmoscommonconfig
 

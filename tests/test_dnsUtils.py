@@ -20,7 +20,6 @@ from copy import deepcopy
 from nmoscommon.mdns.dnsUtils import checkDNSSDActive, getServiceTypes, discoverService
 from nmoscommon.mdns.dnsUtils import getTXTRecord, getSRVRecord
 from mock import MagicMock, patch
-from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
 
 
 class TestDNSUtils(unittest.TestCase):

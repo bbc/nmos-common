@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import dns
-from dns import resolver
 from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
 
 

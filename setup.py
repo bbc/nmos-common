@@ -137,7 +137,7 @@ packages_required = [
     "wsaccel>=0.6.2",
     "mediatimestamp>=1.0.1",
     "mediajson>=1.0.0",
-    "authlib>=0.11",
+    "authlib>=0.10",
     "dnspython>=1.12.0",
     "zeroconf-monkey>=0.1.0"
 ]

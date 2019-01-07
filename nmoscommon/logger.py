@@ -19,7 +19,7 @@ from nmoscommon.nmoscommonconfig import config as _config
 
 # Check to see if BBC R&D internal logger is present
 try:  # pragma: no cover
-    from ipppython.ipplogger import IppLogger
+    from pyipputils.ipplogger import IppLogger
     IPP_LOGGER = True
 except ImportError:  # pragma: no cover
     IPP_LOGGER = False

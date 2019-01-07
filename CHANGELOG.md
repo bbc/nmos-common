@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.9.3
+- Update import for internal logging library
+
 ## 0.9.2
 - Correctly retry query API lookup on HTTP error
 

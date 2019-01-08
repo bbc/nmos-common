@@ -33,6 +33,7 @@ import re
 from pygments import highlight
 from pygments.lexers import JsonLexer, PythonTracebackLexer
 from pygments.formatters import HtmlFormatter
+from mediajson import NMOSJSONEncoder
 import sys
 
 from werkzeug.exceptions import HTTPException
@@ -168,7 +169,7 @@ def htmlify(r, mimetype, status=200):
         if x != '':
             t += '/' + x.strip('/')
             title += '/<a href="' + t + '">' + x.strip('/') + '</a>'
-    return IppResponse(highlight(json.dumps(r, indent=4),
+    return IppResponse(highlight(json.dumps(r, indent=4, cls=NMOSJSONEncoder),
                                  JsonLexer(),
                                  LinkingHTMLFormatter(linenos='table',
                                                      full=True,
@@ -179,7 +180,7 @@ def htmlify(r, mimetype, status=200):
 def jsonify(r, status=200, headers=None):
     if headers == None:
         headers = {}
-    return IppResponse(json.dumps(r, indent=4),
+    return IppResponse(json.dumps(r, indent=4, cls=NMOSJSONEncoder),
                        mimetype='application/json',
                        status=status,
                        headers=headers)

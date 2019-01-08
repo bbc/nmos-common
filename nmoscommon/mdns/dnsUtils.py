@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import dns
+import dns.resolver  # Importing dns alone is not enough for NXDOMAIN to work
 from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
 
 

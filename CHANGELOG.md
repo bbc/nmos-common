@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.9.6
+- Use NMOS JSON serialiser in webapi to serialise media-specific API responses
+
 ## 0.9.5
 - Re-introduces helper functions in webapi for MIME type matching/selection
 

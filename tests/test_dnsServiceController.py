@@ -26,7 +26,7 @@ class TestDNSServiceController(unittest.TestCase):
     def setUp(self):
         self.callback = MagicMock()
         self.logger = MagicMock()
-        self.type = "_test_service_type_.tcp_"
+        self.type = "_test_service_type._tcp"
         self.dut = DNSServiceController(self.type, self.callback, self.logger, False)
         self.services = {"type1": "service1", "type2": "service2", "type3": "service3"}
 

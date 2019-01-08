@@ -77,7 +77,6 @@ class DNSService(object):
 
     def _addService(self):
         self.dnsListener.addListener(self)
-        pass
 
     def _ttlTimerCallback(self):
         try:

@@ -45,17 +45,24 @@ class TestDNSUtils(unittest.TestCase):
         search.search = ["example.com", "result2"]
         return dns
 
-    def helper_test_method(self, method, record, type, addDomain=False, addRecord=False):
+    def helper_test_method(self, method, record, type, addDomain=False, customDomain=None, addRecord=False):
         with patch('nmoscommon.mdns.dnsUtils.dns') as dns:
             self.dns = dns
             self.helper_setup_dns()
             if addDomain:
-                self.expectedRecord = record + ".example.com"
+                if customDomain:
+                    self.expectedRecord = record + "." + customDomain
+                else:
+                    self.expectedRecord = record + ".example.com"
             else:
                 self.expectedRecord = record
             self.expectedType = type
-            if addRecord:
+            if addRecord and customDomain:
+                answer = method(record, customDomain)
+            elif addRecord:
                 answer = method(record)
+            elif customDomain:
+                answer = method(customDomain)
             else:
                 answer = method()
             self.assertTrue(answer)
@@ -75,6 +82,15 @@ class TestDNSUtils(unittest.TestCase):
             self.dns.resolver.query.side_effect = self.dns.resolver.NXDOMAIN
             self.assertFalse(checkDNSSDActive())
 
+    def test_checkDNSDActiveCustom(self):
+        self.helper_test_method(
+            checkDNSSDActive,
+            "lb._dns-sd._udp",
+            "PTR",
+            True,
+            "customdomain.com"
+        )
+
     def test_get_service_types(self):
         self.helper_test_method(
             getServiceTypes,
@@ -83,12 +99,32 @@ class TestDNSUtils(unittest.TestCase):
             True
         )
 
+    def test_get_service_types_custom(self):
+        self.helper_test_method(
+            getServiceTypes,
+            "_services._dns-sd._udp",
+            "PTR",
+            True,
+            "customdomain.com"
+        )
+
     def test_get_discover_service(self):
         self.helper_test_method(
             discoverService,
             "_test_record",
             "PTR",
-            False,
+            True,
+            None,
+            True
+        )
+
+    def test_get_discover_service_custom(self):
+        self.helper_test_method(
+            discoverService,
+            "_test_record",
+            "PTR",
+            True,
+            "customdomain.com",
             True
         )
 
@@ -98,6 +134,7 @@ class TestDNSUtils(unittest.TestCase):
             "_test_record",
             "TXT",
             False,
+            None,
             True
         )
 
@@ -107,6 +144,7 @@ class TestDNSUtils(unittest.TestCase):
             "_test_record",
             "SRV",
             False,
+            None,
             True
         )
 

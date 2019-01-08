@@ -14,44 +14,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import dns
+import dns.resolver  # Importing dns alone is not enough for NXDOMAIN to work
 from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
 
 
-def _appendDomain(record):
+def _defaultDomain():
     resolve = dns.resolver.Resolver()
-    machineDomiain = resolve.search[0]
-    record = record + "." + str(machineDomiain)
+    return str(resolve.search[0])
+
+
+def _appendDomain(record, domainName):
+    record = record + "." + domainName
     return record
 
 
-def _dnsRequest(record, type, addDomain=True):
+def _dnsRequest(record, recordType, addDomain=True, customDomain=None):
     if addDomain:
-        record = _appendDomain(record)
+        if customDomain:
+            record = _appendDomain(record, customDomain)
+        else:
+            record = _appendDomain(record, _defaultDomain())
     try:
-        answers = dns.resolver.query(record, type)
+        answers = dns.resolver.query(record, recordType)
     except dns.resolver.NXDOMAIN:
-        print("Could not find {} type record at {}".format(type, record))
+        print("Could not find {} type record at {}".format(recordType, record))
         raise DNSRecordNotFound
     else:
         return answers
 
 
-def checkDNSSDActive():
+def checkDNSSDActive(customDomain=None):
     try:
-        _dnsRequest('lb._dns-sd._udp', 'PTR')
+        _dnsRequest('lb._dns-sd._udp', 'PTR', True, customDomain)
     except DNSRecordNotFound:
         return False
     else:
         return True
 
 
-def getServiceTypes():
-    return _dnsRequest('_services._dns-sd._udp', 'PTR')
+def getServiceTypes(customDomain=None):
+    return _dnsRequest('_services._dns-sd._udp', 'PTR', True, customDomain)
 
 
-def discoverService(regType):
-    return _dnsRequest(regType, 'PTR', False)
+def discoverService(regType, customDomain=None):
+    return _dnsRequest(regType, 'PTR', True, customDomain)
 
 
 def getTXTRecord(service):

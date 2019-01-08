@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.10.0
+- Add Authlib dependency and error-handling. 'Authorization' added to CORS headers.
+
 ## 0.9.1
 - Handle uncaught mDNS exceptions and manage double calls to start mDNSEngine
 

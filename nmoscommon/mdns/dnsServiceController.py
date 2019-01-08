@@ -61,7 +61,7 @@ class DNSServiceController(object):
     def _getDNSServices(self):
         if not dnsUtils.checkDNSSDActive():
             self.logger.writeError("DNS-SD pointer record not found on current domain")
-            return
+            return []
         try:
             return dnsUtils.discoverService(self.type)
         except DNSRecordNotFound:

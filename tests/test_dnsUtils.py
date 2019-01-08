@@ -16,6 +16,7 @@
 
 
 import unittest
+from copy import deepcopy
 from nmoscommon.mdns.dnsUtils import checkDNSSDActive, getServiceTypes, discoverService
 from nmoscommon.mdns.dnsUtils import getTXTRecord, getSRVRecord
 from mock import MagicMock, patch
@@ -31,10 +32,14 @@ class TestDNSUtils(unittest.TestCase):
             print("record {} type {}".format(record, type))
             return False
 
+        class NXDOMAIN(Exception):
+            pass
+
         dns = self.dns
         dns.resolver = MagicMock()
         dns.resolver.query = MagicMock()
         dns.resolver.query.side_effect = query_call
+        dns.resolver.NXDOMAIN = deepcopy(NXDOMAIN)
         search = MagicMock()
         dns.resolver.Resolver.return_value = search
         search.search = ["example.com", "result2"]
@@ -62,6 +67,13 @@ class TestDNSUtils(unittest.TestCase):
             "PTR",
             True
         )
+
+    def test_checkDNSDFail(self):
+        with patch('nmoscommon.mdns.dnsUtils.dns') as dns:
+            self.dns = dns
+            self.helper_setup_dns()
+            self.dns.resolver.query.side_effect = self.dns.resolver.NXDOMAIN
+            self.assertFalse(checkDNSSDActive())
 
     def test_get_service_types(self):
         self.helper_test_method(

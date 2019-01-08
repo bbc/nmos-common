@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.9.4
+- Bugfix to prevent un-handled errors in unicast DNS dicovery when no PTR record is present
+
 ## 0.9.3
 - Update import for internal logging library
 

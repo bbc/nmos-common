@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.9.5
+- Re-introduces helper functions in webapi for MIME type matching/selection
+
 ## 0.9.4
 - Bugfix to prevent un-handled errors in unicast DNS dicovery when no PTR record is present
 

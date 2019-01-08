@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.11.0
+- Add capability to set a custom domain for unicast DNS-SD
+
 ## 0.10.0
 - Add Authlib dependency and error-handling. 'Authorization' added to CORS headers.
 

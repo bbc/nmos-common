@@ -33,6 +33,7 @@ import re
 from pygments import highlight
 from pygments.lexers import JsonLexer, PythonTracebackLexer
 from pygments.formatters import HtmlFormatter
+from mediajson import NMOSJSONEncoder
 import sys
 
 from werkzeug.exceptions import HTTPException
@@ -55,6 +56,64 @@ except:  # pragma: no cover
     from urllib.parse import urlparse
 
 from nmoscommon.nmoscommonconfig import config as _config
+
+class MediaType(object):
+    def __init__(self, mr):
+        comps = [ x.strip() for x in mr.split(';') ]
+        (self.type, self.subtype) = comps.pop(0).split('/')
+        self.priority = 1.0
+        self.options = []
+        self.accept_index = 0
+        for c in comps:
+            if c[0] == 'q':
+                tmp = [ x.strip() for x in c.split('=') ]
+                if tmp[0] == "q":
+                    self.priority = float(tmp[1])
+                    continue
+            self.options.append(c)
+
+    def __str__(self):
+        return "%s/%s;%s" % (self.type, self.subtype, ';'.join(self.options + [ 'q=%g' % self.priority, ]))
+
+    def __repr__(self):
+        return "MediaType(\"{}\")".format(self.__str__())
+
+    def matches(self, t):
+        if not isinstance(t, MediaType):
+            t = MediaType(t)
+        if t.type == self.type or self.type == '*':
+            if t.subtype == self.subtype or self.subtype == '*':
+                return True
+        return False
+
+def AcceptStringParser(accept_string):
+    return [MediaType(x.strip()) for x in accept_string.split(',')]
+
+def AcceptableType(mt, accept_string):
+    if not isinstance(mt, MediaType):
+        mt = MediaType(mt)
+    for idx, t in enumerate(AcceptStringParser(accept_string)):
+        if t.matches(mt):
+            t.accept_index = idx
+            return t
+    return None
+
+def MostAcceptableType(type_strings, accept_string):
+    """First parameter is a list of media type strings, the second is an HTTP Accept header string. Return
+    value is a string which corresponds to the most acceptable type out of the list provided."""
+    def __cmp(a,b):
+        if a is None and b is None:
+            return 0
+        elif a is None:
+            return 1
+        elif b is None:
+            return -1
+        elif a.priority == b.priority:
+            return cmp(a.accept_index, b.accept_index)
+        else:
+            return -cmp(a.priority, b.priority)
+
+    return sorted([ (mt, AcceptableType(MediaType(mt), accept_string)) for mt in type_strings ], cmp=lambda a,b :__cmp(a[1], b[1]))[0][0]
 
 HOST = None
 itt = 0
@@ -111,7 +170,7 @@ def htmlify(r, mimetype, status=200):
         if x != '':
             t += '/' + x.strip('/')
             title += '/<a href="' + t + '">' + x.strip('/') + '</a>'
-    return IppResponse(highlight(json.dumps(r, indent=4),
+    return IppResponse(highlight(json.dumps(r, indent=4, cls=NMOSJSONEncoder),
                                  JsonLexer(),
                                  LinkingHTMLFormatter(linenos='table',
                                                      full=True,
@@ -122,7 +181,7 @@ def htmlify(r, mimetype, status=200):
 def jsonify(r, status=200, headers=None):
     if headers == None:
         headers = {}
-    return IppResponse(json.dumps(r, indent=4),
+    return IppResponse(json.dumps(r, indent=4, cls=NMOSJSONEncoder),
                        mimetype='application/json',
                        status=status,
                        headers=headers)

@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import dns
-from dns import resolver
 from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
 
 
@@ -39,7 +38,12 @@ def _dnsRequest(record, type, addDomain=True):
 
 
 def checkDNSSDActive():
-    return bool(_dnsRequest('lb._dns-sd._udp', 'PTR'))
+    try:
+        _dnsRequest('lb._dns-sd._udp', 'PTR')
+    except DNSRecordNotFound:
+        return False
+    else:
+        return True
 
 
 def getServiceTypes():

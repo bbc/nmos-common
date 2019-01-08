@@ -49,8 +49,9 @@ class TestDNSServiceController(unittest.TestCase):
         with patch('nmoscommon.mdns.dnsServiceController.dnsUtils') as utils:
             self.utils = utils
             self.utils.checkDNSSDActive.return_value = False
-            self.dut._getDNSServices()
+            services = self.dut._getDNSServices()
             self.assertTrue(self.dut.logger.writeError.called)
+            self.assertEqual(services, [])
 
     def helper_check_service_creation(self, call):
         ptr = call[0][0]
@@ -126,7 +127,7 @@ class TestDNSServiceController(unittest.TestCase):
                     time, _ = timer.call_args[0]
                     self.assertEqual(time, 3)
 
-    def test_no_services(self):
+    def test_no_services_callback_timer(self):
         with patch('nmoscommon.mdns.dnsServiceController.dnsUtils') as utils:
             utils.discoverService.side_effect = DNSRecordNotFound
             with patch('nmoscommon.mdns.dnsServiceController.Timer') as timer:

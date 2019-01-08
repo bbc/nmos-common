@@ -3,6 +3,21 @@
 ## 0.10.0
 - Add Authlib dependency and error-handling. 'Authorization' added to CORS headers.
 
+## 0.9.6
+- Use NMOS JSON serialiser in webapi to serialise media-specific API responses
+
+## 0.9.5
+- Re-introduces helper functions in webapi for MIME type matching/selection
+
+## 0.9.4
+- Bugfix to prevent un-handled errors in unicast DNS dicovery when no PTR record is present
+
+## 0.9.3
+- Update import for internal logging library
+
+## 0.9.2
+- Correctly retry query API lookup on HTTP error
+
 ## 0.9.1
 - Handle uncaught mDNS exceptions and manage double calls to start mDNSEngine
 

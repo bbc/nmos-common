@@ -44,6 +44,7 @@ from requests.structures import CaseInsensitiveDict
 
 import flask_oauthlib
 import flask_oauthlib.client
+from authlib.common.errors import AuthlibBaseError, AuthlibHTTPError
 
 from .utils import getLocalIP
 
@@ -560,7 +561,7 @@ class WebAPI(object):
         if _config.get('fix_proxy') == 'enabled':
             self.app.wsgi_app = ProxyFix(self.app.wsgi_app)
 
-    def add_routes(self, cl, basepath):
+    def add_routes(self, routesObject, basepath):
 
         assert not basepath.endswith('/'), "basepath must not end with a slash"
 
@@ -576,9 +577,9 @@ class WebAPI(object):
                 bases += getbases(x)
             return bases
 
-        for klass in [cl.__class__,] + getbases(cl.__class__):
+        for klass in [routesObject.__class__,] + getbases(routesObject.__class__):
             for name in klass.__dict__.keys():
-                value = getattr(cl, name)
+                value = getattr(routesObject, name)
                 if callable(value):
                     endpoint = "{}_{}".format(basepath.replace('/', '_'), value.__name__)
                     if hasattr(value, 'app_methods') and value.app_methods is not None:
@@ -597,7 +598,7 @@ class WebAPI(object):
                                 origin=value.app_origin,
                                 methods=methods,
                                 headers=headers +
-                                ['Content-Type',
+                                ['Content-Type', 'Authorization',
                                  'token',])(returns_requires_auth(value)))
                     elif hasattr(value, "response_route"):
                         self.app.route(
@@ -606,7 +607,7 @@ class WebAPI(object):
                             methods=["GET", "POST", "HEAD", "OPTIONS"])(crossdomain(
                                 origin='*',
                                 methods=['GET', 'POST', 'HEAD'],
-                                headers=['Content-Type',])(returns_response(value)))
+                                headers=['Content-Type', 'Authorization',])(returns_response(value)))
                     elif hasattr(value, "app_route"):
                         if value.app_auto_json:
                             self.app.route(
@@ -617,7 +618,7 @@ class WebAPI(object):
                                         origin=value.app_origin,
                                         methods=methods,
                                         headers=headers +
-                                        ["Content-Type",])(returns_json(value)))
+                                        ['Content-Type', 'Authorization',])(returns_json(value)))
                         else:
                             self.app.route(
                                     basepath + value.app_route,
@@ -626,7 +627,7 @@ class WebAPI(object):
                                     ["OPTIONS",])(crossdomain(
                                         origin=value.app_origin,
                                         methods=methods,
-                                        headers=headers + ["Content-Type",])(dummy(value)))
+                                        headers=headers + ['Content-Type', 'Authorization',])(dummy(value)))
                     elif hasattr(value, "app_file_route"):
                         self.app.route(
                             basepath + value.app_file_route,
@@ -634,12 +635,12 @@ class WebAPI(object):
                             methods=methods + ["OPTIONS"])(crossdomain(
                                 origin='*',
                                 methods=methods,
-                                headers=headers + ["Content-Type",])(returns_file(value)))
+                                headers=headers + ['Content-Type', 'Authorization',])(returns_file(value)))
                     elif hasattr(value, "app_resource_route"):
                         f = crossdomain(origin='*',
                                             methods=methods,
-                                            headers=headers + ["Content-Type",
-                                                     "api-key",])(returns_json(
+                                            headers=headers + ['Content-Type', 'Authorization',
+                                                     'api-key',])(returns_json(
                                                          obj_path_access(value)))
                         self.app.route(basepath + value.app_resource_route,
                                            methods=methods + ["OPTIONS",],
@@ -650,7 +651,7 @@ class WebAPI(object):
                                 methods=methods + ["OPTIONS",],
                                 endpoint=f.__name__)(f)
                     elif hasattr(value, "sockets_on"):
-                        socket_recv_gen = getattr(cl, "on_websocket_connect", None)
+                        socket_recv_gen = getattr(routesObject, "on_websocket_connect", None)
                         if socket_recv_gen is None:
                             f = self.handle_sock(expects_json(value), self.socks)
                         else:
@@ -719,6 +720,30 @@ class WebAPI(object):
                 }
 
                 return IppResponse(json.dumps(response), status=e.code, mimetype='application/json')
+
+            if isinstance(e, AuthlibHTTPError):
+                response = {
+                    'code': e.status_code,
+                    'error': e.description,
+                    'debug': str({
+                        'traceback': [str(x) for x in traceback.extract_tb(tb)],
+                        'exception': [str(x) for x in traceback.format_exception_only(t, v)]
+                    })
+                }
+
+                return IppResponse(json.dumps(response), status=e.status_code, mimetype='application/json')
+
+            if isinstance(e, AuthlibBaseError):
+                response = {
+                    'code': 400,
+                    'error': e.description,
+                    'debug': str({
+                        'traceback': [str(x) for x in traceback.extract_tb(tb)],
+                        'exception': [str(x) for x in traceback.format_exception_only(t, v)]
+                    })
+                }
+
+                return IppResponse(json.dumps(response), status=400, mimetype='application/json')
 
             response = {
                 'code': 500,

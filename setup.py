@@ -46,7 +46,8 @@ def create_default_conf():
         },
         "nodefacade": {
             "NODE_REGVERSION": "v1.2"
-        }
+        },
+        "oauth_mode": False
     }
 
     try:
@@ -136,6 +137,7 @@ packages_required = [
     "wsaccel>=0.6.2",
     "mediatimestamp>=1.0.1",
     "mediajson>=1.0.0",
+    "authlib>=0.10",
     "dnspython>=1.12.0",
     "zeroconf-monkey>=0.1.0"
 ]
@@ -156,7 +158,7 @@ deps_required = []
 
 
 setup(name="nmoscommon",
-      version="0.9.6",
+      version="0.10.0",
       description="Common components for the BBC's NMOS implementations",
       url='https://github.com/bbc/nmos-common',
       author='Peter Brightwell',

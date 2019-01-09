@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.11.1
+- Modify construction of Depends lines in stdeb
+
 ## 0.11.0
 - Add capability to set a custom domain for unicast DNS-SD
 

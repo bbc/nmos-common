@@ -77,15 +77,19 @@ class Aggregator(object):
         }
         self._running = True
         self._reg_queue = gevent.queue.Queue()
+        self._reset_heartbeat()
         self.heartbeat_thread = gevent.spawn(self._heartbeat)
         self.queue_thread = gevent.spawn(self._process_queue)
+
+    def _reset_heartbeat(self):
+        self.heartbeat_wait = 5  # Heartbeat interval
 
     # The heartbeat thread runs in the background every five seconds.
     # If when it runs the Node is believed to be registered it will perform a heartbeat
     def _heartbeat(self):
         self.logger.writeDebug("Starting heartbeat thread")
         while self._running:
-            heartbeat_wait = 5
+            self._reset_heartbeat()
             if not self._registered["registered"]:
                 self._process_reregister()
             elif self._registered["node"]:
@@ -113,10 +117,20 @@ class Aggregator(object):
                 self._registered["registered"] = False
                 if(self._mdns_updater is not None):
                     self._mdns_updater.inc_P2P_enable_count()
-            while heartbeat_wait > 0 and self._running:
+            while self.heartbeat_wait > 0 and self._running:
                 gevent.sleep(1)
-                heartbeat_wait -= 1
+                self.heartbeat_wait -= 1
         self.logger.writeDebug("Stopping heartbeat thread")
+
+    def _register_node(self):
+        # Register the node, and immediately heartbeat if successful to avoid race with garbage collect.
+        self.logger.writeInfo("Attempting registration for Node {}".format(self._registered["node"]["data"]["id"]))
+        self._SEND("POST", "/resource", self._registered["node"])
+        self._SEND("POST", "/health/nodes/" + self._registered["node"]["data"]["id"])
+        self._reset_heartbeat()
+        self._registered["registered"] = True
+        if self._mdns_updater is not None:
+            self._mdns_updater.P2P_disable()
 
     # Provided the Node is believed to be correctly registered, hand off a single request to the SEND method
     # On client error, clear the resource from the local mirror
@@ -134,15 +148,8 @@ class Aggregator(object):
                     res_key = queue_item["key"]
                     if queue_item["method"] == "POST":
                         if res_type == "node":
-                            data = self._registered["node"]
                             try:
-                                self.logger.writeInfo("Attempting registration for Node {}".format(self._registered["node"]["data"]["id"]))
-                                self._SEND("POST", "/{}".format(namespace), data)
-                                self._SEND("POST", "/health/nodes/" + self._registered["node"]["data"]["id"])
-                                self._registered["registered"] = True
-                                if self._mdns_updater is not None:
-                                    self._mdns_updater.P2P_disable()
-
+                                self._register_node()
                             except Exception as ex:
                                 self.logger.writeWarning("Error registering Node: %r" % (traceback.format_exc(),))
 
@@ -245,13 +252,7 @@ class Aggregator(object):
                 break
 
         try:
-            # Register the node, and immediately heartbeat if successful to avoid race with garbage collect.
-            self.logger.writeInfo("Attempting re-registration for Node {}".format(self._registered["node"]["data"]["id"]))
-            self._SEND("POST", "/resource", self._registered["node"])
-            self._SEND("POST", "/health/nodes/" + self._registered["node"]["data"]["id"])
-            self._registered["registered"] = True
-            if self._mdns_updater is not None:
-                self._mdns_updater.P2P_disable()
+            self._register_node()
         except Exception as e:
             self.logger.writeWarning("Error re-registering Node: {}".format(e))
             self.aggregator == "" # Fallback to prevent us getting stuck if the Reg API issues a 4XX error incorrectly

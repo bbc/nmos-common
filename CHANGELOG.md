@@ -1,7 +1,7 @@
 # NMOS Common Library Changelog
 
-## 0.11.2
-- By default the websocket library does not use the system certificate bundle - now is manually configured to point at it.
+## 0.12.0
+- Expose parameter for modifying websocket SSL behaviour
 
 ## 0.11.1
 - Modify construction of Depends lines in stdeb

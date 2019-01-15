@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.11.2
+- Require a version of `oauthlib` compatible with `flask-oauthlib` ([#75](https://github.com/bbc/nmos-common/issues/75))
+
 ## 0.11.1
 - Modify construction of Depends lines in stdeb
 

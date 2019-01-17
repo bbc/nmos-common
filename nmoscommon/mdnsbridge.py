@@ -94,10 +94,13 @@ class IppmDNSBridge(object):
 
     def _createHref(self, service):
         proto = service['protocol']
-        address = service['address']
-        port = service['port']
-        if ":" in address:
-            address = "[" + address + "]"
+        if service['hostname'] is not None:
+            address = service['hostname']
+        else:
+            address = service['address']
+            if ":" in address:
+                address = "[" + address + "]"
+        port = service['port']        
         return '{}://{}:{}'.format(proto, address, port)
 
     def _updateServices(self, srv_type):

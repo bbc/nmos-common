@@ -27,6 +27,7 @@ class testDNSService(unittest.TestCase):
         self.type = "_nmos-registration._tcp.example.com"
         self.port = 80
         self.ttl = 6
+        self.hostname = "hostname.example.com"
         self.addr = "hostname.example.com."
         self.ip = "192.168.0.1"
         self.srvRecord = "0 0 {} {}".format(self.port, self.addr)
@@ -115,6 +116,9 @@ class testDNSService(unittest.TestCase):
 
     def test_initialise_addr(self):
         self.assertEqual(self.ip, self.dut.address)
+
+    def test_initalise_hostname(self):
+        self.assertEqual(self.hostname, self.dut.hostname)
 
     def test_ttl_callback_duration(self):
         with patch('nmoscommon.mdns.dnsService.Timer') as timer:

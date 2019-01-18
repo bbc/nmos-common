@@ -127,6 +127,8 @@ packages_required = [
     "pyzmq>=15.2.0",
     "pygments>=1.6",
     "python-dateutil>=2.4.2",
+    "oauthlib<3.0.0",
+    "requests-oauthlib<1.2.0",
     "flask-oauthlib>=0.9.1",
     "ws4py>=0.3.2",
     "requests>=2.6",

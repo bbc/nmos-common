@@ -40,7 +40,7 @@ class TestWebSocketClient(unittest.TestCase):
                                          on_error=mock.ANY,
                                          on_close=mock.ANY,
                                          on_open=mock.ANY)
-        WebSocketApp.return_value.run_forever.assert_called_once_with()
+        WebSocketApp.return_value.run_forever.assert_called_once_with(sslopt=None)
         self.assertTrue(UUT.started.is_set())
 
     @mock.patch("websocket.WebSocketApp")
@@ -61,7 +61,7 @@ class TestWebSocketClient(unittest.TestCase):
                                          on_close=mock.ANY,
                                          on_open=mock.ANY)
         self.assertListEqual(WebSocketApp.return_value.run_forever.mock_calls,
-                                 [ mock.call(), mock.call() ] )
+                                 [ mock.call(sslopt=None), mock.call(sslopt=None) ] )
         self.assertTrue(UUT.started.is_set())
 
     @mock.patch("websocket.WebSocketApp")
@@ -69,7 +69,7 @@ class TestWebSocketClient(unittest.TestCase):
         # Make this raise an exception so that the run loop will exit once we've tested what we want to test
         UUT = WebSocketClient(mock.sentinel.wsAddr)
 
-        WebSocketApp.return_value.run_forever.side_effect = UUT.stop
+        WebSocketApp.return_value.run_forever.side_effect = lambda sslopt: UUT.stop()
         self.assertFalse(UUT.started.is_set())
 
         UUT.run()
@@ -80,7 +80,7 @@ class TestWebSocketClient(unittest.TestCase):
                                          on_close=mock.ANY,
                                          on_open=mock.ANY)
         self.assertListEqual(WebSocketApp.return_value.run_forever.mock_calls,
-                                 [ mock.call() ] )
+                                 [ mock.call(sslopt=None) ] )
         self.assertTrue(UUT.started.is_set())
 
     @mock.patch("websocket.WebSocketApp")

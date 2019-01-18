@@ -1,7 +1,10 @@
 # NMOS Common Library Changelog
 
-## 0.12.0
+## 0.13.0
 - Add hostnames to mdns callback
+
+## 0.12.0
+- Expose parameter for modifying websocket SSL behaviour
 
 ## 0.11.2
 - Require a version of `oauthlib` compatible with `flask-oauthlib` ([#75](https://github.com/bbc/nmos-common/issues/75))

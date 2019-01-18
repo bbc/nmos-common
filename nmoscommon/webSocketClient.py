@@ -11,11 +11,12 @@ import json
 class WebSocketClient(threading.Thread):
     daemon = True
 
-    def __init__(self, wsAddr):
+    def __init__(self, wsAddr, sslopt=None):
         self.started = threading.Event()
         self.wsAddr = wsAddr
         self._keep_running = False
         threading.Thread.__init__(self)
+        self.sslopt = sslopt
 
     def run(self):
         self._keep_running = True
@@ -26,7 +27,7 @@ class WebSocketClient(threading.Thread):
                                          on_open=self._on_open)
         while self._keep_running:
             self.__setstarted()
-            self.ws.run_forever()
+            self.ws.run_forever(sslopt=self.sslopt)
 
     def __setstarted(self):
         self.started.set()

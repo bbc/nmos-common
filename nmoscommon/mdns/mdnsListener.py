@@ -71,6 +71,7 @@ class MDNSListener(object):
             "type": info.type,
             "name": info.name,
             "port": info.port,
+            "hostname": info.name,
             "address": inet_ntoa(info.address),
             "txt": info.properties
         }

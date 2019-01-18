@@ -38,4 +38,5 @@ class DNSListener(object):
         toReturn['type'] = subscription.type
         toReturn['txt'] = subscription.txt
         toReturn['name'] = subscription.name
+        toReturn['hostname'] = subscription.hostname
         return toReturn

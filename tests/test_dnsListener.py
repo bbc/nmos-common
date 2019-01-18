@@ -26,6 +26,7 @@ class TestDNSListener(unittest.TestCase):
         self.port = "8080"
         self.type = "_nmos-registration._tcp"
         self.name = "registration_http._nmos-registration._tcp"
+        self.hostname = "testservice.nmos.tv"
         self.txt = {}
         self.callbackMethod = MagicMock()
         registerOnly = False
@@ -36,6 +37,7 @@ class TestDNSListener(unittest.TestCase):
         info.address = self.addr
         info.port = self.port
         info.name = self.name
+        info.hostname = self.hostname
         info.type = self.type
         info.txt = self.txt
         return info
@@ -46,6 +48,7 @@ class TestDNSListener(unittest.TestCase):
             'address': self.addr,
             'txt': self.txt,
             'name': self.name,
+            'hostname': self.hostname,
             'type': self.type,
             'port': self.port
         }

@@ -61,10 +61,14 @@ class DNSService(object):
             toReturn[fragments[0][1:]] = fragments[1][:-1]
         return toReturn
 
+    def _removeTrailingDot(self, hostname):
+        return hostname[:-1]
+
     def _parseSRVRecord(self):
         for value in self.serviceRecord:
             entries = value.to_text().split(" ")
-            self.address = socket.gethostbyname(entries[3][:-1])
+            self.hostname = self._removeTrailingDot(entries[3])
+            self.address = socket.gethostbyname(self.hostname)
             self.port = int(entries[2])
 
     def _removeService(self):

@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.13.0
+- Add hostnames to mdns callback
+
 ## 0.12.0
 - Expose parameter for modifying websocket SSL behaviour
 

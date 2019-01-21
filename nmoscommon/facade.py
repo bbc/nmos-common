@@ -213,13 +213,13 @@ class Facade(object):
         return self._call_ipc_method("self_get", api_version)
 
     def addClock(self, clk_data):
-        self._call_ipc_method("clk_register", clk_data)
+        self._call_ipc_method("clock_register", clk_data)
 
     def updateClock(self, clk_data):
-        self._call_ipc_method("clk_update", clk_data)
+        self._call_ipc_method("clock_update", clk_data)
 
     def delClock(self, clk_name):
-        self._call_ipc_method("clk_unregister", clk_name)
+        self._call_ipc_method("clock_unregister", clk_name)
 
     def debug_message(self, code):
         msg = {FAC_SUCCESS: "Success!",

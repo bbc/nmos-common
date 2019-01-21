@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.13.2
+- Fix bug in IPC methods for managing clocks
+
 ## 0.13.1
 - Handle case where mdns callback does not include hostname
 

@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.13.1
+- Handle case where mdns callback does not include hostname
+
 ## 0.13.0
 - Add hostnames to mdns callback
 

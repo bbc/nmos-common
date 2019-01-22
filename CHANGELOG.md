@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.14.0
+- Add config option to allow selection of discover mechanism
+
 ## 0.13.2
 - Fix bug in IPC methods for managing clocks
 

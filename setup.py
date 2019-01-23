@@ -34,6 +34,7 @@ def create_default_conf():
         "priority": 0,
         "https_mode": "disabled",
         "prefer_ipv6": False,
+        "prefer_hostnames": False,
         "node_hostname": None,
         "fix_proxy": "disabled",
         "logging": {

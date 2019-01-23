@@ -102,8 +102,8 @@ class MDNSEngine(object):
 
     def callback_on_services(self, regtype, callback, registerOnly=True, domain=None):
         self._autostart_if_required()
-        doDNSDiscover = domain != 'local' and config['dns_discover']
-        domDNSDiscover = (domain == "local" or domain is None) and config['mdns_discover']
+        doDNSDiscover =  config['dns_discover']
+        domDNSDiscover = config['mdns_discover']
         if domDNSDiscover:
             listener = MDNSListener(callback, registerOnly)
             self.subscriptionController.addSubscription(listener, regtype)

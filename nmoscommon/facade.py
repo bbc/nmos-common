@@ -55,6 +55,12 @@ class Facade(object):
             except Exception:
                 self.ipc = None
 
+    def close_ipc(self):
+        with self.lock:
+            if self.ipc:
+                self.ipc.close()
+            self.ipc = None
+
     def register_service(self, href, proxy_path):
         self.logger.writeInfo("Register service")
         self.href = href
@@ -72,7 +78,7 @@ class Facade(object):
                     self.logger.writeInfo("Service registration failed: {}".format(self.debug_message(s)))
         except Exception as e:
             self.logger.writeError("Exception when registering service: {}".format(str(e)))
-            self.ipc = None
+            self.close_ipc()
 
     def unregister_service(self):
         if not self.ipc:
@@ -85,7 +91,7 @@ class Facade(object):
                 self.srv_registered = False
         except Exception as e:
             self.logger.writeError("Exception when unregistering service: {}".format(str(e)))
-            self.ipc = None
+            self.close_ipc()
 
     def heartbeat_service(self):
         if not self.ipc:
@@ -106,7 +112,7 @@ class Facade(object):
                 self.reregister_all()
         except Exception as e:
             self.logger.writeError("Exception when heartbeating service: {}".format(str(e)))
-            self.ipc = None
+            self.close_ipc()
 
     # ONLY call this directly from within heartbeat_service!
     # To cause a re-registration on failure, set self.reregister!

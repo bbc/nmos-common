@@ -94,7 +94,7 @@ class IppmDNSBridge(object):
 
     def _createHref(self, service):
         proto = service['protocol']
-        if service.get('hostname') is not None:
+        if service.get('hostname') is not None and self.config["prefer_hostnames"]:
             address = service['hostname']
         else:
             address = service['address']

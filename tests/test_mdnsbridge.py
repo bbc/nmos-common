@@ -49,7 +49,7 @@ class TestIppmDNSBridge(unittest.TestCase):
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["hostname"] + ":" + str(services[0]["port"]))
+        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
@@ -85,7 +85,7 @@ class TestIppmDNSBridge(unittest.TestCase):
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["hostname"] + ":" + str(services[2]["port"]))
+        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
@@ -103,7 +103,7 @@ class TestIppmDNSBridge(unittest.TestCase):
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["hostname"] + ":" + str(services[2]["port"]))
+        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
@@ -121,7 +121,7 @@ class TestIppmDNSBridge(unittest.TestCase):
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[1]["protocol"] + "://" + services[1]["hostname"] + ":" + str(services[1]["port"]))
+        self.assertEqual(href, services[1]["protocol"] + "://" + services[1]["address"] + ":" + str(services[1]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=3) # guaranteed random, chosen by roll of fair die
@@ -143,7 +143,7 @@ class TestIppmDNSBridge(unittest.TestCase):
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[5]["protocol"] + "://" + services[5]["hostname"] + ":" + str(services[5]["port"]))
+        self.assertEqual(href, services[5]["protocol"] + "://" + services[5]["address"] + ":" + str(services[5]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
@@ -253,12 +253,12 @@ class TestIppmDNSBridge(unittest.TestCase):
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[1]["protocol"] + "://" + services[1]["hostname"] + ":" + str(services[1]["port"]))
+        self.assertEqual(href, services[1]["protocol"] + "://" + services[1]["address"] + ":" + str(services[1]["port"]))
 
         get.reset_mock()
         href = self.UUT.getHref(srv_type)
         get.assert_not_called()
-        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["hostname"] + ":" + str(services[2]["port"]))
+        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
 
 
     @mock.patch('requests.get')
@@ -278,12 +278,12 @@ class TestIppmDNSBridge(unittest.TestCase):
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
-        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["hostname"] + ":" + str(services[0]["port"]))
+        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
 
         get.reset_mock()
         href = self.UUT.getHref(srv_type)
         get.assert_not_called()
-        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["hostname"] + ":" + str(services[0]["port"]))
+        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
@@ -318,7 +318,7 @@ class TestIppmDNSBridge(unittest.TestCase):
         get.reset_mock()
         href = self.UUT.getHref(srv_type)
         get.assert_called_once_with("http://127.0.0.1/x-ipstudio/mdnsbridge/v1.0/" + srv_type + "/", timeout=0.5, proxies={'http': ''})
-        self.assertEqual(href, second_services[3]["protocol"] + "://" + second_services[3]["hostname"] + ":" + str(second_services[3]["port"]))
+        self.assertEqual(href, second_services[3]["protocol"] + "://" + second_services[3]["address"] + ":" + str(second_services[3]["port"]))
 
     @mock.patch('requests.get')
     @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
@@ -335,3 +335,20 @@ class TestIppmDNSBridge(unittest.TestCase):
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
         self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
+
+    @mock.patch('requests.get')
+    @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
+    def test_gethref_handles_prefer_hostnames(self, rand, get):
+        srv_type = "potato"
+        self.UUT.config['priority'] = 100
+        self.UUT.config['https_mode'] = "disabled"
+        self.UUT.config['prefer_hostnames'] = True
+
+        services = [
+            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_hostname0" },
+        ]
+
+        get.return_value.status_code=200
+        get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
+        href = self.UUT.getHref(srv_type)
+        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["hostname"] + ":" + str(services[0]["port"]))

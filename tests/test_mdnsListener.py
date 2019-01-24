@@ -30,7 +30,8 @@ class TestMDNSListener(unittest.TestCase):
         self.txt = {}
         self.type = "nmos-test._tcp.local."
         self.name = "name_" + self.type
-        self.hostname = self.name
+        self.hostname = self.name.rstrip(".")
+        self.server = self.name
 
     def helper_build_info(self):
         info = MagicMock()
@@ -38,7 +39,7 @@ class TestMDNSListener(unittest.TestCase):
         info.port = self.port
         info.type = self.type
         info.name = self.name
-        info.hostname = self.hostname
+        info.server = self.server
         info.properties = {}
         return info
 

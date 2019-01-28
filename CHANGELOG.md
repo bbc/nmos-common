@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.14.1
+- Fix bug in mDNS Listener causing KeyError on service removal
+
 ## 0.14.0
 - Add config option to prefer hostnames to IP addresses
 

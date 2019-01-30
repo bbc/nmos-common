@@ -37,7 +37,9 @@ config_defaults = {
     "nodefacade": {
         "NODE_REGVERSION": "v1.2"
     },
-    "oauth_mode": False
+    "oauth_mode": False,
+    "dns_discover": True,
+    "mdns_discover": True
 }
 
 config = {}

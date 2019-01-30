@@ -115,6 +115,20 @@ class TestMDNSEngine(unittest.TestCase):
         with self.assertRaises(ServiceNotFoundException):
             self.dut.update("not", "this")
 
+    def test_disable_mdns_discover(self):
+        with patch('nmoscommon.mdns.mdnsEngine.MDNSListener') as listener:
+            self.dut.config = {"mdns_discover": False}
+            callbackHandler = self._helper_build_callback_handler()
+            self.dut._add_registration_handle_errors(MagicMock(), callbackHandler)
+            listener.assert_not_called()
+
+    def test_disable_dns_discover(self):
+        with patch('nmoscommon.mdns.mdnsEngine.DNSServiceController') as controller:
+            self.dut.config = {"dns_discover": False}
+            callbackHandler = self._helper_build_callback_handler()
+            self.dut._add_registration_handle_errors(MagicMock(), callbackHandler)
+            controller.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

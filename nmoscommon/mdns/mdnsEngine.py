@@ -16,6 +16,7 @@
 
 import zeroconf_monkey as zeroconf
 from nmoscommon.logger import Logger
+from nmoscommon.nmoscommonconfig import config
 from .dnsServiceController import DNSServiceController
 from .mdnsListener import MDNSListener
 from .mdnsCallbackHandler import MDNSAdvertisementCallbackHandler
@@ -101,10 +102,12 @@ class MDNSEngine(object):
 
     def callback_on_services(self, regtype, callback, registerOnly=True, domain=None):
         self._autostart_if_required()
-        if domain == "local" or domain is None:
+        doDNSDiscover =  config['dns_discover']
+        domDNSDiscover = config['mdns_discover']
+        if domDNSDiscover:
             listener = MDNSListener(callback, registerOnly)
             self.subscriptionController.addSubscription(listener, regtype)
-        if domain != 'local':
+        if doDNSDiscover:
             dnsServiceController = DNSServiceController(
                 regtype,
                 callback,

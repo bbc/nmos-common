@@ -48,7 +48,9 @@ def create_default_conf():
         "nodefacade": {
             "NODE_REGVERSION": "v1.2"
         },
-        "oauth_mode": False
+        "oauth_mode": False,
+        "dns_discover": True,
+        "mdns_discover": True
     }
 
     try:
@@ -161,7 +163,7 @@ deps_required = []
 
 
 setup(name="nmoscommon",
-      version="0.14.1",
+      version="0.15.0",
       description="Common components for the BBC's NMOS implementations",
       url='https://github.com/bbc/nmos-common',
       author='Peter Brightwell',

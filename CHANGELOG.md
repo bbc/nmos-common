@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.15.0
+- Add config option to allow selection of discover mechanism
+
 ## 0.14.1
 - Fix bug in mDNS Listener causing KeyError on service removal
 

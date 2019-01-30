@@ -62,7 +62,7 @@ class DNSService(object):
         return toReturn
 
     def _removeTrailingDot(self, hostname):
-        return hostname[:-1]
+        return hostname.rstrip(".")
 
     def _parseSRVRecord(self):
         for value in self.serviceRecord:

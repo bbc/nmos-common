@@ -1,7 +1,13 @@
 # NMOS Common Library Changelog
 
-## 0.14.0
+## 0.15.0
 - Add config option to allow selection of discover mechanism
+
+## 0.14.1
+- Fix bug in mDNS Listener causing KeyError on service removal
+
+## 0.14.0
+- Add config option to prefer hostnames to IP addresses
 
 ## 0.13.2
 - Fix bug in IPC methods for managing clocks

@@ -34,6 +34,7 @@ def create_default_conf():
         "priority": 0,
         "https_mode": "disabled",
         "prefer_ipv6": False,
+        "prefer_hostnames": False,
         "node_hostname": None,
         "fix_proxy": "disabled",
         "logging": {
@@ -162,7 +163,7 @@ deps_required = []
 
 
 setup(name="nmoscommon",
-      version="0.14.0",
+      version="0.15.0",
       description="Common components for the BBC's NMOS implementations",
       url='https://github.com/bbc/nmos-common',
       author='Peter Brightwell',

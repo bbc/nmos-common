@@ -25,7 +25,7 @@ pipeline {
     parameters {
         booleanParam(name: "FORCE_PYUPLOAD", defaultValue: false, description: "Force Python artifact upload")
         booleanParam(name: "FORCE_DEBUPLOAD", defaultValue: false, description: "Force Debian package upload")
-        booleanParam(name: "INTEGRATION_TEST", defaultValue: true, description: "Run integration test using joint ri?")	
+        booleanParam(name: "INTEGRATION_TEST", defaultValue: true, description: "Run integration test using joint ri?")
         booleanParam(name: "DESTROY_VAGRANT", defaultValue: false, description: "Destroy integration testing vagrant box before build?")
     }
     environment {
@@ -81,47 +81,55 @@ pipeline {
                         }
                     }
                 }
-                stage ("Integration Tests") {	
-                    stages{	
-                        stage ("Integration Tests") {	
-                            agent {	
-                                node{	
-                                    label 'apmm-slave&&baremetal'	
-                                }	
-                            }	
-                            when{	
-                                expression { params.INTEGRATION_TEST }	
-                            }	
-                            stages{	
-                                stage ("Start Test Environment") {	
-                                    steps{	
-                                        sh 'rm -r nmos-joint-ri || :'	
-                                        withBBCGithubSSHAgent{	
+                stage ("Integration Tests") {
+                    stages{
+                        stage ("Integration Tests") {
+                            agent {
+                                node{
+                                    label 'apmm-slave&&baremetal'
+                                }
+                            }
+                            when{
+                                expression { params.INTEGRATION_TEST }
+                            }
+                            stages{
+                                stage ("Start Test Environment") {
+                                    steps{
+                                        script {
+                                            env.int_result = "FAILURE"
+                                        }
+                                        bbcGithubNotify(context: "tests/integration", status: "PENDING")
+                                        sh 'rm -r nmos-joint-ri || :'
+                                        withBBCGithubSSHAgent{
                                             sh 'git clone git@github.com:bbc/nmos-joint-ri.git'
-                                        }	
-                                        dir ('nmos-joint-ri/vagrant') {	
+                                        }
+                                        dir ('nmos-joint-ri/vagrant') {
                                             sh 'vagrant up --provision'
-                                        }	
-                                    }	
-                                }	
-                                stage ("Run Integration Tests") {	
-                                    steps{	
-                                        dir ('nmos-joint-ri') {	
-                                            bbcVagrantFindPorts(vagrantDir: "vagrant")	
+                                        }
+                                    }
+                                }
+                                stage ("Run Integration Tests") {
+                                    steps{
+                                        dir ('nmos-joint-ri') {
+                                            bbcVagrantFindPorts(vagrantDir: "vagrant")
                                             sh 'python3 -m unittest discover'
-                                        }	
-                                    }	
-                                }	
-                            }	
-                            post{	
-                                always{	
-                                    dir ('nmos-joint-ri/vagrant') {	
+                                        }
+                                        script {
+                                            env.int_result = "SUCCESS"
+                                        }
+                                    }
+                                }
+                            }
+                            post{
+                                always{
+                                    dir ('nmos-joint-ri/vagrant') {
                                         sh 'vagrant destroy -f'
-                                    }	
-                                }	
-                            }	
-                        }	
-                    }	
+                                    }
+                                    bbcGithubNotify(context: "tests/integration", status: env.int_result)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

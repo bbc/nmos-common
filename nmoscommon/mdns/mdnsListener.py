@@ -49,13 +49,13 @@ class MDNSListener(object):
 
     def _update_record(self, srv_type, name, info):
         try:
-            self.records[type][name] = info
+            self.records[srv_type][name] = info
         except KeyError:
-            self.records[type] = {}
-            self.records[type][name] = info
+            self.records[srv_type] = {}
+            self.records[srv_type][name] = info
 
-    def remove_service(self, zeroconf, type, name):
-        info = self.records[type].pop(name)
+    def remove_service(self, zeroconf, srv_type, name):
+        info = self.records[srv_type].pop(name)
         if not self.registerOnly:
             action = "remove"
             self._respondToClient(name, action, info)
@@ -71,7 +71,7 @@ class MDNSListener(object):
             "type": info.type,
             "name": info.name,
             "port": info.port,
-            "hostname": info.name,
+            "hostname": info.server.rstrip("."),
             "address": inet_ntoa(info.address),
             "txt": info.properties
         }

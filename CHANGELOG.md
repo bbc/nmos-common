@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.16.0
+- Add basic mechanism to discover current Registration API
+
 ## 0.15.0
 - Add config option to allow selection of discover mechanism
 

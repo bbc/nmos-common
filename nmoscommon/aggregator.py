@@ -376,6 +376,26 @@ class MDNSUpdater:
 
         self.mdns.register(self.mdns_name, self.mdns_type, self.port, self.txt_rec_base)
 
+        self._running = True
+        self._mdns_update_queue = gevent.queue.Queue()
+        self.mdns_thread = gevent.spawn(self._modify_mdns)
+
+    def _modify_mdns(self):
+        while self._running:
+            if self._mdns_update_queue.empty():
+                gevent.sleep(0.2)
+            else:
+                try:
+                    txt_recs = self._mdns_update_queue.get()
+                    self.mdns.update(self.mdns_name, self.mdns_type, txt_recs)
+                except ServiceNotFoundException:
+                    self.logger.writeError("Unable to update mDNS record of type {} and name {}"
+                                           .format(self.mdns_name, self.mdns_type))
+
+    def stop(self):
+        self._running = False
+        self.mdns_thread.join()
+
     def _p2p_txt_recs(self):
         txt_recs = self.txt_rec_base.copy()
         txt_recs.update(self.service_versions)
@@ -386,18 +406,14 @@ class MDNSUpdater:
             if (action == "register") or (action == "update") or (action == "unregister"):
                 self.logger.writeDebug("mDNS action: {} {}".format(action, type))
                 self._increment_service_version(type)
-                try:
-                    self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
-                except ServiceNotFoundException:
-                    self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
-                                                                                                        self.mdns_name))
+                self._mdns_update_queue.put(self._p2p_txt_recs())
 
     def _increment_service_version(self, type):
         self.service_versions[self.mappings[type]] = self.service_versions[self.mappings[type]]+1
         if self.service_versions[self.mappings[type]] > 255:
             self.service_versions[self.mappings[type]] = 0
 
-    #Counts up a number of times, and then enables P2P
+    # Counts up a number of times, and then enables P2P
     def inc_P2P_enable_count(self):
         if not self.p2p_enable:
             self.p2p_enable_count += 1
@@ -409,24 +425,16 @@ class MDNSUpdater:
 
     def P2P_enable(self):
         if not self.p2p_enable:
-            self.logger.writeInfo("Enabling P2P Discovery");
+            self.logger.writeInfo("Enabling P2P Discovery")
             self.p2p_enable = True
-            try:
-                self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
-            except ServiceNotFoundException:
-                self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
-                                                                                                    self.mdns_name))
+            self._mdns_update_queue.put(self._p2p_txt_recs())
 
     def P2P_disable(self):
         if self.p2p_enable:
-            self.logger.writeInfo("Disabling P2P Discovery");
+            self.logger.writeInfo("Disabling P2P Discovery")
             self.p2p_enable = False
             self._reset_P2P_enable_count()
-            try:
-                self.mdns.update(self.mdns_name, self.mdns_type, self.txt_rec_base)
-            except ServiceNotFoundException:
-                self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
-                                                                                                    self.mdns_name))
+            self._mdns_update_queue.put(self.txt_rec_base)
         else:
             self._reset_P2P_enable_count()
 

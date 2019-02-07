@@ -254,7 +254,7 @@ class Aggregator(object):
                 self._mdns_updater.P2P_disable()
         except Exception as e:
             self.logger.writeWarning("Error re-registering Node: {}".format(e))
-            self.aggregator == "" # Fallback to prevent us getting stuck if the Reg API issues a 4XX error incorrectly
+            self.aggregator = ""  # Fallback to prevent us getting stuck if the Reg API issues a 4XX error incorrectly
             return
 
         # Re-register items that must be ordered

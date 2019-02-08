@@ -36,24 +36,28 @@ AGGREGATOR_APINAME = "registration"
 LEGACY_REG_MDNSTYPE = "nmos-registration"
 REGISTRATION_MDNSTYPE = "nmos-register"
 
+
 class NoAggregator(Exception):
-    def __init__(self, mdns_updater = None):
+    def __init__(self, mdns_updater=None):
         if mdns_updater is not None:
             mdns_updater.inc_P2P_enable_count()
-        pass
+        super(NoAggregator, self).__init__("No Registration API found")
+
 
 class InvalidRequest(Exception):
-    def __init__(self, status_code=400, mdns_updater = None):
+    def __init__(self, status_code=400, mdns_updater=None):
         if mdns_updater is not None:
             mdns_updater.inc_P2P_enable_count()
         super(InvalidRequest, self).__init__("Invalid Request, code {}".format(status_code))
         self.status_code = status_code
 
+
 class TooManyRetries(Exception):
-    def __init__(self, mdns_updater = None):
+    def __init__(self, mdns_updater=None):
         if mdns_updater is not None:
             mdns_updater.inc_P2P_enable_count()
         super(TooManyRetries, self).__init__("Too many retries.")
+
 
 class Aggregator(object):
     """This class serves as a proxy for the distant aggregation service running elsewhere on the network.
@@ -91,7 +95,8 @@ class Aggregator(object):
             elif self._registered["node"]:
                 # Do heartbeat
                 try:
-                    self.logger.writeDebug("Sending heartbeat for Node {}".format(self._registered["node"]["data"]["id"]))
+                    self.logger.writeDebug("Sending heartbeat for Node {}"
+                                           .format(self._registered["node"]["data"]["id"]))
                     self._SEND("POST", "/health/nodes/" + self._registered["node"]["data"]["id"])
                 except InvalidRequest as e:
                     if e.status_code == 404:
@@ -103,7 +108,8 @@ class Aggregator(object):
                             self._mdns_updater.inc_P2P_enable_count()
                     else:
                         # Client side error. Report this upwards via exception, but don't resend
-                        self.logger.writeError("Unrecoverable error code {} received from Registration API on heartbeat".format(e.status_code))
+                        self.logger.writeError("Unrecoverable error code {} received from Registration API on heartbeat"
+                                               .format(e.status_code))
                         self._running = False
                 except:
                     # Re-register
@@ -123,7 +129,8 @@ class Aggregator(object):
     # On other error, mark Node as unregistered and trigger re-registration
     def _process_queue(self):
         self.logger.writeDebug("Starting HTTP queue processing thread")
-        while self._running or (self._registered["registered"] and not self._reg_queue.empty()): # Checks queue not empty before quitting to make sure unregister node gets done
+        # Checks queue not empty before quitting to make sure unregister node gets done
+        while self._running or (self._registered["registered"] and not self._reg_queue.empty()):
             if not self._registered["registered"] or self._reg_queue.empty():
                 gevent.sleep(1)
             else:
@@ -136,7 +143,8 @@ class Aggregator(object):
                         if res_type == "node":
                             data = self._registered["node"]
                             try:
-                                self.logger.writeInfo("Attempting registration for Node {}".format(self._registered["node"]["data"]["id"]))
+                                self.logger.writeInfo("Attempting registration for Node {}"
+                                                      .format(self._registered["node"]["data"]["id"]))
                                 self._SEND("POST", "/{}".format(namespace), data)
                                 self._SEND("POST", "/health/nodes/" + self._registered["node"]["data"]["id"])
                                 self._registered["registered"] = True
@@ -152,7 +160,7 @@ class Aggregator(object):
                                 self._SEND("POST", "/{}".format(namespace), data)
                             except InvalidRequest as e:
                                 self.logger.writeWarning("Error registering {} {}: {}".format(res_type, res_key, e))
-                                self.logger.writeWarning("Request data: {}".format(self._registered["entities"][namespace][res_type][res_key]))
+                                self.logger.writeWarning("Request data: {}".format(data))
                                 del self._registered["entities"][namespace][res_type][res_key]
 
                     elif queue_item["method"] == "DELETE":
@@ -160,9 +168,11 @@ class Aggregator(object):
                         try:
                             self._SEND("DELETE", "/{}/{}/{}".format(namespace, translated_type, res_key))
                         except InvalidRequest as e:
-                            self.logger.writeWarning("Error deleting resource {} {}: {}".format(translated_type, res_key, e))
+                            self.logger.writeWarning("Error deleting resource {} {}: {}"
+                                                     .format(translated_type, res_key, e))
                     else:
-                        self.logger.writeWarning("Method {} not supported for Registration API interactions".format(queue_item["method"]))
+                        self.logger.writeWarning("Method {} not supported for Registration API interactions"
+                                                 .format(queue_item["method"]))
                 except Exception as e:
                     self._registered["registered"] = False
                     if(self._mdns_updater is not None):
@@ -246,7 +256,8 @@ class Aggregator(object):
 
         try:
             # Register the node, and immediately heartbeat if successful to avoid race with garbage collect.
-            self.logger.writeInfo("Attempting re-registration for Node {}".format(self._registered["node"]["data"]["id"]))
+            self.logger.writeInfo("Attempting re-registration for Node {}"
+                                  .format(self._registered["node"]["data"]["id"]))
             self._SEND("POST", "/resource", self._registered["node"])
             self._SEND("POST", "/health/nodes/" + self._registered["node"]["data"]["id"])
             self._registered["registered"] = True
@@ -264,7 +275,8 @@ class Aggregator(object):
         for res_type in self.registration_order:
             for namespace, entities in self._registered["entities"].items():
                 if res_type in entities:
-                    self.logger.writeInfo("Ordered re-registration for type: '{}' in namespace '{}'".format(res_type, namespace))
+                    self.logger.writeInfo("Ordered re-registration for type: '{}' in namespace '{}'"
+                                          .format(res_type, namespace))
                     for key in entities[res_type]:
                         self._queue_request("POST", namespace, res_type, key)
 
@@ -275,7 +287,8 @@ class Aggregator(object):
         for namespace, entities in self._registered["entities"].items():
             for res_type in entities:
                 if res_type not in self.registration_order:
-                    self.logger.writeInfo("Unordered re-registration for type: '{}' in namespace '{}'".format(res_type, namespace))
+                    self.logger.writeInfo("Unordered re-registration for type: '{}' in namespace '{}'"
+                                          .format(res_type, namespace))
                     for key in entities[res_type]:
                         self._queue_request("POST", namespace, res_type, key)
 
@@ -324,7 +337,8 @@ class Aggregator(object):
                 if _config.get('prefer_ipv6') is False:
                     R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, headers=headers)
                 else:
-                    R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, headers=headers, proxies={'http':''})
+                    R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0,
+                                         headers=headers, proxies={'http':''})
                 if R is None:
                     # Try another aggregator
                     self.logger.writeWarning("No response from aggregator {}".format(self.aggregator))
@@ -339,11 +353,13 @@ class Aggregator(object):
                     return
 
                 elif (R.status_code/100) == 4:
-                    self.logger.writeWarning("{} response from aggregator: {} {}".format(R.status_code, method, urljoin(self.aggregator, url)))
+                    self.logger.writeWarning("{} response from aggregator: {} {}"
+                                             .format(R.status_code, method, urljoin(self.aggregator, url)))
                     raise InvalidRequest(R.status_code, self._mdns_updater)
 
                 else:
-                    self.logger.writeWarning("Unexpected status from aggregator {}: {}, {}".format(self.aggregator, R.status_code, R.content))
+                    self.logger.writeWarning("Unexpected status from aggregator {}: {}, {}"
+                                             .format(self.aggregator, R.status_code, R.content))
 
             except requests.exceptions.RequestException as ex:
                 # Log a warning, then let another aggregator be chosen
@@ -355,8 +371,10 @@ class Aggregator(object):
 
         raise TooManyRetries(self._mdns_updater)
 
-class MDNSUpdater:
-    def __init__(self, mdns_engine, mdns_type, mdns_name , mappings, port, logger, p2p_enable=False, p2p_cut_in_count=5, txt_recs=None):
+
+class MDNSUpdater(object):
+    def __init__(self, mdns_engine, mdns_type, mdns_name, mappings, port, logger, p2p_enable=False, p2p_cut_in_count=5,
+                 txt_recs=None):
         self.mdns = mdns_engine
         self.mdns_type = mdns_type
         self.mdns_name = mdns_name
@@ -376,6 +394,26 @@ class MDNSUpdater:
 
         self.mdns.register(self.mdns_name, self.mdns_type, self.port, self.txt_rec_base)
 
+        self._running = True
+        self._mdns_update_queue = gevent.queue.Queue()
+        self.mdns_thread = gevent.spawn(self._modify_mdns)
+
+    def _modify_mdns(self):
+        while self._running:
+            if self._mdns_update_queue.empty():
+                gevent.sleep(0.2)
+            else:
+                try:
+                    txt_recs = self._mdns_update_queue.get()
+                    self.mdns.update(self.mdns_name, self.mdns_type, txt_recs)
+                except ServiceNotFoundException:
+                    self.logger.writeError("Unable to update mDNS record of type {} and name {}"
+                                           .format(self.mdns_name, self.mdns_type))
+
+    def stop(self):
+        self._running = False
+        self.mdns_thread.join()
+
     def _p2p_txt_recs(self):
         txt_recs = self.txt_rec_base.copy()
         txt_recs.update(self.service_versions)
@@ -386,18 +424,14 @@ class MDNSUpdater:
             if (action == "register") or (action == "update") or (action == "unregister"):
                 self.logger.writeDebug("mDNS action: {} {}".format(action, type))
                 self._increment_service_version(type)
-                try:
-                    self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
-                except ServiceNotFoundException:
-                    self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
-                                                                                                        self.mdns_name))
+                self._mdns_update_queue.put(self._p2p_txt_recs())
 
     def _increment_service_version(self, type):
         self.service_versions[self.mappings[type]] = self.service_versions[self.mappings[type]]+1
         if self.service_versions[self.mappings[type]] > 255:
             self.service_versions[self.mappings[type]] = 0
 
-    #Counts up a number of times, and then enables P2P
+    # Counts up a number of times, and then enables P2P
     def inc_P2P_enable_count(self):
         if not self.p2p_enable:
             self.p2p_enable_count += 1
@@ -409,37 +443,31 @@ class MDNSUpdater:
 
     def P2P_enable(self):
         if not self.p2p_enable:
-            self.logger.writeInfo("Enabling P2P Discovery");
+            self.logger.writeInfo("Enabling P2P Discovery")
             self.p2p_enable = True
-            try:
-                self.mdns.update(self.mdns_name, self.mdns_type, self._p2p_txt_recs())
-            except ServiceNotFoundException:
-                self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
-                                                                                                    self.mdns_name))
+            self._mdns_update_queue.put(self._p2p_txt_recs())
 
     def P2P_disable(self):
         if self.p2p_enable:
-            self.logger.writeInfo("Disabling P2P Discovery");
+            self.logger.writeInfo("Disabling P2P Discovery")
             self.p2p_enable = False
             self._reset_P2P_enable_count()
-            try:
-                self.mdns.update(self.mdns_name, self.mdns_type, self.txt_rec_base)
-            except ServiceNotFoundException:
-                self.logger.writeError("Unable to update mDNS record of type {} and name {}".format(self.mdns_type,
-                                                                                                    self.mdns_name))
+            self._mdns_update_queue.put(self.txt_rec_base)
         else:
             self._reset_P2P_enable_count()
 
-if __name__ == "__main__": #pragma: no cover
+
+if __name__ == "__main__":  # pragma: no cover
     from uuid import uuid4
 
     agg = Aggregator()
     ID = str(uuid4())
 
-    agg.register("node", ID, id=ID, label="A Test Service", href="http://127.0.0.1:12345/", services=[], caps={}, version="0:0", hostname="apiTest")
+    agg.register("node", ID, id=ID, label="A Test Service", href="http://127.0.0.1:12345/", services=[], caps={},
+                 version="0:0", hostname="apiTest")
     try:
         while True:
             time.sleep(1)
-    except:
+    except KeyboardInterrupt:
         agg.unregister("node", ID)
         agg.stop()

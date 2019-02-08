@@ -19,9 +19,11 @@ from six import PY2
 
 import unittest
 import mock
+import time
 from nmoscommon.aggregator import *
 import nmoscommon.logger
 from nmoscommon import nmoscommonconfig
+
 
 class TestMDNSUpdater(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -68,6 +70,8 @@ class TestMDNSUpdater(unittest.TestCase):
 
         self.assertTrue(UUT.p2p_enable)
         txt_recs.update(UUT.service_versions)
+        while not UUT._mdns_update_queue.empty():
+            time.sleep(0.1)
         UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
     def test_inc_P2P_enable_count(self):
@@ -86,11 +90,15 @@ class TestMDNSUpdater(unittest.TestCase):
             UUT.inc_P2P_enable_count()
 
             self.assertFalse(UUT.p2p_enable)
+            while not UUT._mdns_update_queue.empty():
+                time.sleep(0.1)
             UUT.mdns.update.assert_not_called()
 
         UUT.inc_P2P_enable_count()
         self.assertTrue(UUT.p2p_enable)
         txt_recs.update(UUT.service_versions)
+        while not UUT._mdns_update_queue.empty():
+            time.sleep(0.1)
         UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
     def test_P2P_disable_when_enabled(self):
@@ -105,10 +113,14 @@ class TestMDNSUpdater(unittest.TestCase):
 
         UUT = MDNSUpdater(mdnsengine, mdnstype, mdnsname, mappings, port, logger, txt_recs=txt_recs)
         UUT.P2P_enable()
+        while not UUT._mdns_update_queue.empty():
+            time.sleep(0.1)
         UUT.mdns.update.reset_mock()
         UUT.P2P_disable()
 
         self.assertFalse(UUT.p2p_enable)
+        while not UUT._mdns_update_queue.empty():
+            time.sleep(0.1)
         UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
     def test_P2P_disable_resets_enable_count(self):
@@ -127,6 +139,8 @@ class TestMDNSUpdater(unittest.TestCase):
             UUT.inc_P2P_enable_count()
 
             self.assertFalse(UUT.p2p_enable)
+            while not UUT._mdns_update_queue.empty():
+                time.sleep(0.1)
             UUT.mdns.update.assert_not_called()
 
         UUT.P2P_disable()
@@ -135,11 +149,15 @@ class TestMDNSUpdater(unittest.TestCase):
             UUT.inc_P2P_enable_count()
 
             self.assertFalse(UUT.p2p_enable)
+            while not UUT._mdns_update_queue.empty():
+                time.sleep(0.1)
             UUT.mdns.update.assert_not_called()
 
         UUT.inc_P2P_enable_count()
         self.assertTrue(UUT.p2p_enable)
         txt_recs.update(UUT.service_versions)
+        while not UUT._mdns_update_queue.empty():
+            time.sleep(0.1)
         UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
     def test_update_mdns_does_nothing_when_not_enabled(self):
@@ -156,6 +174,8 @@ class TestMDNSUpdater(unittest.TestCase):
 
         UUT.update_mdns("device", "register")
         self.assertEqual(UUT.service_versions[mappings["device"]], 0)
+        while not UUT._mdns_update_queue.empty():
+            time.sleep(0.1)
         UUT.mdns.update.assert_not_called()
 
     def test_update_mdns(self):
@@ -172,17 +192,21 @@ class TestMDNSUpdater(unittest.TestCase):
         UUT = MDNSUpdater(mdnsengine, mdnstype, mdnsname, mappings, port, logger, txt_recs=txt_recs)
         UUT.P2P_enable()
 
-        for i in range(1,256):
+        # Don't check the mDNS update calls here as it'll take forever and it's handled by other tests already
+        for i in range(1, 256):
             UUT.mdns.update.reset_mock()
             UUT.update_mdns("device", "register")
             self.assertEqual(UUT.service_versions[mappings["device"]], i)
             txt_recs.update(UUT.service_versions)
-            UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
         UUT.mdns.update.reset_mock()
+        while not UUT._mdns_update_queue.empty():
+            UUT._mdns_update_queue.get()
         UUT.update_mdns("device", "register")
         self.assertEqual(UUT.service_versions[mappings["device"]], 0)
         txt_recs.update(UUT.service_versions)
+        while not UUT._mdns_update_queue.empty():
+            time.sleep(0.1)
         UUT.mdns.update.assert_called_once_with(mdnsname, mdnstype, txt_recs)
 
 class TestAggregator(unittest.TestCase):

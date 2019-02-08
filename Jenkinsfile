@@ -39,97 +39,84 @@ pipeline {
                 sh 'git clean -dfx'
             }
         }
-        stage ("Tests") {
+        stage ("Unit Tests") {
             parallel {
-                stage ("Unit Tests") {
-                    stages {
-                        stage ("Python 2.7 Unit Tests") {
-                            steps {
-                                script {
-                                    env.py27_result = "FAILURE"
-                                }
-                                bbcGithubNotify(context: "tests/py27", status: "PENDING")
-                                // Use a workdirectory in /tmp to avoid shebang length limitation
-                                sh 'tox -e py27 --recreate --workdir /tmp/$(basename ${WORKSPACE})/tox-py27'
-                                script {
-                                    env.py27_result = "SUCCESS" // This will only run if the sh above succeeded
-                                }
-                            }
-                            post {
-                                always {
-                                    bbcGithubNotify(context: "tests/py27", status: env.py27_result)
-                                }
-                            }
+                stage ("Python 2.7 Unit Tests") {
+                    steps {
+                        script {
+                            env.py27_result = "FAILURE"
                         }
-                        stage ("Python 3 Unit Tests") {
-                            steps {
-                                script {
-                                    env.py3_result = "FAILURE"
-                                }
-                                bbcGithubNotify(context: "tests/py3", status: "PENDING")
-                                // Use a workdirectory in /tmp to avoid shebang length limitation
-                                sh 'tox -e py3 --recreate --workdir /tmp/$(basename ${WORKSPACE})/tox-py3'
-                                script {
-                                    env.py3_result = "SUCCESS" // This will only run if the sh above succeeded
-                                }
-                            }
-                            post {
-                                always {
-                                    bbcGithubNotify(context: "tests/py3", status: env.py3_result)
-                                }
-                            }
+                        bbcGithubNotify(context: "tests/py27", status: "PENDING")
+                        // Use a workdirectory in /tmp to avoid shebang length limitation
+                        sh 'tox -e py27 --recreate --workdir /tmp/$(basename ${WORKSPACE})/tox-py27'
+                        script {
+                            env.py27_result = "SUCCESS" // This will only run if the sh above succeeded
+                        }
+                    }
+                    post {
+                        always {
+                            bbcGithubNotify(context: "tests/py27", status: env.py27_result)
                         }
                     }
                 }
-                stage ("Integration Tests") {
-                    stages{
-                        stage ("Integration Tests") {
-                            agent {
-                                node{
-                                    label 'apmm-slave&&baremetal'
-                                }
-                            }
-                            when{
-                                expression { params.INTEGRATION_TEST }
-                            }
-                            stages{
-                                stage ("Start Test Environment") {
-                                    steps{
-                                        script {
-                                            env.int_result = "FAILURE"
-                                        }
-                                        bbcGithubNotify(context: "tests/integration", status: "PENDING")
-                                        sh 'rm -r nmos-joint-ri || :'
-                                        withBBCGithubSSHAgent{
-                                            sh 'git clone git@github.com:bbc/nmos-joint-ri.git'
-                                        }
-                                        dir ('nmos-joint-ri/vagrant') {
-                                            sh 'vagrant up --provision'
-                                        }
-                                    }
-                                }
-                                stage ("Run Integration Tests") {
-                                    steps{
-                                        dir ('nmos-joint-ri') {
-                                            bbcVagrantFindPorts(vagrantDir: "vagrant")
-                                            sh 'python3 -m unittest discover'
-                                        }
-                                        script {
-                                            env.int_result = "SUCCESS"
-                                        }
-                                    }
-                                }
-                            }
-                            post{
-                                always{
-                                    dir ('nmos-joint-ri/vagrant') {
-                                        sh 'vagrant destroy -f'
-                                    }
-                                    bbcGithubNotify(context: "tests/integration", status: env.int_result)
-                                }
-                            }
+                stage ("Python 3 Unit Tests") {
+                    steps {
+                        script {
+                            env.py3_result = "FAILURE"
+                        }
+                        bbcGithubNotify(context: "tests/py3", status: "PENDING")
+                        // Use a workdirectory in /tmp to avoid shebang length limitation
+                        sh 'tox -e py3 --recreate --workdir /tmp/$(basename ${WORKSPACE})/tox-py3'
+                        script {
+                            env.py3_result = "SUCCESS" // This will only run if the sh above succeeded
                         }
                     }
+                    post {
+                        always {
+                            bbcGithubNotify(context: "tests/py3", status: env.py3_result)
+                        }
+                    }
+                }
+            }
+        }
+        stage ("Integration Tests") {
+            when {
+                expression { params.INTEGRATION_TEST }
+            }
+            stages {
+                stage ("Start Test Environment") {
+                    steps {
+                        script {
+                            env.int_result = "FAILURE"
+                        }
+                        bbcGithubNotify(context: "tests/integration", status: "PENDING")
+                        sh 'rm -r nmos-joint-ri || :'
+                        withBBCGithubSSHAgent{
+                            sh 'git clone git@github.com:bbc/nmos-joint-ri.git'
+                        }
+                        dir ('nmos-joint-ri/vagrant') {
+                            sh 'vagrant up --provision'
+                        }
+                    }
+                }
+                stage ("Run Integration Tests") {
+                    steps {
+                        dir ('nmos-joint-ri') {
+                            bbcVagrantFindPorts(vagrantDir: "vagrant")
+                            sh 'python3 -m unittest discover'
+                        }
+                        script {
+                            env.int_result = "SUCCESS"
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    dir ('nmos-joint-ri/vagrant') {
+                        sh 'vagrant destroy -f'
+                    }
+                    bbcGithubNotify(context: "tests/integration", status: env.int_result)
                 }
             }
         }

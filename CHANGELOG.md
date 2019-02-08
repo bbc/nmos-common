@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.17.0
+- Fix heartbeat frequency. Requires use of 'stop' method in MDNSUpdater
+
 ## 0.16.0
 - Add basic mechanism to discover current Registration API
 

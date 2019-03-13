@@ -50,7 +50,7 @@ nodeapi.addResource("device", "my-device-uuid", "my-device-json-here")
 
 The following components are deprecated and are maintained here as a compatibility interface to alternative underlying libraries. New code should make direct use of the underlying libraries as opposed to the classes and functions provided here.
 
-*   json.py: Now provideded by 'mediajson'
+*   json.py: Now provided by 'mediajson'
 *   ptptime.py: Now provided by 'mediatimestamp'
 *   timestamp.py: Now provided by 'mediatimestamp'
 

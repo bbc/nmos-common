@@ -84,7 +84,7 @@ class TestLogger(unittest.TestCase):
 
     def test_ipstudio_logger_loaded(self):
         if IPP_LOGGER:
-            from ipppython.ipplogger import IppLogger
+            from pyipputils.ipplogger import IppLogger
             self.assertEqual(IppLogger, Logger)
         else:
             self.assertEqual(PurePythonLogger, Logger)

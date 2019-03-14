@@ -21,7 +21,7 @@ from six import get_method_self
 
 import uuid
 import json
-import traceback as trace
+import traceback
 import time
 
 from flask import Flask, Response, request, abort, jsonify
@@ -607,7 +607,7 @@ class WebAPI(object):
         if _config.get('fix_proxy') == 'enabled':
             self.app.wsgi_app = ProxyFix(self.app.wsgi_app)
 
-    def add_routes(self, routesClass, basepath):
+    def add_routes(self, routesObject, basepath):
 
         assert not basepath.endswith('/'), "basepath must not end with a slash"
 
@@ -623,121 +623,121 @@ class WebAPI(object):
                 bases += getbases(x)
             return bases
 
-        for cls in [routesClass.__class__, ] + getbases(routesClass.__class__):
+        for cls in [routesObject.__class__, ] + getbases(routesObject.__class__):
             for attr in cls.__dict__.keys():
-                routesFunction = getattr(routesClass, attr)
-                if callable(routesFunction):
-                    endpoint = "{}_{}".format(basepath.replace('/', '_'), routesFunction.__name__)
-                    if hasattr(routesFunction, 'app_methods') and routesFunction.app_methods is not None:
-                        methods = routesFunction.app_methods
+                routesMethod = getattr(routesObject, attr)
+                if callable(routesMethod):
+                    endpoint = "{}_{}".format(basepath.replace('/', '_'), routesMethod.__name__)
+                    if hasattr(routesMethod, 'app_methods') and routesMethod.app_methods is not None:
+                        methods = routesMethod.app_methods
                     else:
                         methods = ["GET", "HEAD"]
-                    if hasattr(routesFunction, 'app_headers') and routesFunction.app_headers is not None:
-                        headers = routesFunction.app_headers
+                    if hasattr(routesMethod, 'app_headers') and routesMethod.app_headers is not None:
+                        headers = routesMethod.app_headers
                     else:
                         headers = []
 
-                    if hasattr(routesFunction, "secure_route"):
+                    if hasattr(routesMethod, "secure_route"):
                         self.app.route(
-                            basepath + routesFunction.secure_route,
+                            basepath + routesMethod.secure_route,
                             endpoint=endpoint,
                             methods=methods + ["OPTIONS"])(
                                 crossdomain(
-                                    origin=routesFunction.app_origin,
+                                    origin=routesMethod.app_origin,
                                     methods=methods,
                                     headers=headers + ['Content-Type', 'Authorization', 'token', ])(
-                                        returns_requires_auth(routesFunction)))
+                                        returns_requires_auth(routesMethod)))
 
-                    elif hasattr(routesFunction, "response_route"):
+                    elif hasattr(routesMethod, "response_route"):
                         self.app.route(
-                            basepath + routesFunction.response_route,
+                            basepath + routesMethod.response_route,
                             endpoint=endpoint,
                             methods=["GET", "POST", "HEAD", "OPTIONS"])(
                                 crossdomain(
                                     origin='*',
                                     methods=['GET', 'POST', 'HEAD'],
                                     headers=['Content-Type', 'Authorization', ])(
-                                        returns_response(routesFunction)))
+                                        returns_response(routesMethod)))
 
-                    elif hasattr(routesFunction, "app_route"):
-                        if routesFunction.app_auto_json:
+                    elif hasattr(routesMethod, "app_route"):
+                        if routesMethod.app_auto_json:
                             self.app.route(
-                                basepath + routesFunction.app_route,
+                                basepath + routesMethod.app_route,
                                 endpoint=endpoint,
                                 methods=methods + ["OPTIONS", ])(
                                     crossdomain(
-                                        origin=routesFunction.app_origin,
+                                        origin=routesMethod.app_origin,
                                         methods=methods,
                                         headers=headers + ['Content-Type', 'Authorization', ])(
-                                            returns_json(routesFunction)))
+                                            returns_json(routesMethod)))
                         else:
                             self.app.route(
-                                basepath + routesFunction.app_route,
+                                basepath + routesMethod.app_route,
                                 endpoint=endpoint,
                                 methods=methods + ["OPTIONS", ])(
                                     crossdomain(
-                                        origin=routesFunction.app_origin,
+                                        origin=routesMethod.app_origin,
                                         methods=methods,
                                         headers=headers + ['Content-Type', 'Authorization', ])(
-                                            dummy(routesFunction)))
+                                            dummy(routesMethod)))
 
-                    elif hasattr(routesFunction, "app_file_route"):
+                    elif hasattr(routesMethod, "app_file_route"):
                         self.app.route(
-                            basepath + routesFunction.app_file_route,
+                            basepath + routesMethod.app_file_route,
                             endpoint=endpoint,
                             methods=methods + ["OPTIONS"])(
                                 crossdomain(
                                     origin='*',
                                     methods=methods,
                                     headers=headers + ['Content-Type', 'Authorization', ])(
-                                        returns_file(routesFunction)))
+                                        returns_file(routesMethod)))
 
-                    elif hasattr(routesFunction, "app_resource_route"):
+                    elif hasattr(routesMethod, "app_resource_route"):
                         f = crossdomain(origin='*',
                                         methods=methods,
                                         headers=headers + ['Content-Type', 'Authorization', 'api-key', ])(
-                                            returns_json(obj_path_access(routesFunction)))
+                                            returns_json(obj_path_access(routesMethod)))
                         self.app.route(
-                            basepath + routesFunction.app_resource_route,
+                            basepath + routesMethod.app_resource_route,
                             methods=methods + ["OPTIONS", ],
                             endpoint=endpoint)(f)
                         f.__name__ = endpoint + '_path'
                         self.app.route(
-                            basepath + routesFunction.app_resource_route + '<path:path>/',
+                            basepath + routesMethod.app_resource_route + '<path:path>/',
                             methods=methods + ["OPTIONS", ],
                             endpoint=f.__name__)(f)
 
-                    elif hasattr(routesFunction, "socket_path"):
-                        websocket_opened = getattr(routesClass, "on_websocket_connect", None)
+                    elif hasattr(routesMethod, "socket_path"):
+                        websocket_opened = getattr(routesObject, "on_websocket_connect", None)
                         if websocket_opened is None:
                             self.sockets.route(
-                                basepath + routesFunction.socket_path,
+                                basepath + routesMethod.socket_path,
                                 endpoint=endpoint)(
                                     self.handle_sock(
-                                        expects_json(routesFunction), self.socks))
+                                        expects_json(routesMethod), self.socks))
                         else:
                             self.sockets.route(
-                                basepath + routesFunction.socket_path,
+                                basepath + routesMethod.socket_path,
                                 endpoint=endpoint)(
                                     websocket_opened(
-                                        expects_json(routesFunction)))
+                                        expects_json(routesMethod)))
 
-                    elif hasattr(routesFunction, "errorhandler_args"):
-                        if routesFunction.errorhandler_args:
+                    elif hasattr(routesMethod, "errorhandler_args"):
+                        if routesMethod.errorhandler_args:
                             self.app.errorhandler(
-                                *routesFunction.errorhandler_args,
-                                **routesFunction.errorhandler_kwargs)(
+                                *routesMethod.errorhandler_args,
+                                **routesMethod.errorhandler_kwargs)(
                                     crossdomain(
                                         origin='*',
                                         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"])(
-                                            dummy(routesFunction)))
+                                            dummy(routesMethod)))
                         else:
                             for n in range(400, 600):
-                                try:  # Apply errorhandlers for all known error cdes
+                                try:  # Apply errorhandlers for all known error codes
                                     self.app.errorhandler(n)(crossdomain(
                                         origin='*',
                                         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"])(
-                                            dummy(routesFunction)))
+                                            dummy(routesMethod)))
                                 except KeyError:
                                     # Some error codes aren't valid
                                     pass
@@ -754,9 +754,9 @@ class WebAPI(object):
         if bm == 'text/html':
             if isinstance(e, HTTPException):
                 if e.code == 400:
-                    (exceptionType, value, traceback) = sys.exc_info()
+                    (exceptionType, exceptionParam, trace) = sys.exc_info()
                     return IppResponse(highlight(
-                                            '\n'.join(trace.format_exception(exceptionType, value, traceback)),
+                                            '\n'.join(traceback.format_exception(exceptionType, exceptionParam, trace)),
                                             PythonTracebackLexer(),
                                             HtmlFormatter(linenos='table',
                                                           full=True,
@@ -765,9 +765,9 @@ class WebAPI(object):
                                        mimetype='text/html')
                 return e.get_response()
 
-            (exceptionType, value, traceback) = sys.exc_info()
+            (exceptionType, exceptionParam, trace) = sys.exc_info()
             return IppResponse(highlight(
-                                    '\n'.join(trace.format_exception(exceptionType, value, traceback)),
+                                    '\n'.join(traceback.format_exception(exceptionType, exceptionParam, trace)),
                                     PythonTracebackLexer(),
                                     HtmlFormatter(linenos='table',
                                                   full=True,
@@ -775,14 +775,14 @@ class WebAPI(object):
                                status=500,
                                mimetype='text/html')
         else:
-            exceptionType, value, traceback = sys.exc_info()
+            (exceptionType, exceptionParam, trace) = sys.exc_info()
             if isinstance(e, HTTPException):
                 response = {
                     'code': e.code,
                     'error': e.description,
                     'debug': str({
-                        'traceback': [str(x) for x in trace.extract_tb(traceback)],
-                        'exception': [str(x) for x in trace.format_exception_only(exceptionType, value)]
+                        'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                        'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
                     })
                 }
                 return IppResponse(json.dumps(response), status=e.code, mimetype='application/json')
@@ -792,8 +792,8 @@ class WebAPI(object):
                     'code': e.status_code,
                     'error': e.description,
                     'debug': str({
-                        'traceback': [str(x) for x in trace.extract_tb(traceback)],
-                        'exception': [str(x) for x in trace.format_exception_only(exceptionType, value)]
+                        'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                        'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
                     })
                 }
                 return IppResponse(json.dumps(response), status=e.status_code, mimetype='application/json')
@@ -803,8 +803,8 @@ class WebAPI(object):
                     'code': 400,
                     'error': e.description,
                     'debug': str({
-                        'traceback': [str(x) for x in trace.extract_tb(traceback)],
-                        'exception': [str(x) for x in trace.format_exception_only(exceptionType, value)]
+                        'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                        'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
                     })
                 }
                 return IppResponse(json.dumps(response), status=400, mimetype='application/json')
@@ -813,8 +813,8 @@ class WebAPI(object):
                 'code': 500,
                 'error': 'Internal Error',
                 'debug': str({
-                    'traceback': [str(x) for x in trace.extract_tb(traceback)],
-                    'exception': [str(x) for x in trace.format_exception_only(exceptionType, value)]
+                    'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                    'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
                 })
             }
             return IppResponse(json.dumps(response), status=500, mimetype='application/json')

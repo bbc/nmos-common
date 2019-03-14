@@ -433,7 +433,7 @@ def errorhandler(*args, **kwargs):
 
 def on_json(path):
     def annotate_function(func):
-        func.sockets_on = path
+        func.socket_path = path
         return func
     return annotate_function
 
@@ -707,17 +707,17 @@ class WebAPI(object):
                             methods=methods + ["OPTIONS", ],
                             endpoint=f.__name__)(f)
 
-                    elif hasattr(routesFunction, "sockets_on"):
+                    elif hasattr(routesFunction, "socket_path"):
                         websocket_opened = getattr(routesClass, "on_websocket_connect", None)
                         if websocket_opened is None:
                             self.sockets.route(
-                                basepath + routesFunction.sockets_on,
+                                basepath + routesFunction.socket_path,
                                 endpoint=endpoint)(
                                     self.handle_sock(
                                         expects_json(routesFunction), self.socks))
                         else:
                             self.sockets.route(
-                                basepath + routesFunction.sockets_on,
+                                basepath + routesFunction.socket_path,
                                 endpoint=endpoint)(
                                     websocket_opened(
                                         expects_json(routesFunction)))

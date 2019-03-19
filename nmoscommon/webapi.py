@@ -51,29 +51,30 @@ from .utils import getLocalIP
 try:  # pragma: no cover
     from six.moves.urllib.parse import urlparse
     import urllib2 as http
-except:  # pragma: no cover
+except Exception:  # pragma: no cover
     from urllib import request as http
     from urllib.parse import urlparse
 
 from nmoscommon.nmoscommonconfig import config as _config
 
+
 class MediaType(object):
     def __init__(self, mr):
-        comps = [ x.strip() for x in mr.split(';') ]
+        comps = [x.strip() for x in mr.split(';')]
         (self.type, self.subtype) = comps.pop(0).split('/')
         self.priority = 1.0
         self.options = []
         self.accept_index = 0
         for c in comps:
             if c[0] == 'q':
-                tmp = [ x.strip() for x in c.split('=') ]
+                tmp = [x.strip() for x in c.split('=')]
                 if tmp[0] == "q":
                     self.priority = float(tmp[1])
                     continue
             self.options.append(c)
 
     def __str__(self):
-        return "%s/%s;%s" % (self.type, self.subtype, ';'.join(self.options + [ 'q=%g' % self.priority, ]))
+        return "%s/%s;%s" % (self.type, self.subtype, ';'.join(self.options + ['q=%g' % self.priority, ]))
 
     def __repr__(self):
         return "MediaType(\"{}\")".format(self.__str__())
@@ -86,8 +87,10 @@ class MediaType(object):
                 return True
         return False
 
+
 def AcceptStringParser(accept_string):
     return [MediaType(x.strip()) for x in accept_string.split(',')]
+
 
 def AcceptableType(mt, accept_string):
     if not isinstance(mt, MediaType):
@@ -98,10 +101,11 @@ def AcceptableType(mt, accept_string):
             return t
     return None
 
+
 def MostAcceptableType(type_strings, accept_string):
     """First parameter is a list of media type strings, the second is an HTTP Accept header string. Return
     value is a string which corresponds to the most acceptable type out of the list provided."""
-    def __cmp(a,b):
+    def __cmp(a, b):
         if a is None and b is None:
             return 0
         elif a is None:
@@ -113,7 +117,14 @@ def MostAcceptableType(type_strings, accept_string):
         else:
             return -cmp(a.priority, b.priority)
 
-    return sorted([ (mt, AcceptableType(MediaType(mt), accept_string)) for mt in type_strings ], cmp=lambda a,b :__cmp(a[1], b[1]))[0][0]
+    return sorted(
+                [(mt, AcceptableType(MediaType(mt), accept_string)) for mt in type_strings],
+                cmp=lambda a, b: __cmp(
+                    a[1],
+                    b[1]
+                )
+          )[0][0]
+
 
 HOST = None
 itt = 0
@@ -124,12 +135,13 @@ itt = 0
 while not HOST:
     try:
         HOST = getLocalIP()
-    except:
+    except Exception:
         if itt > 5:
             raise OSError("Could not find an interface for webapi")
         else:
             time.sleep(1)
             itt = itt + 1
+
 
 class LinkingHTMLFormatter(HtmlFormatter):
     def wrap(self, source, outfile):
@@ -143,14 +155,15 @@ class LinkingHTMLFormatter(HtmlFormatter):
 
             yield i, t
 
+
 def expects_json(func):
     @wraps(func)
     def __inner(ws, msg, **kwargs):
         return func(ws, json.loads(msg), **kwargs)
     return __inner
 
-def htmlify(r, mimetype, status=200):
 
+def htmlify(r, mimetype, status=200):
     # if the request was proxied via the nodefacade, use the original host in response.
     # additional external proxies could cause an issue here, so we can override the hostname
     # in the config to an externally-defined one if there are multiple reverse proxies
@@ -173,18 +186,20 @@ def htmlify(r, mimetype, status=200):
     return IppResponse(highlight(json.dumps(r, indent=4, cls=NMOSJSONEncoder),
                                  JsonLexer(),
                                  LinkingHTMLFormatter(linenos='table',
-                                                     full=True,
-                                                     title=title)),
+                                                      full=True,
+                                                      title=title)),
                        mimetype='text/html',
                        status=status)
 
+
 def jsonify(r, status=200, headers=None):
-    if headers == None:
+    if headers is None:
         headers = {}
     return IppResponse(json.dumps(r, indent=4, cls=NMOSJSONEncoder),
                        mimetype='application/json',
                        status=status,
                        headers=headers)
+
 
 def returns_response(f):
     @wraps(f)
@@ -198,8 +213,14 @@ def returns_response(f):
         content_type = r.content_type
         direct_passthrough = True
 
-        return IppResponse(response=response, status=status, headers=headers, mimetype=mimetype, content_type=content_type, direct_passthrough=direct_passthrough)
+        return IppResponse(response=response,
+                           status=status,
+                           headers=headers,
+                           mimetype=mimetype,
+                           content_type=content_type,
+                           direct_passthrough=direct_passthrough)
     return decorated_function
+
 
 def returns_json(f):
     @wraps(f)
@@ -231,6 +252,7 @@ def returns_json(f):
         else:
             return IppResponse(r, status=status, headers=headers)
     return decorated_function
+
 
 def returns_requires_auth(f):
     @wraps(f)
@@ -279,22 +301,34 @@ def returns_requires_auth(f):
             if isinstance(r, IppResponse):
                 return r
             else:
-                return IppResponse(response=r.response, status=r.status, headers=headers, mimetype=r.mimetype, content_type=r.content_type, direct_passthrough=r.direct_passthrough)
+                return IppResponse(response=r.response,
+                                   status=r.status,
+                                   headers=headers,
+                                   mimetype=r.mimetype,
+                                   content_type=r.content_type,
+                                   direct_passthrough=r.direct_passthrough)
         else:
             return IppResponse(response=r, status=status, headers=headers)
 
     return decorated_function
+
 
 def returns_file(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         r = f(*args, **kwargs)
         if 'content-type' in r and r['content-type'] is not None:
-            return IppResponse(r['content'], status=200, headers={'Content-Disposition': 'attachment; filename={}.{}'.format(r['filename'], r['type'])}, content_type=r['content-type'])
+            return IppResponse(r['content'],
+                               status=200,
+                               headers={'Content-Disposition': 'attachment; filename={}.{}'.format(r['filename'], r['type'])},
+                               content_type=r['content-type'])
         else:
-            return IppResponse(r['content'], status=200, headers={'Content-Disposition': 'attachment; filename={}.{}'.format(r['filename'], r['type'])})
+            return IppResponse(r['content'],
+                               status=200,
+                               headers={'Content-Disposition': 'attachment; filename={}.{}'.format(r['filename'], r['type'])})
 
     return decorated_function
+
 
 def obj_path_access(f):
     @wraps(f)
@@ -302,7 +336,7 @@ def obj_path_access(f):
         path = kwargs.pop('path', '')
         rep = f(*args, **kwargs)
         if request.method == "GET":
-            p = [ x for x in path.split('/') if x != '' ]
+            p = [x for x in path.split('/') if x != '']
             for x in p:
                 if isinstance(rep, dict):
                     if x not in rep:
@@ -311,7 +345,7 @@ def obj_path_access(f):
                 elif isinstance(rep, list) or isinstance(rep, tuple):
                     try:
                         y = int(x)
-                    except:
+                    except Exception:
                         abort(404)
                     if y < 0 or y >= len(rep):
                         abort(404)
@@ -320,7 +354,7 @@ def obj_path_access(f):
                     abort(404)
             try:
                 repdump = json.dumps(rep)
-            except:
+            except Exception:
                 abort(404)
             if repdump == "{}":
                 return []
@@ -333,6 +367,7 @@ def obj_path_access(f):
         else:
             return rep
     return decorated_function
+
 
 def secure_route(path, methods=None, auto_json=True, headers=None, origin='*'):
     if methods is None:
@@ -349,15 +384,18 @@ def secure_route(path, methods=None, auto_json=True, headers=None, origin='*'):
         return func
     return annotate_function
 
+
 def basic_route(path):
     def annotate_function(func):
         func.response_route = path
         return func
     return annotate_function
 
+
 def route(path, methods=None, auto_json=True, headers=None, origin='*'):
-    if headers == None:
+    if headers is None:
         headers = []
+
     def annotate_function(func):
         func.app_route = path
         func.app_methods = methods
@@ -367,12 +405,14 @@ def route(path, methods=None, auto_json=True, headers=None, origin='*'):
         return func
     return annotate_function
 
+
 def resource_route(path, methods=None):
     def annotate_function(func):
         func.app_resource_route = path
         func.app_methods = methods
         return func
     return annotate_function
+
 
 def file_route(path, methods=None, headers=None):
     def annotate_function(func):
@@ -382,16 +422,18 @@ def file_route(path, methods=None, headers=None):
         return func
     return annotate_function
 
-def errorhandler(*args,**kwargs):
+
+def errorhandler(*args, **kwargs):
     def annotate_function(func):
         func.errorhandler_args = args
         func.errorhandler_kwargs = kwargs
         return func
     return annotate_function
 
+
 def on_json(path):
     def annotate_function(func):
-        func.sockets_on = path
+        func.socket_path = path
         return func
     return annotate_function
 
@@ -419,9 +461,9 @@ def wrap_val_in_grain(pval):
                     "topic": "",
                     "data": [
                         {
-                            "path":{},
-                            "pre":{},
-                            "post":{}
+                            "path": {},
+                            "pre": {},
+                            "post": {}
                         }
                     ]
                 },
@@ -432,6 +474,7 @@ def wrap_val_in_grain(pval):
     egrain["grain"]["event_payload"]["data"][0]["post"] = pval
     return json.dumps(egrain)
 
+
 def grain_event_wrapper(func):
     @wraps(func)
     def wrapper(ws, message):
@@ -439,6 +482,7 @@ def grain_event_wrapper(func):
         if pval is not None:
             ws.send(wrap_val_in_grain(pval))
     return wrapper
+
 
 class IppResponse(Response):
     def __init__(self, response=None, status=None, headers=None, mimetype=None, content_type=None, direct_passthrough=False):
@@ -491,9 +535,11 @@ class IppResponse(Response):
                 headers_match = False
                 break
             else:
-                if hdr in [ "Access-Control-Allow-Headers" ]:
-                    if set([ h.strip() for h in self.headers[hdr].split(',') ]) != set([ h.strip() for h in other.headers[hdr].split(',') ]):
-                        print("{} != {}".format(set([ h.strip() for h in self.headers[hdr].split(',') ]), set([ h.strip() for h in other.headers[hdr].split(',') ])))
+                if hdr in ["Access-Control-Allow-Headers"]:
+                    ownHeaders = set([h.strip() for h in self.headers[hdr].split(',')])
+                    otherHeaders = set([h.strip() for h in other.headers[hdr].split(',')])
+                    if ownHeaders != otherHeaders:
+                        print("{} != {}".format(ownHeaders, otherHeaders))
                         headers_match = False
                         break
                 else:
@@ -515,11 +561,11 @@ class IppResponse(Response):
                 bodies_match = False
 
         return (bodies_match and
-                    (self.status == other.status) and
-                    headers_match and
-                    (self.mimetype == other.mimetype) and
-                    (self.content_type == other.content_type) and
-                    (self.direct_passthrough == other.direct_passthrough))
+                (self.status == other.status) and
+                headers_match and
+                (self.mimetype == other.mimetype) and
+                (self.content_type == other.content_type) and
+                (self.direct_passthrough == other.direct_passthrough))
 
 
 def proxied_request(uri, headers=None, data=None, method=None, proxies=None):
@@ -571,112 +617,127 @@ class WebAPI(object):
                 return f(*args, **kwargs)
             return inner
 
-        def getbases(cl):
-            bases = list(cl.__bases__)
-            for x in cl.__bases__:
+        def getbases(cls):
+            bases = list(cls.__bases__)
+            for x in cls.__bases__:
                 bases += getbases(x)
             return bases
 
-        for klass in [routesObject.__class__,] + getbases(routesObject.__class__):
-            for name in klass.__dict__.keys():
-                value = getattr(routesObject, name)
-                if callable(value):
-                    endpoint = "{}_{}".format(basepath.replace('/', '_'), value.__name__)
-                    if hasattr(value, 'app_methods') and value.app_methods is not None:
-                        methods = value.app_methods
+        for cls in [routesObject.__class__, ] + getbases(routesObject.__class__):
+            for attr in cls.__dict__.keys():
+                routesMethod = getattr(routesObject, attr)
+                if callable(routesMethod):
+                    endpoint = "{}_{}".format(basepath.replace('/', '_'), routesMethod.__name__)
+                    if hasattr(routesMethod, 'app_methods') and routesMethod.app_methods is not None:
+                        methods = routesMethod.app_methods
                     else:
-                        methods = [ "GET", "HEAD" ]
-                    if hasattr(value, 'app_headers') and value.app_headers is not None:
-                        headers = value.app_headers
+                        methods = ["GET", "HEAD"]
+                    if hasattr(routesMethod, 'app_headers') and routesMethod.app_headers is not None:
+                        headers = routesMethod.app_headers
                     else:
                         headers = []
-                    if hasattr(value, "secure_route"):
+
+                    if hasattr(routesMethod, "secure_route"):
                         self.app.route(
-                            basepath + value.secure_route,
+                            basepath + routesMethod.secure_route,
                             endpoint=endpoint,
-                            methods=methods + ["OPTIONS"])(crossdomain(
-                                origin=value.app_origin,
-                                methods=methods,
-                                headers=headers +
-                                ['Content-Type', 'Authorization',
-                                 'token',])(returns_requires_auth(value)))
-                    elif hasattr(value, "response_route"):
+                            methods=methods + ["OPTIONS"])(
+                                crossdomain(
+                                    origin=routesMethod.app_origin,
+                                    methods=methods,
+                                    headers=headers + ['Content-Type', 'Authorization', 'token', ])(
+                                        returns_requires_auth(routesMethod)))
+
+                    elif hasattr(routesMethod, "response_route"):
                         self.app.route(
-                            basepath + value.response_route,
+                            basepath + routesMethod.response_route,
                             endpoint=endpoint,
-                            methods=["GET", "POST", "HEAD", "OPTIONS"])(crossdomain(
-                                origin='*',
-                                methods=['GET', 'POST', 'HEAD'],
-                                headers=['Content-Type', 'Authorization',])(returns_response(value)))
-                    elif hasattr(value, "app_route"):
-                        if value.app_auto_json:
+                            methods=["GET", "POST", "HEAD", "OPTIONS"])(
+                                crossdomain(
+                                    origin='*',
+                                    methods=['GET', 'POST', 'HEAD'],
+                                    headers=['Content-Type', 'Authorization', ])(
+                                        returns_response(routesMethod)))
+
+                    elif hasattr(routesMethod, "app_route"):
+                        if routesMethod.app_auto_json:
                             self.app.route(
-                                basepath + value.app_route,
+                                basepath + routesMethod.app_route,
                                 endpoint=endpoint,
-                                methods=methods +
-                                    ["OPTIONS",])(crossdomain(
-                                        origin=value.app_origin,
+                                methods=methods + ["OPTIONS", ])(
+                                    crossdomain(
+                                        origin=routesMethod.app_origin,
                                         methods=methods,
-                                        headers=headers +
-                                        ['Content-Type', 'Authorization',])(returns_json(value)))
+                                        headers=headers + ['Content-Type', 'Authorization', ])(
+                                            returns_json(routesMethod)))
                         else:
                             self.app.route(
-                                    basepath + value.app_route,
-                                    endpoint=endpoint,
-                                    methods=methods +
-                                    ["OPTIONS",])(crossdomain(
-                                        origin=value.app_origin,
+                                basepath + routesMethod.app_route,
+                                endpoint=endpoint,
+                                methods=methods + ["OPTIONS", ])(
+                                    crossdomain(
+                                        origin=routesMethod.app_origin,
                                         methods=methods,
-                                        headers=headers + ['Content-Type', 'Authorization',])(dummy(value)))
-                    elif hasattr(value, "app_file_route"):
+                                        headers=headers + ['Content-Type', 'Authorization', ])(
+                                            dummy(routesMethod)))
+
+                    elif hasattr(routesMethod, "app_file_route"):
                         self.app.route(
-                            basepath + value.app_file_route,
+                            basepath + routesMethod.app_file_route,
                             endpoint=endpoint,
-                            methods=methods + ["OPTIONS"])(crossdomain(
-                                origin='*',
-                                methods=methods,
-                                headers=headers + ['Content-Type', 'Authorization',])(returns_file(value)))
-                    elif hasattr(value, "app_resource_route"):
+                            methods=methods + ["OPTIONS"])(
+                                crossdomain(
+                                    origin='*',
+                                    methods=methods,
+                                    headers=headers + ['Content-Type', 'Authorization', ])(
+                                        returns_file(routesMethod)))
+
+                    elif hasattr(routesMethod, "app_resource_route"):
                         f = crossdomain(origin='*',
-                                            methods=methods,
-                                            headers=headers + ['Content-Type', 'Authorization',
-                                                     'api-key',])(returns_json(
-                                                         obj_path_access(value)))
-                        self.app.route(basepath + value.app_resource_route,
-                                           methods=methods + ["OPTIONS",],
-                                           endpoint=endpoint)(f)
+                                        methods=methods,
+                                        headers=headers + ['Content-Type', 'Authorization', 'api-key', ])(
+                                            returns_json(obj_path_access(routesMethod)))
+                        self.app.route(
+                            basepath + routesMethod.app_resource_route,
+                            methods=methods + ["OPTIONS", ],
+                            endpoint=endpoint)(f)
                         f.__name__ = endpoint + '_path'
                         self.app.route(
-                                basepath + value.app_resource_route + '<path:path>/',
-                                methods=methods + ["OPTIONS",],
-                                endpoint=f.__name__)(f)
-                    elif hasattr(value, "sockets_on"):
-                        socket_recv_gen = getattr(routesObject, "on_websocket_connect", None)
-                        if socket_recv_gen is None:
-                            f = self.handle_sock(expects_json(value), self.socks)
+                            basepath + routesMethod.app_resource_route + '<path:path>/',
+                            methods=methods + ["OPTIONS", ],
+                            endpoint=f.__name__)(f)
+
+                    elif hasattr(routesMethod, "socket_path"):
+                        websocket_opened = getattr(routesObject, "on_websocket_connect", None)
+                        if websocket_opened is None:
+                            self.sockets.route(
+                                basepath + routesMethod.socket_path,
+                                endpoint=endpoint)(
+                                    self.handle_sock(
+                                        expects_json(routesMethod), self.socks))
                         else:
-                            f = socket_recv_gen(expects_json(value))
-                        self.sockets.route(basepath + value.sockets_on, endpoint=endpoint)(f)
-                    elif hasattr(value, "errorhandler_args"):
-                        if value.errorhandler_args:
+                            self.sockets.route(
+                                basepath + routesMethod.socket_path,
+                                endpoint=endpoint)(
+                                    websocket_opened(
+                                        expects_json(routesMethod)))
+
+                    elif hasattr(routesMethod, "errorhandler_args"):
+                        if routesMethod.errorhandler_args:
                             self.app.errorhandler(
-                                *value.errorhandler_args, **
-                                value.errorhandler_kwargs)(crossdomain(
-                                    origin='*',
-                                    methods=["GET", "POST", "PUT", "DELETE",
-                                             "OPTIONS", "HEAD"])(dummy(value)))
+                                *routesMethod.errorhandler_args,
+                                **routesMethod.errorhandler_kwargs)(
+                                    crossdomain(
+                                        origin='*',
+                                        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"])(
+                                            dummy(routesMethod)))
                         else:
                             for n in range(400, 600):
-                                try:
+                                try:  # Apply errorhandlers for all known error codes
                                     self.app.errorhandler(n)(crossdomain(
                                         origin='*',
-                                        methods=[
-                                            "GET",
-                                            "POST",
-                                            "PUT",
-                                            "DELETE",
-                                            "OPTIONS",
-                                            "HEAD"])(dummy(value)))
+                                        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"])(
+                                            dummy(routesMethod)))
                                 except KeyError:
                                     # Some error codes aren't valid
                                     pass
@@ -691,34 +752,39 @@ class WebAPI(object):
 
         bm = request.accept_mimetypes.best_match(['application/json', 'text/html'])
         if bm == 'text/html':
-            if isinstance(e,HTTPException):
+            if isinstance(e, HTTPException):
                 if e.code == 400:
-                    (t,v,tb) = sys.exc_info()
-                    return IppResponse(highlight('\n'.join(traceback.format_exception(t,v,tb)), PythonTracebackLexer(), HtmlFormatter(linenos='table',
-                                                                                                                                      full=True,
-                                                                                                                                      title="{}: {}".format(e.code, e.description))),
-                        status=e.code,
-                        mimetype='text/html')
+                    (exceptionType, exceptionParam, trace) = sys.exc_info()
+                    return IppResponse(highlight(
+                                            '\n'.join(traceback.format_exception(exceptionType, exceptionParam, trace)),
+                                            PythonTracebackLexer(),
+                                            HtmlFormatter(linenos='table',
+                                                          full=True,
+                                                          title="{}: {}".format(e.code, e.description))),
+                                       status=e.code,
+                                       mimetype='text/html')
                 return e.get_response()
 
-            (t,v,tb) = sys.exc_info()
-            return IppResponse(highlight('\n'.join(traceback.format_exception(t,v,tb)), PythonTracebackLexer(), HtmlFormatter(linenos='table',
-                                                                                                                              full=True,
-                                                                                                                              title='500: Internal Exception')),
-                            status=500,
-                            mimetype='text/html')
+            (exceptionType, exceptionParam, trace) = sys.exc_info()
+            return IppResponse(highlight(
+                                    '\n'.join(traceback.format_exception(exceptionType, exceptionParam, trace)),
+                                    PythonTracebackLexer(),
+                                    HtmlFormatter(linenos='table',
+                                                  full=True,
+                                                  title='500: Internal Exception')),
+                               status=500,
+                               mimetype='text/html')
         else:
-            t, v, tb = sys.exc_info()
+            (exceptionType, exceptionParam, trace) = sys.exc_info()
             if isinstance(e, HTTPException):
                 response = {
                     'code': e.code,
                     'error': e.description,
                     'debug': str({
-                        'traceback': [str(x) for x in traceback.extract_tb(tb)],
-                        'exception': [str(x) for x in traceback.format_exception_only(t, v)]
+                        'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                        'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
                     })
                 }
-
                 return IppResponse(json.dumps(response), status=e.code, mimetype='application/json')
 
             if isinstance(e, AuthlibHTTPError):
@@ -726,11 +792,10 @@ class WebAPI(object):
                     'code': e.status_code,
                     'error': e.description,
                     'debug': str({
-                        'traceback': [str(x) for x in traceback.extract_tb(tb)],
-                        'exception': [str(x) for x in traceback.format_exception_only(t, v)]
+                        'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                        'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
                     })
                 }
-
                 return IppResponse(json.dumps(response), status=e.status_code, mimetype='application/json')
 
             if isinstance(e, AuthlibBaseError):
@@ -738,28 +803,26 @@ class WebAPI(object):
                     'code': 400,
                     'error': e.description,
                     'debug': str({
-                        'traceback': [str(x) for x in traceback.extract_tb(tb)],
-                        'exception': [str(x) for x in traceback.format_exception_only(t, v)]
+                        'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                        'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
                     })
                 }
-
                 return IppResponse(json.dumps(response), status=400, mimetype='application/json')
 
             response = {
                 'code': 500,
                 'error': 'Internal Error',
                 'debug': str({
-                    'traceback': [str(x) for x in traceback.extract_tb(tb)],
-                    'exception': [str(x) for x in traceback.format_exception_only(t, v)]
+                    'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                    'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
                 })
             }
-
             return IppResponse(json.dumps(response), status=500, mimetype='application/json')
 
-    def torun(self): # pragma: no cover
+    def torun(self):  # pragma: no cover
         pass
 
-    def stop(self): # pragma: no cover
+    def stop(self):  # pragma: no cover
         pass
 
     def handle_sock(self, func, socks):
@@ -771,7 +834,7 @@ class WebAPI(object):
             while True:
                 try:
                     message = ws.receive()
-                except:
+                except Exception:
                     message = None
 
                 if message is not None:
@@ -790,7 +853,9 @@ class WebAPI(object):
             loginserver = self._oauth_config['loginserver']
             proxies = self._oauth_config['proxies']
             whitelist = self._oauth_config['access_whitelist']
-            result = proxied_request(uri="{}/check-token".format(loginserver), headers={'token': token}, proxies=proxies)
+            result = proxied_request(
+                        uri="{}/check-token".format(loginserver),
+                        headers={'token': token}, proxies=proxies)
             json_payload = json.loads(result[1])
             return json_payload['userid'] in whitelist
         else:
@@ -804,7 +869,9 @@ class WebAPI(object):
             print('authenticating: {}'.format(token))
             if token is None:
                 return False
-            result = proxied_request(uri="{}/check-token".format(loginserver), headers={'token': token}, proxies=proxies)
+            result = proxied_request(
+                        uri="{}/check-token".format(loginserver),
+                        headers={'token': token}, proxies=proxies)
             print('token result code: {}'.format(result[0].code))
             print('result payload: {}'.format(result[1]))
             return result[0].code == 200 and json.loads(result[1])['token'] == token

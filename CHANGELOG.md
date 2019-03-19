@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.17.1
+- Change variable naming and code layout for readability
+
 ## 0.17.0
 - Fix heartbeat frequency. Requires use of 'stop' method in MDNSUpdater
 

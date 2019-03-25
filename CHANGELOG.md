@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.17.2
+- Pin Werkzeug < 0.15 (along with >= 0.9.4) to avoid change to ProxyFix middleware incompatible with Debian version.
+
 ## 0.17.1
 - Change variable naming and code layout for readability
 

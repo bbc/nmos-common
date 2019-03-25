@@ -1,5 +1,9 @@
 # NMOS Common Library Changelog
 
+## 0.17.2
+- Update ProxyFix import location to match Werkzeug 0.15
+- Enable "fixing" more than one layer of proxy.
+
 ## 0.17.1
 - Change variable naming and code layout for readability
 

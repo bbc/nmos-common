@@ -38,7 +38,7 @@ import sys
 
 from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import BaseResponse
-from werkzeug.contrib.fixers import ProxyFix
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from requests.structures import CaseInsensitiveDict
 

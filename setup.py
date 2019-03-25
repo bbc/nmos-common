@@ -123,7 +123,7 @@ packages_required = [
     "six>=1.10.0",
     "flask>=0.10.1",
     "jinja2>=2.7.2",
-    "werkzeug>=0.9.4",
+    "werkzeug>=0.9.4,<0.15.0",  # Werkzeug 0.15.0 changes the ProxyFix middleware, but is not available for Debian.
     "itsdangerous>=0.24",
     "socketio-client>=0.5.3",
     "flask-sockets>=0.1",
@@ -163,7 +163,7 @@ deps_required = []
 
 
 setup(name="nmoscommon",
-      version="0.17.1",
+      version="0.17.2",
       description="Common components for the BBC's NMOS implementations",
       url='https://github.com/bbc/nmos-common',
       author='Peter Brightwell',

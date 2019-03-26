@@ -4,7 +4,10 @@ import json
 from requests.exceptions import RequestException
 from functools import wraps
 from flask import request
-from urlparse import parse_qs
+try:
+    from urlparse import parse_qs
+except ImportError:
+    from urllib.parse import parse_qs
 from OpenSSL import crypto
 
 from nmoscommon.mdnsbridge import IppmDNSBridge

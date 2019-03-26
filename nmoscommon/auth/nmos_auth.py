@@ -34,6 +34,7 @@ from authlib.common.errors import AuthlibBaseError
 
 from .claims_options import IS_XX_CLAIMS
 from .claims_validator import JWTClaimsValidator
+from .constants import CERT_ENDPOINT, CERT_PATH, CERT_KEY
 
 MDNS_SERVICE_TYPE = "nmos-auth"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))

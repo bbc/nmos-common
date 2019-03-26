@@ -143,6 +143,7 @@ packages_required = [
     "mediatimestamp>=1.0.1",
     "mediajson>=1.0.0",
     "authlib>=0.10",
+    "pyopenssl",
     "dnspython>=1.12.0",
     "zeroconf-monkey>=0.1.0"
 ]

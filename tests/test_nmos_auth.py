@@ -16,30 +16,30 @@ import json
 
 from authlib.specs.rfc6749.errors import UnsupportedTokenTypeError, MissingAuthorizationError
 from authlib.specs.rfc7519.errors import InvalidClaimError
-from nmosoauth.resource_server.nmos_security import NmosSecurity
-from nmosoauth.resource_server.claims_options import IS_04_REG_CLAIMS, IS_05_CLAIMS
+from nmoscommon.auth.nmos_auth import RequiresAuth
+from nmoscommon.auth.claims_options import IS_04_REG_CLAIMS, IS_05_CLAIMS
 from nmos_auth_data import BEARER_TOKEN, CERT, PUB_KEY
 
 
-class TestNmosSecurity(unittest.TestCase):
+class TestRequiresAuth(unittest.TestCase):
 
     def setUp(self):
-        self.security = NmosSecurity(condition=True)
+        self.security = RequiresAuth(condition=True)
 
     def dummy(self):
         return "SUCCESS"
 
-    @mock.patch.object(NmosSecurity, "JWTRequired")
+    @mock.patch.object(RequiresAuth, "JWTRequired")
     def testCondition(self, mockJWTRequired):
-        self.security = NmosSecurity(condition=False)
+        self.security = RequiresAuth(condition=False)
         self.security(self.dummy)
         mockJWTRequired.assert_not_called()
 
-        self.security = NmosSecurity(condition=True)
+        self.security = RequiresAuth(condition=True)
         self.security(self.dummy)
         mockJWTRequired.assert_called_once()
 
-    @mock.patch("nmosoauth.resource_server.nmos_security.request")
+    @mock.patch("nmoscommon.auth.nmos_auth.request")
     def testJWTRequiredWithBadRequest(self, mockRequest):
         mockRequest.headers.get.return_value = None
         self.assertRaises(MissingAuthorizationError, self.security(self.dummy))
@@ -59,8 +59,8 @@ class TestNmosSecurity(unittest.TestCase):
         res = eval("self.security.{}()".format(method))
         return res
 
-    @mock.patch.object(NmosSecurity, "getHrefFromService")
-    @mock.patch("nmosoauth.resource_server.nmos_security.requests")
+    @mock.patch.object(RequiresAuth, "getHrefFromService")
+    @mock.patch("nmoscommon.auth.nmos_auth.requests")
     def testGetCertfromEndpoint(self, mockRequests, mockGetHref):
 
         mockGetHref.return_value = "http://172.29.80.117:4999"
@@ -93,21 +93,21 @@ class TestNmosSecurity(unittest.TestCase):
         self.assertRaises(Exception, self.security.extractPublicKey, "")
         self.assertEqual(self.security.extractPublicKey(CERT['default']), PUB_KEY)
 
-    @mock.patch.object(NmosSecurity, "getCertFromEndpoint")
-    @mock.patch("nmosoauth.resource_server.nmos_security.request")
+    @mock.patch.object(RequiresAuth, "getCertFromEndpoint")
+    @mock.patch("nmoscommon.auth.nmos_auth.request")
     def testJWTClaimsValidator(self, mockRequest, mockGetCert):
         mockRequest.headers.get.return_value = "Bearer " + BEARER_TOKEN["access_token"]
         mockGetCert.return_value = CERT['default']
 
-        self.security = NmosSecurity(condition=True, claimsOptions=IS_04_REG_CLAIMS)
+        self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
         self.assertRaises(InvalidClaimError, self.security(self.dummy))
 
-        self.security = NmosSecurity(condition=True, claimsOptions=IS_05_CLAIMS)
+        self.security = RequiresAuth(condition=True, claimsOptions=IS_05_CLAIMS)
         self.assertEqual(self.security(self.dummy)(), "SUCCESS")
 
         # NOTE: Assumes Only Write Access is permitted
         IS_05_CLAIMS["x-nmos-api"]["value"]["access"] = "read"
-        self.security = NmosSecurity(condition=True, claimsOptions=IS_05_CLAIMS)
+        self.security = RequiresAuth(condition=True, claimsOptions=IS_05_CLAIMS)
         self.assertRaises(InvalidClaimError, self.security(self.dummy))
 
 

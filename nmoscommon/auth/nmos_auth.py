@@ -85,7 +85,7 @@ class RequiresAuth(object):
             self.logger.writeError("Public Key could not be extracted from certificate")
             raise ValueError
         else:
-            return pubKeyString
+            return pubKeyString.decode('utf-8')
 
     def getPublicKey(self):
         if self.certificate is None:

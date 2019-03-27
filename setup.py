@@ -153,12 +153,20 @@ packages_required = [
 if int(setuptools.__version__.split(".", 1)[0]) < 18:
     # Check python version using legacy mechanism
     if sys.version_info[0:2] < (3, 0):
-        packages_required.extend(["zeroconf<=0.19.1", "urlparse"])  # Version locked to preserve Python 2 compatibility
+        packages_required.extend([
+            "zeroconf<=0.19.1"
+        ])  # Version locked to preserve Python 2 compatibility
     else:
-        packages_required.extend(["zeroconf>=0.21.0", "urllib"])
+        packages_required.extend([
+            "zeroconf>=0.21.0"
+        ])
 else:
-    packages_required.extend(["zeroconf==0.19.1;python_version<'3.0'", "urlparse"])
-    packages_required.extend(["zeroconf>=0.21.0;python_version>='3.0'", "urllib"])
+    packages_required.extend([
+        "zeroconf==0.19.1;python_version<'3.0'"
+    ])
+    packages_required.extend([
+        "zeroconf>=0.21.0;python_version>='3.0'"
+    ])
 
 deps_required = []
 

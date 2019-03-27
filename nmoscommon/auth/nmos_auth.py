@@ -1,3 +1,17 @@
+# Copyright 2019 British Broadcasting Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import requests
 import json
@@ -20,11 +34,16 @@ from authlib.common.errors import AuthlibBaseError
 
 from .claims_options import IS_XX_CLAIMS
 from .claims_validator import JWTClaimsValidator
-from .constants import CERT_ENDPOINT, CERT_PATH, CERT_KEY
 
 MDNS_SERVICE_TYPE = "nmos-auth"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OAUTH_MODE = _config.get('oauth_mode', True)
+
+NMOSOAUTH_DIR = '/var/nmosoauth'  # LINUX ONLY
+CERT_FILE = 'certificate.pem'
+CERT_PATH = os.path.join(NMOSOAUTH_DIR, CERT_FILE)
+CERT_ENDPOINT = '/certs'
+CERT_KEY = 'default'
 
 
 class RequiresAuth(object):

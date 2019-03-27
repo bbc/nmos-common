@@ -23,15 +23,12 @@ class JWTClaimsValidator(JWTClaims):
 
     def validate_iss(self):  # placeholder
         super(JWTClaimsValidator, self).validate_iss()
-        pass
 
     def validate_sub(self):  # placeholder
         super(JWTClaimsValidator, self).validate_sub()
-        pass
 
     def validate_aud(self):  # placeholder
         super(JWTClaimsValidator, self).validate_aud()
-        pass
 
     def validate_nmos(self):
         claim_name = "x-nmos-api"

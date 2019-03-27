@@ -53,7 +53,7 @@ class TestRequiresAuth(unittest.TestCase):
     def mockGetResponse(self, code, content, headers, mockObject, method):
         resp = requests.Response()
         resp.status_code = code
-        resp._content = json.dumps(content)
+        resp._content = json.dumps(content).encode('utf-8')
         resp.headers = headers
         mockObject.get.return_value = resp
         res = eval("self.security.{}()".format(method))

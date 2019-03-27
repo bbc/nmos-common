@@ -45,22 +45,23 @@ class RequiresAuth(object):
             href = self.getHrefFromService(MDNS_SERVICE_TYPE)
             certHref = href + CERT_ENDPOINT
             self.logger.writeInfo('cert href is: {}'.format(certHref))
-            cert = requests.get(certHref, timeout=0.5, proxies={'http': ''})
-            cert.raise_for_status()  # Raise error if status !=200
+            cert_resp = requests.get(certHref, timeout=0.5, proxies={'http': ''})
+            cert_resp.raise_for_status()  # Raise error if status !=200
         except RequestException as e:
             self.logger.writeError("Error: {0!s}".format(e))
             self.logger.writeError("Cannot find certificate at {}. Is the Auth Server Running?".format(certHref))
             raise
 
-        contentType = cert.headers['content-type'].split(";")[0]
+        contentType = cert_resp.headers['content-type'].split(";")[0]
         if contentType == "application/json":
+            cert = cert_resp.json()
             try:
-                if len(cert.json()) > 1:
+                if len(cert) > 1:
                     self.logger.writeWarning("Multiple certificates at Endpoint. Returning First Instance.")
-                cert = cert.json()[CERT_KEY]
+                cert = cert[CERT_KEY]
                 return cert
             except KeyError as e:
-                self.logger.writeError("Error: {}. Endpoint contains: {}".format(str(e), cert.json()))
+                self.logger.writeError("Error: {}. Endpoint contains: {}".format(str(e), cert))
                 raise
         else:
             self.logger.writeError("Incorrect Content-Type. Expected 'application/json but got {}".format(contentType))

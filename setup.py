@@ -167,34 +167,31 @@ if int(setuptools.__version__.split(".", 1)[0]) < 18:
         ])
 else:
     packages_required.extend([
-        "zeroconf==0.19.1;python_version<'3.0'"
-    ])
-    packages_required.extend([
-        "zeroconf>=0.21.0;python_version>='3.0'"
-    ])
-    packages_required.extend([
-        'wsaccel>=0.6.2;python_version<"3.6"',
+        "zeroconf==0.19.1;python_version<'3.0'",
+        "zeroconf>=0.21.0;python_version>='3.0'",
+        'wsaccel>=0.6.2;python_version<"3.6"'
     ])
 
 deps_required = []
 
 
-setup(name="nmoscommon",
-      version="0.19.0",
-      description="Common components for the BBC's NMOS implementations",
-      url='https://github.com/bbc/nmos-common',
-      author='Peter Brightwell',
-      author_email='peter.brightwell@bbc.co.uk',
-      license='Apache 2',
-      packages=package_names,
-      package_dir=packages,
-      install_requires=packages_required,
-      dependency_links=deps_required,
-      scripts=[],
-      data_files=[],
-      long_description="Common components for the BBC's NMOS implementations",
-      cmdclass={
+setup(
+    name="nmoscommon",
+    version="0.19.0",
+    description="Common components for the BBC's NMOS implementations",
+    url='https://github.com/bbc/nmos-common',
+    author='Peter Brightwell',
+    author_email='peter.brightwell@bbc.co.uk',
+    license='Apache 2',
+    packages=package_names,
+    package_dir=packages,
+    install_requires=packages_required,
+    dependency_links=deps_required,
+    scripts=[],
+    data_files=[],
+    long_description="Common components for the BBC's NMOS implementations",
+    cmdclass={
         'develop': PostDevelopCommand,
         'install': PostInstallCommand,
-      }
-      )
+    }
+)

@@ -1,4 +1,4 @@
-@Library("rd-apmm-groovy-ci-library@simonra-pipdeptree) _
+@Library("rd-apmm-groovy-ci-library@simonra-pipdeptree") _
 
 /*
  Runs the following steps in parallel and reports results to GitHub:

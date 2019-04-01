@@ -111,7 +111,7 @@ class Aggregator(object):
                         self.logger.writeError("Unrecoverable error code {} received from Registration API on heartbeat"
                                                .format(e.status_code))
                         self._running = False
-                except:
+                except Exception:
                     # Re-register
                     self.logger.writeWarning("Unexpected error on heartbeat. Marking Node for re-registration")
                     self._registered["registered"] = False
@@ -151,7 +151,7 @@ class Aggregator(object):
                                 if self._mdns_updater is not None:
                                     self._mdns_updater.P2P_disable()
 
-                            except Exception as ex:
+                            except Exception:
                                 self.logger.writeWarning("Error registering Node: %r" % (traceback.format_exc(),))
 
                         elif res_key in self._registered["entities"][namespace][res_type]:
@@ -338,7 +338,7 @@ class Aggregator(object):
                     R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0, headers=headers)
                 else:
                     R = requests.request(method, urljoin(self.aggregator, url), data=data, timeout=1.0,
-                                         headers=headers, proxies={'http':''})
+                                         headers=headers, proxies={'http': ''})
                 if R is None:
                     # Try another aggregator
                     self.logger.writeWarning("No response from aggregator {}".format(self.aggregator))

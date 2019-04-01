@@ -1,4 +1,4 @@
-@Library("rd-apmm-groovy-ci-library@v1.x") _
+@Library("rd-apmm-groovy-ci-library@simonra-pipdeptree) _
 
 /*
  Runs the following steps in parallel and reports results to GitHub:
@@ -118,6 +118,11 @@ pipeline {
                     }
                     bbcGithubNotify(context: "tests/integration", status: env.int_result)
                 }
+            }
+        }
+        stage ("Report Dependencies") {
+            steps{
+                bbcPipTree()
             }
         }
         stage ("Debian Source Build") {

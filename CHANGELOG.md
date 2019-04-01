@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.18.0
+- Addition of NMOS Auth Security files for resource endpoint protection. Changed error handler output for authlib errors
+
 ## 0.17.2
 - Pin Werkzeug < 0.15 (along with >= 0.9.4) to avoid change to ProxyFix middleware incompatible with Debian version.
 

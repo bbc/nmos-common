@@ -790,7 +790,7 @@ class WebAPI(object):
             if isinstance(e, AuthlibHTTPError):
                 response = {
                     'code': e.status_code,
-                    'error': e.description,
+                    'error': e.get_error_description() if e.get_error_description() else e.error,
                     'debug': str({
                         'traceback': [str(x) for x in traceback.extract_tb(trace)],
                         'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
@@ -801,7 +801,7 @@ class WebAPI(object):
             if isinstance(e, AuthlibBaseError):
                 response = {
                     'code': 400,
-                    'error': e.description,
+                    'error': e.message if e.description else e.error,
                     'debug': str({
                         'traceback': [str(x) for x in traceback.extract_tb(trace)],
                         'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]

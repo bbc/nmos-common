@@ -139,7 +139,6 @@ packages_required = [
     "netifaces>=0.10.6",
     "websocket-client>=0.18.0",
     "ujson>=1.33",
-    "wsaccel>=0.6.2",
     "mediatimestamp>=1.0.1",
     "mediajson>=1.0.0",
     "authlib>=0.10",
@@ -150,6 +149,7 @@ packages_required = [
 
 # Check if setuptools is recent enough to recognise python_version syntax
 # Pybonjour is only available for Python 2
+# wsaccel doesn't work with python 3.6
 if int(setuptools.__version__.split(".", 1)[0]) < 18:
     # Check python version using legacy mechanism
     if sys.version_info[0:2] < (3, 0):
@@ -160,6 +160,11 @@ if int(setuptools.__version__.split(".", 1)[0]) < 18:
         packages_required.extend([
             "zeroconf>=0.21.0"
         ])
+
+    if sys.version_info[0:2] < (3, 6):
+        packages_required.extend([
+            'wsaccel>=0.6.2',
+        ])
 else:
     packages_required.extend([
         "zeroconf==0.19.1;python_version<'3.0'"
@@ -167,12 +172,15 @@ else:
     packages_required.extend([
         "zeroconf>=0.21.0;python_version>='3.0'"
     ])
+    packages_required.extend([
+        'wsaccel>=0.6.2;python_version<"3.6"',
+    ])
 
 deps_required = []
 
 
 setup(name="nmoscommon",
-      version="0.18.0",
+      version="0.18.1",
       description="Common components for the BBC's NMOS implementations",
       url='https://github.com/bbc/nmos-common',
       author='Peter Brightwell',

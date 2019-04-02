@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.18.1
+- Removed wsaccel dependency when python version >= 3.6
+
 ## 0.18.0
 - Addition of NMOS Auth Security files for resource endpoint protection. Changed error handler output for authlib errors
 

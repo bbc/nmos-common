@@ -25,6 +25,7 @@ import gevent.queue
 from nmoscommon.logger import Logger
 from nmoscommon.mdnsbridge import IppmDNSBridge
 from nmoscommon.mdns.mdnsExceptions import ServiceNotFoundException
+from .auth.auth_headers import get_auth_headers
 
 from nmoscommon.nmoscommonconfig import config as _config
 import traceback
@@ -319,9 +320,13 @@ class Aggregator(object):
             self.aggregator = self._get_api_href()
 
         headers = None
+
         if data is not None:
             data = json.dumps(data)
             headers = {"Content-Type": "application/json"}
+
+        if _config.get('oauth_mode') is True:
+            headers = get_auth_headers(headers)
 
         url = AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url
         for i in range(0, 3):

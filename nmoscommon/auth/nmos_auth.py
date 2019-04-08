@@ -19,9 +19,9 @@ from requests.exceptions import RequestException
 from functools import wraps
 from flask import request
 try:
-    from urlparse import parse_qs
+    from urlparse import parse_qs, urljoin
 except ImportError:
-    from urllib.parse import parse_qs
+    from urllib.parse import parse_qs, urljoin
 from OpenSSL import crypto
 
 from nmoscommon.mdnsbridge import IppmDNSBridge
@@ -42,7 +42,7 @@ OAUTH_MODE = _config.get('oauth_mode', True)
 NMOSOAUTH_DIR = '/var/nmosoauth'  # LINUX ONLY
 CERT_FILE = 'certificate.pem'
 CERT_PATH = os.path.join(NMOSOAUTH_DIR, CERT_FILE)
-CERT_ENDPOINT = '/certs'
+CERT_ENDPOINT = 'certs'
 CERT_KEY = 'default'
 
 
@@ -62,7 +62,7 @@ class RequiresAuth(object):
     def getCertFromEndpoint(self):
         try:
             href = self.getHrefFromService(MDNS_SERVICE_TYPE)
-            certHref = href + CERT_ENDPOINT
+            certHref = urljoin(href, CERT_ENDPOINT)
             self.logger.writeInfo('cert href is: {}'.format(certHref))
             cert_resp = requests.get(certHref, timeout=0.5, proxies={'http': ''})
             cert_resp.raise_for_status()  # Raise error if status !=200

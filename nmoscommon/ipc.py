@@ -24,14 +24,18 @@ import json
 import stat
 import warnings
 
+
 class RemoteException(Exception):
     pass
+
 
 class LocalException(Exception):
     pass
 
+
 # Included for backward compatibility with previous typo'ed version
 RemoteExcepton = RemoteException
+
 
 class Host(object):
     """This class provides a server which can make a set of ipc commands available at a well known address.
@@ -55,7 +59,7 @@ class Host(object):
                                    stat.S_IROTH | stat.S_IWOTH | stat.S_IXOTH))
 
         self.thread = None
-        self._stop  = True
+        self._stop = True
 
         self.methods = {}
 
@@ -72,15 +76,15 @@ class Host(object):
         if self.greenlet is not None:
             self.greenlet.kill()
         self.greenlet = None
+        if not self.socket.closed:
+            self.socket.close()
 
     def _run(self):
         while not self._stop:
             r = self.socket.poll(timeout=self.timeout)
             if r != 0:
                 msg = self.socket.recv_json()
-                if ('function' not in msg or
-                    'args' not in msg or
-                    'kwargs' not in msg):
+                if ('function' not in msg or 'args' not in msg or 'kwargs' not in msg):
                     self.socket.send_json({})
                     continue
 
@@ -90,7 +94,7 @@ class Host(object):
 
                 try:
                     r = self.methods[msg['function']](*(msg['args']), **(msg['kwargs']))
-                except Exception as e:
+                except Exception:
                     self.socket.send_json({'exc': traceback.format_exc()})
                     continue
                 if r is not None:
@@ -98,7 +102,7 @@ class Host(object):
                 else:
                     self.socket.send_json({})
 
-    def ipcmethod(self, name = None):
+    def ipcmethod(self, name=None):
         def _inner(function):
             _name = name
             if _name is None:
@@ -109,7 +113,10 @@ class Host(object):
 
     def getmethods(self):
         """Return a list of all methods available and their help text"""
-        return dict(((key, self.methods[key].__doc__ if self.methods[key].__doc__ is not None else "") for key in self.methods.keys()))
+        return dict(
+            ((key, self.methods[key].__doc__ if self.methods[key].__doc__ is not None else "") for key in self.methods.keys())
+        )
+
 
 class Proxy(object):
     """This class provides a proxy to a remote ipc host which can be used to invoke methods on that host."""
@@ -131,9 +138,9 @@ class Proxy(object):
 
     def invoke_named(self, name, *args, **kwargs):
         try:
-            msg = { 'function' : name,
-                    'args'     : args,
-                    'kwargs'   : kwargs }
+            msg = {'function': name,
+                   'args': args,
+                   'kwargs': kwargs}
             gevent.sleep(0)
             self.socket.send_json(msg)
             gevent.sleep(0)
@@ -148,7 +155,7 @@ class Proxy(object):
                 raise RemoteException(r['exc'])
             if 'ret' in r:
                 return r['ret']
-        except:
+        except Exception:
             gevent.sleep(0)
             raise
 
@@ -156,7 +163,7 @@ class Proxy(object):
         if self.socket:
             try:
                 self.socket.close()
-            except:
+            except Exception:
                 pass
             self.socket = None
 
@@ -167,17 +174,16 @@ class Proxy(object):
 
 
 # This is deprecated
-class Socket(object): # pragma: no cover
+class Socket(object):  # pragma: no cover
     def __init__(self, name=None, rmethods=None):
         warnings.warn("The Socket Class is Deprecated and will be removed in future", DeprecationWarning, stacklevel=1)
-        if rmethods == None:
+        if rmethods is None:
             rmethods = []
         if name is None:
             name = '/tmp/nmoscommon_ipc_' + str(uuid.uuid4())
             self.side = "slave"
         else:
             self.side = "master"
-
 
         self.name = name
         ctx = zmq.Context.instance()
@@ -230,7 +236,7 @@ class Socket(object): # pragma: no cover
         if "return" in rmsg:
             return rmsg["return"]
 
-    def local(self,f):
+    def local(self, f):
         self.lmethods[f.__name__] = f
         return f
 
@@ -248,6 +254,7 @@ class Socket(object): # pragma: no cover
                 return callremote
             raise
 
+
 def main():
     import sys
     address = "ipc:///tmp/nmoscommon_test"
@@ -259,6 +266,7 @@ def main():
         print(json.dumps(getattr(p, sys.argv[2])(*(sys.argv[3:]))))
     else:
         h = Host(address)
+
         @h.ipcmethod("hello")
         def hello(name="James"):
             return "Hello, {}".format(name)
@@ -266,5 +274,6 @@ def main():
         h._stop = False
         h._run()
 
-if __name__ == "__main__": #pragma: no cover
+
+if __name__ == "__main__":  # pragma: no cover
     main()

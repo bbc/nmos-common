@@ -128,9 +128,8 @@ class Aggregator(object):
         self.logger.writeDebug("Stopping heartbeat thread")
 
     def _process_queue(self):
-        print("IN PROCESS QUEUE")
-        """Provided the Node is believed to be correctly registered, hand off a single request to the SEND method
-        On client error, clear the resource from the local mirror
+        """Provided the Node is believed to be correctly registered, hand off a single request to the SEND method.
+        On client error, clear the resource from the local mirror.
         On other error, mark Node as unregistered and trigger re-registration"""
         self.logger.writeDebug("Starting HTTP queue processing thread")
         # Checks queue not empty before quitting to make sure unregister node gets done
@@ -147,7 +146,6 @@ class Aggregator(object):
                         if res_type == "node":
                             data = self._registered["node"]
                             try:
-                                print("ATTEMPTING NORMAL REGISTRATION")
                                 self.logger.writeInfo("Attempting registration for Node {}"
                                                       .format(self._registered["node"]["data"]["id"]))
                                 self._SEND("POST", "/{}".format(namespace), data, headers=self.auth_header())
@@ -218,8 +216,8 @@ class Aggregator(object):
             self._registered["entities"][namespace][res_type][key] = send_obj
         self._queue_request("POST", namespace, res_type, key)
 
-    # General unregister method for 'resource' types
     def unregister_from(self, namespace, res_type, key):
+        """ General unregister method for 'resource' types"""
         if namespace == "resource" and res_type == "node":
             # Handle special Node type
             self._registered["node"] = None
@@ -229,16 +227,15 @@ class Aggregator(object):
                 del self._registered["entities"][namespace][res_type][key]
         self._queue_request("DELETE", namespace, res_type, key)
 
-    # Deal with missing keys in local mirror
     def _add_mirror_keys(self, namespace, res_type):
+        """Deal with missing keys in local mirror"""
         if namespace not in self._registered["entities"]:
             self._registered["entities"][namespace] = {}
         if res_type not in self._registered["entities"][namespace]:
             self._registered["entities"][namespace][res_type] = {}
 
-    # Re-register just the Node, and queue requests in order for other resources
     def _process_reregister(self):
-        print("PROCESS REREGISTER FIRED")
+        """Re-register just the Node, and queue requests in order for other resources"""
         if self._registered.get("node", None) is None:
             self.logger.writeDebug("No node registered, re-register returning")
             return
@@ -267,7 +264,6 @@ class Aggregator(object):
 
         try:
             # Register the node, and immediately heartbeat if successful to avoid race with garbage collect.
-            print("ATTEMPTING TO REREGISTER")
             self.logger.writeInfo("Attempting re-registration for Node {}"
                                   .format(self._registered["node"]["data"]["id"]))
             self._SEND("POST", "/resource", self._registered["node"], headers=self.auth_header())
@@ -326,6 +322,7 @@ class Aggregator(object):
         return api_href
 
     def _oauth_register(self, client_name, client_uri):
+        """Register OAuth client with Authorization Server"""
         auth_reg = AuthRegistrar(
             client_name=client_name,
             client_uri=client_uri,
@@ -341,15 +338,16 @@ class Aggregator(object):
             return auth_reg
 
     def auth_header(self, headers={}):
+        """Make request for Bearer Token and add Access Token to request Headers"""
         if self._registered['oauth_registered'] and _config.get('oauth_mode') and self.auth_reg is not None:
             auth_req = AuthRequestor(self.auth_reg)
             token = auth_req.token_request_password(username='dannym', password='password', scope='is04')
-            # headers.update({'authorization': 'Bearer {}'.format(token['access_token'])})
+            headers.update({'authorization': 'Bearer {}'.format(token['access_token'])}) if token else True
         print(headers)
         return headers
 
-    # Handle sending all requests to the Registration API, and searching for a new 'aggregator' if one fails
     def _SEND(self, method, url, data=None, headers={}):
+        """Handle sending all requests to the Registration API, and searching for a new 'aggregator' if one fails"""
 
         if self.aggregator == "":
             self.aggregator = self._get_api_href()

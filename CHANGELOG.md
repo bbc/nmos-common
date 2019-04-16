@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.20.0
+- Addition of OAuth Register and OAuth Token Request Classes for adding JWT Authorization Headers
+
 ## 0.19.0
 - Add filters to mdnsbridge client for API versions and protocols
 - Filter by api_ver and api_proto when selecting a Registration API

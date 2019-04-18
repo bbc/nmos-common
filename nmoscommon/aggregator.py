@@ -18,17 +18,15 @@ from six.moves.urllib.parse import urljoin
 import requests
 import json
 import time
-
+import traceback
 import gevent
 import gevent.queue
 
-from nmoscommon.logger import Logger
-from nmoscommon.mdnsbridge import IppmDNSBridge
-from nmoscommon.mdns.mdnsExceptions import ServiceNotFoundException
+from .logger import Logger
+from .mdnsbridge import IppmDNSBridge
+from .mdns.mdnsExceptions import ServiceNotFoundException
 from .auth.auth_registrar import AuthRegistrar, AuthRequestor
-
-from nmoscommon.nmoscommonconfig import config as _config
-import traceback
+from .nmoscommonconfig import config as _config
 
 AGGREGATOR_APIVERSION = _config.get('nodefacade').get('NODE_REGVERSION')
 AGGREGATOR_APINAMESPACE = "x-nmos"
@@ -36,6 +34,8 @@ AGGREGATOR_APINAME = "registration"
 
 LEGACY_REG_MDNSTYPE = "nmos-registration"
 REGISTRATION_MDNSTYPE = "nmos-register"
+
+OAUTH_MODE = _config.get("oauth_mode", False)
 
 
 class NoAggregator(Exception):
@@ -68,7 +68,6 @@ class Aggregator(object):
         self.logger = Logger("aggregator_proxy", logger)
         self.mdnsbridge = IppmDNSBridge(logger=self.logger)
         self.aggregator = ""
-        self.auth_reg = None
         self.registration_order = ["device", "source", "flow", "sender", "receiver"]
         self._mdns_updater = mdns_updater
         # 'registered' is a local mirror of aggregated items. There are helper methods
@@ -76,12 +75,15 @@ class Aggregator(object):
         self._registered = {
             'node': None,
             'registered': False,
-            'oauth_registered': False,
+            'oauth_client_registered': False,
             'entities': {
-                'resource': {
-                }
+                'resource': {}
             }
         }
+        self.auth_registrar = None
+        self.auth_requestor = None
+        self.bearer_token = None
+
         self._running = True
         self._reg_queue = gevent.queue.Queue()
         self.heartbeat_thread = gevent.spawn(self._heartbeat)
@@ -148,7 +150,7 @@ class Aggregator(object):
                             try:
                                 self.logger.writeInfo("Attempting registration for Node {}"
                                                       .format(self._registered["node"]["data"]["id"]))
-                                self._SEND("POST", "/{}".format(namespace), data, headers=self.auth_header())
+                                self._SEND("POST", "/{}".format(namespace), data)
                                 self._SEND("POST", "/health/nodes/" + self._registered["node"]["data"]["id"])
                                 self._registered["registered"] = True
                                 if self._mdns_updater is not None:
@@ -205,12 +207,8 @@ class Aggregator(object):
         if namespace == "resource" and res_type == "node":
             # Handle special Node type
             self._registered["node"] = send_obj
-
-            if self.auth_reg is None:
-                self.auth_reg = self._oauth_register(
-                    client_name='client-{}'.format(send_obj['data']['description']),
-                    client_uri='{}'.format(send_obj['data']['href'])
-                    )
+            # Register with Auth server as Auth client
+            self.register_oauth(send_obj)
         else:
             self._add_mirror_keys(namespace, res_type)
             self._registered["entities"][namespace][res_type][key] = send_obj
@@ -266,7 +264,7 @@ class Aggregator(object):
             # Register the node, and immediately heartbeat if successful to avoid race with garbage collect.
             self.logger.writeInfo("Attempting re-registration for Node {}"
                                   .format(self._registered["node"]["data"]["id"]))
-            self._SEND("POST", "/resource", self._registered["node"], headers=self.auth_header())
+            self._SEND("POST", "/resource", self._registered["node"])
             self._SEND("POST", "/health/nodes/" + self._registered["node"]["data"]["id"])
             self._registered["registered"] = True
             if self._mdns_updater is not None:
@@ -321,40 +319,55 @@ class Aggregator(object):
             api_href = self.mdnsbridge.getHref(LEGACY_REG_MDNSTYPE, None, AGGREGATOR_APIVERSION, protocol)
         return api_href
 
+    def register_oauth(self, send_object):
+        if OAUTH_MODE is True and self.auth_registrar is None:
+            self.auth_registrar = self._oauth_register(
+                client_name=send_object['data']['description'],
+                client_uri=send_object['data']['href']
+            )
+        if self._registered['oauth_client_registered']:
+            self.auth_requestor = AuthRequestor(self.auth_registrar, logger=self.logger)
+
     def _oauth_register(self, client_name, client_uri):
         """Register OAuth client with Authorization Server"""
-        auth_reg = AuthRegistrar(
+        auth_registrar = AuthRegistrar(
             client_name=client_name,
             client_uri=client_uri,
             allowed_scope="is04",
             redirect_uri=client_uri,
-            allowed_grant="password",  # Authlib only seems to accept grants seperated with newline chars
+            allowed_grant="password",  # Authlib only accepts grants seperated with newline chars
             allowed_response="code",
             auth_method="client_secret_basic",
-            certificate=None
+            certificate=None,
+            logger=self.logger
         )
-        if auth_reg.initialised is True:
-            self._registered['oauth_registered'] = True
-            return auth_reg
+        if auth_registrar.initialised is True:
+            self._registered['oauth_client_registered'] = True
+            return auth_registrar
 
-    def auth_header(self, headers={}):
+    def _auth_header(self, headers={}):
         """Make request for Bearer Token and add Access Token to request Headers"""
-        if self._registered['oauth_registered'] and _config.get('oauth_mode') and self.auth_reg is not None:
-            auth_req = AuthRequestor(self.auth_reg)
-            token = auth_req.token_request_password(username='dannym', password='password', scope='is04')
-            headers.update({'authorization': 'Bearer {}'.format(token['access_token'])}) if token else True
-        print(headers)
+        if self.auth_requestor is None:
+            return headers
+        if self.auth_requestor.validate_token_expiry(self.bearer_token) is False:
+            self.bearer_token = self.auth_requestor.token_request_password(username='dannym', password='password', scope='is04')
+        if self.bearer_token:
+            headers.update({'authorization': 'Bearer {}'.format(self.bearer_token['access_token'])})
         return headers
 
-    def _SEND(self, method, url, data=None, headers={}):
+    def _SEND(self, method, url, data=None):
         """Handle sending all requests to the Registration API, and searching for a new 'aggregator' if one fails"""
 
+        headers = {}
         if self.aggregator == "":
             self.aggregator = self._get_api_href()
 
         if data is not None:
             data = json.dumps(data)
             headers.update({"Content-Type": "application/json"})
+
+        if OAUTH_MODE is True:
+            self._auth_header(headers)
 
         url = AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url
         for i in range(0, 3):

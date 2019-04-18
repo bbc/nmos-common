@@ -18,10 +18,7 @@ import json
 from requests.exceptions import RequestException
 from functools import wraps
 from flask import request
-try:
-    from urlparse import parse_qs, urljoin
-except ImportError:
-    from urllib.parse import parse_qs, urljoin
+from six.moves.urllib.parse import urljoin, parse_qs
 from OpenSSL import crypto
 
 from nmoscommon.mdnsbridge import IppmDNSBridge
@@ -36,13 +33,17 @@ from .claims_options import IS_XX_CLAIMS
 from .claims_validator import JWTClaimsValidator
 
 MDNS_SERVICE_TYPE = "nmos-auth"
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OAUTH_MODE = _config.get('oauth_mode', True)
 
 NMOSOAUTH_DIR = '/var/nmosoauth'  # LINUX ONLY
 CERT_FILE = 'certificate.pem'
-CERT_PATH = os.path.join(NMOSOAUTH_DIR, CERT_FILE)
+CERT_FILE_PATH = os.path.join(NMOSOAUTH_DIR, CERT_FILE)
+
+APINAMESPACE = "x-nmos"
+APINAME = "auth"
+APIVERSION = "v1.0"
 CERT_ENDPOINT = 'certs'
+CERT_URL_PATH = '/{}/{}/{}/{}'.format(APINAMESPACE, APINAME, APIVERSION, CERT_ENDPOINT)
 CERT_KEY = 'default'
 
 
@@ -62,7 +63,7 @@ class RequiresAuth(object):
     def getCertFromEndpoint(self):
         try:
             href = self.getHrefFromService(MDNS_SERVICE_TYPE)
-            certHref = urljoin(href, CERT_ENDPOINT)
+            certHref = urljoin(href, CERT_URL_PATH)
             self.logger.writeInfo('cert href is: {}'.format(certHref))
             cert_resp = requests.get(certHref, timeout=0.5, proxies={'http': ''})
             cert_resp.raise_for_status()  # Raise error if status !=200
@@ -115,7 +116,7 @@ class RequiresAuth(object):
                 cert = self.getCertFromEndpoint()
             except Exception as e:
                 self.logger.writeError("Error: {0!s}. Trying to fetch Cert From File...".format(e))
-                cert = self.getCertFromFile(CERT_PATH)
+                cert = self.getCertFromFile(CERT_FILE_PATH)
             self.certificate = cert
         pubKey = self.extractPublicKey(self.certificate)
         return pubKey
@@ -172,6 +173,7 @@ class RequiresAuth(object):
             def processAccessToken(*args, **kwargs):
                 # Check to see if request is a Websocket upgrade, else treat request as a standard HTTP request
                 headers = request.headers
+                self.logger.writeInfo("Validating Token for endpoint {}".format(request.url))
                 if ('Upgrade' in headers.keys() and headers['Upgrade'].lower() == 'websocket'):
                     self.logger.writeInfo("Using Socket handler")
                     self.handleSocketAuth(*args, **kwargs)

@@ -83,6 +83,7 @@ class AuthRegistrar(object):
         credentials = {"client_id": self.client_id, "client_secret": self.client_secret}
         with open(file_path, 'w') as f:
             json.dump(credentials, f)
+        os.chmod(file_path, 0o600)
         return True
 
     def send_oauth_registration_request(self):
@@ -134,17 +135,17 @@ class AuthRequestor(object):
     def token_request(self, grant_type, username=None, password=None, auth_code=None, scope=None):
         """Determine data object to be sent in Token Request"""
 
-        data = None
+        request_data = None
 
         if grant_type == "password" and username is not None and password is not None:
-            data = {
+            request_data = {
                 "grant_type": grant_type,
                 "username": username,
                 "password": password
             }
         elif grant_type == "authorization_code" and auth_code is not None:
             if self.auth_reg is not None:
-                data = {
+                request_data = {
                     "grant_type": grant_type,
                     "code": auth_code,
                     "redirect_uri": self.auth_reg.redirect_uri,
@@ -152,19 +153,19 @@ class AuthRequestor(object):
                 }
             else:
                 client_id, client_secret = get_credentials_from_file(CREDENTIALS_PATH)
-                data = {
+                request_data = {
                     "grant_type": grant_type,
                     "code": auth_code,
                     "redirect_uri": None,
                     "client_id": client_id
                 }
-        if data is None:
+        if request_data is None:
             raise Exception("Invalid Credentials for the supplied Grant Type")
 
         if scope is not None:
-            data.update({'scope': scope})
+            request_data.update({'scope': scope})
 
-        return self._auth_request(data)
+        return self._auth_request(request_data)
 
     def validate_token_expiry(self, bearer_token):
         """Validate if access token has expired and, if so, remove"""

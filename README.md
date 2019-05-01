@@ -38,7 +38,7 @@ This library provides a number of configuration options which are used by its ow
 *   **logging.fileLocation:** The path to write the log file to. Default: "/var/log/nmos.log".
 *   **logging.output:** An array of locations to write log messages to, which may include "file" and "stdout". Default: \["file", "stdout"\].
 *   **nodefacade.NODE_REGVERSION:** Which Registration API version to look for when performing registrations from a Node API. Default: "v1.2".
-*   **oauth_mode:** Boolean indicating whether use of JSON Web Tokens and OAuth authorisation is expected. Default: false.
+*   **oauth_mode:** A boolean parameter indicating whether use of JSON Web Tokens and OAuth authorisation is expected. Default: false.
 *   **dns_discover:** A boolean parameter indicating whether browsing of DNS-SD via unicast DNS is enabled. Default: true.
 *   **mdns_discover:** A boolean parameter indicating whether browsing of DNS-SD via multicast DNS is enabled. Default: true.
 *   **interfaces:** An array containing network interfaces, via which mDNS announcements and browsing should be performed. Default: Not present (uses the default gateway interface).

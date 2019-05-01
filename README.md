@@ -28,7 +28,7 @@ $ sudo python setup.py install
 
 This library provides a number of configuration options which are used by its own components and by services which depend upon the library. Configuration is provided by a JSON object within the file `/etc/nmoscommon/config.json`. The following attributes may be set in the object:
 
-*   **priority:** Overrides the default behaviour for interaction with a Registration API, causing it to prefer a particular instance if set to a value greater than or equal to 100. Default: 0.
+*   **priority:** Overrides the default behaviour for interaction with a Registration API, causing it to prefer a particular instance **if set to a value greater than or equal to 100**. Default: 0.
 *   **https_mode:** Switches the library between HTTP and HTTPS operation. "disabled" indicates HTTP mode is in use, "enabled" indicates HTTPS mode is in use. Default: "disabled".
 *   **prefer_ipv6:** A boolean parameter to switch the libary into IPv6 mode. Default: false.
 *   **prefer_hostnames:** A boolean parameter to cause hostnames to be surfaced via APIs rather than IP addresses, and to cause any HTTP requests to use hostnames rather than IP addresses where possible. This is important when operating in HTTPS mode. Default: false.

@@ -24,6 +24,53 @@ $ pip install setuptools
 $ sudo python setup.py install
 ```
 
+## Configuration
+
+This library provides a number of configuration options which are used by its own components and by services which depend upon the library. Configuration is provided by a JSON object within the file `/etc/nmoscommon/config.json`. The following attributes may be set in the object:
+
+*   **priority:** Overrides the default behaviour for interaction with a Registration API, causing it to prefer a particular instance if set to a value greater than or equal to 100. Default: 0.
+*   **https_mode:** Switches the library between HTTP and HTTPS operation. "disabled" indicates HTTP mode is in use, "enabled" indicates HTTPS mode is in use. Default: "disabled".
+*   **prefer_ipv6:** A boolean parameter to switch the libary into IPv6 mode. Default: false.
+*   **prefer_hostnames:** A boolean parameter to cause hostnames to be surfaced via APIs rather than IP addresses, and to cause any HTTP requests to use hostnames rather than IP addresses where possible. This is important when operating in HTTPS mode. Default: false.
+*   **node_hostname:** Overrides the default fully qualified DNS name for the system. Default: null.
+*   **fix_proxy:** Corrects the appearance of URLs and links (including some headers) returned by APIs when operating behind a reverse proxy. Default: "disabled".
+*   **logging.level:** Sets the log level to one of "DEBUG", "INFO", "WARN", "ERROR" or "FATAL". Default: "DEBUG".
+*   **logging.fileLocation:** The path to write the log file to. Default: "/var/log/nmos.log".
+*   **logging.output:** An array of locations to write log messages to, which may include "file" and "stdout". Default: \["file", "stdout"\].
+*   **nodefacade.NODE_REGVERSION:** Which Registration API version to look for when performing registrations from a Node API. Default: "v1.2".
+*   **oauth_mode:** Boolean indicating whether use of JSON Web Tokens and OAuth authorisation is expected. Default: false.
+*   **dns_discover:** A boolean parameter indicating whether browsing of DNS-SD via unicast DNS is enabled. Default: true.
+*   **mdns_discover:** A boolean parameter indicating whether browsing of DNS-SD via multicast DNS is enabled. Default: true.
+*   **interfaces:** An array of interfaces which mDNS announcements and browsing should be performed via. Default: Not present (uses the default gateway interface).
+
+An example configuration file is shown below:
+
+```json
+{
+  "priority": 0,
+  "https_mode": "disabled",
+  "prefer_ipv6": false,
+  "prefer_hostnames": false,
+  "node_hostname": null,
+  "fix_proxy": "disabled",
+  "logging": {
+    "level": "DEBUG",
+    "fileLocation": "/var/log/nmos.log",
+    "output": [
+      "file",
+      "stdout"
+    ]
+  },
+  "nodefacade": {
+    "NODE_REGVERSION": "v1.2"
+  },
+  "oauth_mode": false,
+  "dns_discover": true,
+  "mdns_discover": false,
+  "interfaces": ["ens1f0", "eno1"]
+}
+```
+
 ## Usage
 
 The following code snippet demonstrates registering a service and its resources with the Node API.

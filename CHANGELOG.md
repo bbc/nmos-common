@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.18.2
+- Make wsaccel a recommended debian dependency when using python 2
+
 ## 0.18.1
 - Removed wsaccel dependency when python version >= 3.6
 

@@ -19,8 +19,12 @@ from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
 
 
 def _defaultDomain():
-    resolve = dns.resolver.Resolver()
-    return str(resolve.search[0])
+    try:
+        resolve = dns.resolver.Resolver()
+        return str(resolve.search[0])
+    except IndexError: 
+        print("No default search domain found in /etc/resolv.conf")
+        return ''
 
 
 def _appendDomain(record, domainName):

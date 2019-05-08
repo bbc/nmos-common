@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.18.3
+- Handle exception if no default DNS search domain found
+
 ## 0.18.2
 - Make wsaccel a recommended debian dependency when using python 2
 

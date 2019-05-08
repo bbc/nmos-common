@@ -17,7 +17,7 @@
 from nmoscommon.mdns.dnsListener import DNSListener
 from nmoscommon.mdns.dnsService import DNSService
 from nmoscommon.mdns import dnsUtils
-from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
+from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound, NoDefaultDnsSearchDomian
 from threading import Timer
 
 
@@ -60,9 +60,14 @@ class DNSServiceController(object):
         return accumulator
 
     def _getDNSServices(self):
-        if not dnsUtils.checkDNSSDActive(self.domain):
-            self.logger.writeError("DNS-SD pointer record not found on current domain")
+        try: 
+            if not dnsUtils.checkDNSSDActive(self.domain):
+                self.logger.writeError("DNS-SD pointer record not found on current domain")
+                return []
+        except NoDefaultDnsSearchDomian:
+            self.logger.writeError("No default DNS search domain found")
             return []
+            
         try:
             return dnsUtils.discoverService(self.type, self.domain)
         except DNSRecordNotFound:

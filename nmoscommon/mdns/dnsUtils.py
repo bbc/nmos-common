@@ -15,7 +15,7 @@
 # limitations under the License.
 
 import dns.resolver  # Importing dns alone is not enough for NXDOMAIN to work
-from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
+from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound, NoDefaultDnsSearchDomian
 
 
 def _defaultDomain():
@@ -24,7 +24,7 @@ def _defaultDomain():
         return str(resolve.search[0])
     except IndexError: 
         print("No default search domain found in /etc/resolv.conf")
-        return ''
+        raise NoDefaultDnsSearchDomian
 
 
 def _appendDomain(record, domainName):

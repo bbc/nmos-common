@@ -20,11 +20,11 @@ from copy import deepcopy
 from nmoscommon.mdns.dnsUtils import checkDNSSDActive, getServiceTypes, discoverService
 from nmoscommon.mdns.dnsUtils import getTXTRecord, getSRVRecord
 from mock import MagicMock, patch
-
+from nmoscommon.mdns.mdnsExceptions import NoDefaultDnsSearchDomian
 
 class TestDNSUtils(unittest.TestCase):
 
-    def helper_setup_dns(self):
+    def helper_setup_dns(self, searchDomain=["example.com", "result2"]):
         def query_call(record, type):
             if record == self.expectedRecord:
                 if type == self.expectedType:
@@ -42,7 +42,7 @@ class TestDNSUtils(unittest.TestCase):
         dns.resolver.NXDOMAIN = deepcopy(NXDOMAIN)
         search = MagicMock()
         dns.resolver.Resolver.return_value = search
-        search.search = ["example.com", "result2"]
+        search.search = searchDomain
         return dns
 
     def helper_test_method(self, method, record, type, addDomain=False, customDomain=None, addRecord=False):
@@ -148,6 +148,11 @@ class TestDNSUtils(unittest.TestCase):
             True
         )
 
+    def test_no_default_domain(self):
+        with patch('nmoscommon.mdns.dnsUtils.dns') as dns:
+            self.dns = dns
+            self.helper_setup_dns(searchDomain=[])
+            self.assertRaises(NoDefaultDnsSearchDomian, checkDNSSDActive)
 
 if __name__ == "__main__":
     unittest.main()

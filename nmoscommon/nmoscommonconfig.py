@@ -39,7 +39,8 @@ config_defaults = {
     },
     "oauth_mode": False,
     "dns_discover": True,
-    "mdns_discover": True
+    "mdns_discover": True,
+    "interfaces": []
 }
 
 config = {}

@@ -41,7 +41,7 @@ This library provides a number of configuration options which are used by its ow
 *   **oauth_mode:** \[boolean\] Indicates whether use of JSON Web Tokens and OAuth authorisation is expected. Default: false.
 *   **dns_discover:** \[boolean\] Indicates whether browsing of DNS-SD via unicast DNS is enabled. Default: true.
 *   **mdns_discover:** \[boolean\] Indicates whether browsing of DNS-SD via multicast DNS is enabled. Default: true.
-*   **interfaces:** \[mixed\] An array containing network interfaces, via which mDNS announcements and browsing should be performed. Default: Not present (uses the default gateway interface).
+*   **interfaces:** \[mixed\] An array containing network interfaces, via which mDNS announcements and browsing should be performed. Default: [] (uses the default gateway interface).
 
 An example configuration file is shown below:
 

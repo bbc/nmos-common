@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.18.4
+- Add empty list as default config for interfaces, makes mDNS use default gateway interface
+
 ## 0.18.3
 - Handle exception if no default DNS search domain found
 

@@ -43,7 +43,7 @@ class IppmDNSBridge(object):
             self.logger.writeWarning("No local query service running {}".format(e))
         return ""
 
-    def getHref(self, srv_type, priority=None):
+    def getHref(self, srv_type, priority=None, api_ver=None, api_proto=None):
         if priority is None:
             priority = self.config["priority"]
 
@@ -57,6 +57,10 @@ class IppmDNSBridge(object):
         # Check if there are any of that type of service, if not do a request
         no_results = True
         for service in self.services[srv_type]:
+            if api_ver is not None and api_ver not in service["versions"]:
+                continue
+            if api_proto is not None and api_proto != service["protocol"]:
+                continue
             if priority >= 100:
                 if service["priority"] == priority:
                     no_results = False
@@ -69,6 +73,10 @@ class IppmDNSBridge(object):
         current_priority = 99
         valid_services = []
         for service in self.services[srv_type]:
+            if api_ver is not None and api_ver not in service["versions"]:
+                continue
+            if api_proto is not None and api_proto != service["protocol"]:
+                continue
             if priority >= 100:
                 if service["priority"] == priority:
                     return self._createHref(service)
@@ -100,7 +108,7 @@ class IppmDNSBridge(object):
             address = service['address']
             if ":" in address:
                 address = "[" + address + "]"
-        port = service['port']        
+        port = service['port']
         return '{}://{}:{}'.format(proto, address, port)
 
     def _updateServices(self, srv_type):

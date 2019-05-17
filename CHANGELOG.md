@@ -1,5 +1,9 @@
 # NMOS Common Library Changelog
 
+## 0.19.0
+- Add filters to mdnsbridge client for API versions and protocols
+- Filter by api_ver and api_proto when selecting a Registration API
+
 ## 0.18.2
 - Make wsaccel a recommended debian dependency when using python 2
 

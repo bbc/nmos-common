@@ -305,9 +305,12 @@ class Aggregator(object):
                 "registered": self._registered["registered"]}
 
     def _get_api_href(self):
-        api_href = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE)
+        protocol = "http"
+        if _config.get('https_mode') == "enabled":
+            protocol = "https"
+        api_href = self.mdnsbridge.getHref(REGISTRATION_MDNSTYPE, None, AGGREGATOR_APIVERSION, protocol)
         if api_href == "":
-            api_href = self.mdnsbridge.getHref(LEGACY_REG_MDNSTYPE)
+            api_href = self.mdnsbridge.getHref(LEGACY_REG_MDNSTYPE, None, AGGREGATOR_APIVERSION, protocol)
         return api_href
 
     # Handle sending all requests to the Registration API, and searching for a new 'aggregator' if one fails

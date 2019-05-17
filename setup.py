@@ -144,7 +144,8 @@ packages_required = [
     "authlib>=0.10",
     "pyopenssl",
     "dnspython>=1.12.0",
-    "zeroconf-monkey>=0.1.0"
+    "zeroconf-monkey>=0.1.0",
+    "PyJWT"
 ]
 
 # Check if setuptools is recent enough to recognise python_version syntax

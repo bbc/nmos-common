@@ -115,7 +115,7 @@ def MostAcceptableType(type_strings, accept_string):
         elif a.priority == b.priority:
             return (a.accept_index > b.accept_index) - (a.accept_index < b.accept_index)
         else:
-            return -((a.accept_index > b.accept_index) - (a.accept_index < b.accept_index))
+            return -((a.priority > b.priority) - (a.priority < b.priority))
 
     return sorted(
                 [(mt, AcceptableType(MediaType(mt), accept_string)) for mt in type_strings],

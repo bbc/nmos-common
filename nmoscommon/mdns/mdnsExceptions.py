@@ -39,5 +39,5 @@ class DNSRecordNotFound(Exception):
     pass
 
 
-class NoDefaultDnsSearchDomian(Exception):
+class NoDefaultDnsSearchDomain(Exception):
     pass

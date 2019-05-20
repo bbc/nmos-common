@@ -23,7 +23,6 @@ def _defaultDomain():
         resolve = dns.resolver.Resolver()
         return str(resolve.search[0])
     except IndexError: 
-        print("No default search domain found in /etc/resolv.conf")
         raise NoDefaultDnsSearchDomian
 
 

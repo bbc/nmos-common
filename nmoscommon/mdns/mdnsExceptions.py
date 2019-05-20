@@ -37,3 +37,7 @@ class NoNetworkInterfacesFoundException(Exception):
 
 class DNSRecordNotFound(Exception):
     pass
+
+
+class NoDefaultDnsSearchDomain(Exception):
+    pass

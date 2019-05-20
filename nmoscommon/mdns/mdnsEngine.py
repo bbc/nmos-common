@@ -91,7 +91,7 @@ class MDNSEngine(object):
         try:
             registration = self.registrationController.registrations[regtype][name]
         except KeyError:
-            self.logger.writeError("Could not update registraton type: {} with name {}"
+            self.logger.writeError("Could not update registration type: {} with name {}"
                                    " - registration not found".format(regtype, name))
             raise ServiceNotFoundException
         registration.update(name=name, regtype=regtype, txtRecord=txtRecord)

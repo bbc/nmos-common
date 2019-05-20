@@ -50,7 +50,8 @@ def create_default_conf():
         },
         "oauth_mode": False,
         "dns_discover": True,
-        "mdns_discover": True
+        "mdns_discover": True,
+        "interfaces": []
     }
 
     try:
@@ -180,7 +181,7 @@ deps_required = []
 
 
 setup(name="nmoscommon",
-      version="0.19.1",
+      version="0.19.2",
       description="Common components for the BBC's NMOS implementations",
       url='https://github.com/bbc/nmos-common',
       author='Peter Brightwell',

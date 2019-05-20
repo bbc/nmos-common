@@ -116,7 +116,7 @@ class MDNSInterfaceController(object):
                 interfaces.append(netifaces.ifaddresses(interfaceName)[netifaces.AF_INET][0]['addr'])
             self.logger.writeDebug("Choosing mDNS interface from /etc/nmoscommon/config.json "
                                    "file: {}".format(interfaces))
-        except KeyError as e:
+        except KeyError:
             self.logger.writeDebug("No interface config file - will try and use routing rules")
             return False
         else:

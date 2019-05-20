@@ -17,18 +17,17 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
-import ctypes, os, time
-from subprocess import check_output
+import ctypes
 from .timestamp import Timestamp
 
 try:
     import ipppython.ptptime
     IPP_PYTHON = True
 except ImportError:
-    import traceback
     IPP_PYTHON = False
 
-__all__ = [ "ptp_time", "ptp_detail" ]
+__all__ = ["ptp_time", "ptp_detail"]
+
 
 class timespec(ctypes.Structure):
     _fields_ = [
@@ -36,7 +35,8 @@ class timespec(ctypes.Structure):
         ('tv_nsec', ctypes.c_long)
     ]
 
-# This method is depricated, use Timestamp.get_time()
+
+# This method is deprecated, use Timestamp.get_time()
 def ptp_data():
     t = timespec()
     ts = Timestamp.get_time()
@@ -44,19 +44,23 @@ def ptp_data():
     t.tv_nsec = int(ts.to_nanosec() - (t.tv_sec * 1e9))
     return t
 
-# This method is depricated, use Timestamp.get_time()
+
+# This method is deprecated, use Timestamp.get_time()
 if IPP_PYTHON:
-    ptp_data = ipppython.ptptime.ptp_data
+    ptp_data = ipppython.ptptime.ptp_data  # noqa F811
     FD_TO_CLOCKID = ipppython.ptptime.FD_TO_CLOCKID
+
 
 def ptp_time():
     t = ptp_data()
     return t.tv_sec + t.tv_nsec * 1e-9
 
+
 def ptp_detail():
     t = ptp_data()
     return [t.tv_sec, t.tv_nsec]
 
-if __name__ == "__main__": # pragma: no cover
+
+if __name__ == "__main__":  # pragma: no cover
     print(ptp_time())
     print(ptp_detail())

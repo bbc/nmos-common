@@ -22,6 +22,7 @@ import netifaces
 
 from .logger import Logger
 
+
 def get_node_id():
     logger = Logger("utils", None)
     node_id_path = "/var/nmos-node/facade.json"
@@ -40,8 +41,9 @@ def get_node_id():
         logger.writeWarning(str(e))
     return node_id
 
+
 def getLocalIP():
-    interfaces= netifaces.interfaces()
+    interfaces = netifaces.interfaces()
     for interface in interfaces:
         if (interface is not None) & (str(interface)[0:2] != 'lo'):
             try:

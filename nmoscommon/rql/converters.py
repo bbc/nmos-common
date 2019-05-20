@@ -14,11 +14,7 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-from six import PY2
-if PY2:
-    from urllib import unquote
-else:
-    from urllib.parse import unquote
+from six.moves.urllib.parse import unquote
 from .dateutil import strptime_partial
 from datetime import datetime
 import json
@@ -26,7 +22,6 @@ import re
 import logging
 
 JSON_QUERY_COMPATIBLE = True
-
 
 CONVERT_TYPES = {
     'true': True,

@@ -144,7 +144,7 @@ def parse(query):
 
         elif (property_or_value or ',' in delim):
             val = str_to_val(property_or_value)
-            if val is not '':
+            if val != '':
                 current_term.add_argument(val)
 
             # cache operators we want to bubble to top term

@@ -22,7 +22,7 @@ def _defaultDomain():
     try:
         resolve = dns.resolver.Resolver()
         return str(resolve.search[0])
-    except IndexError: 
+    except IndexError:
         raise NoDefaultDnsSearchDomain
 
 

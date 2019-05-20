@@ -920,7 +920,7 @@ class TestAggregator(unittest.TestCase):
     If any of the SEND attempts succeeds then the routine exits immediately succesfully.
 """
         aggregator_urls_queue = [ x for x in aggregator_urls ]
-        def _get_href(_):
+        def _get_href(_1, _2, _3, _4):
             if len(aggregator_urls_queue) == 0:
                 return ""
             else:
@@ -932,7 +932,7 @@ class TestAggregator(unittest.TestCase):
 
         expected_gethref_calls = []
         if initial_aggregator == "":
-            expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE))
+            expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE, None, AGGREGATOR_APIVERSION, "http"))
 
         if data is not None:
             expected_data = json.dumps(data)
@@ -949,28 +949,28 @@ class TestAggregator(unittest.TestCase):
             else:
                 expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[0], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0, proxies={'http':''}))
         if to_point > self.SEND_ITERATION_0:
-            expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE))
+            expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE, None, AGGREGATOR_APIVERSION, "http"))
         if to_point >= self.SEND_ITERATION_1:
             if not prefer_ipv6:
                 expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[1], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0))
             else:
                 expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[1], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0, proxies={'http':''}))
         if to_point > self.SEND_ITERATION_1:
-            expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE))
+            expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE, None, AGGREGATOR_APIVERSION, "http"))
         if to_point >= self.SEND_ITERATION_2:
             if not prefer_ipv6:
                 expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[2], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0))
             else:
                 expected_request_calls.append(mock.call(method, urljoin(aggregator_urls[2], AGGREGATOR_APINAMESPACE + "/" + AGGREGATOR_APINAME + "/" + AGGREGATOR_APIVERSION + url), data=expected_data, headers=headers, timeout=1.0, proxies={'http':''}))
         if to_point > self.SEND_ITERATION_2:
-            expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE))
+            expected_gethref_calls.append(mock.call(REGISTRATION_MDNSTYPE, None, AGGREGATOR_APIVERSION, "http"))
 
         if to_point in (self.SEND_AGGREGATOR_EMPTY_CHECK_0, self.SEND_AGGREGATOR_EMPTY_CHECK_1, self.SEND_AGGREGATOR_EMPTY_CHECK_2):
             expected_exception = NoAggregator
-            expected_gethref_calls.append(mock.call(LEGACY_REG_MDNSTYPE))
+            expected_gethref_calls.append(mock.call(LEGACY_REG_MDNSTYPE, None, AGGREGATOR_APIVERSION, "http"))
         elif to_point == self.SEND_TOO_MANY_RETRIES:
             expected_exception = TooManyRetries
-            expected_gethref_calls.append(mock.call(LEGACY_REG_MDNSTYPE))
+            expected_gethref_calls.append(mock.call(LEGACY_REG_MDNSTYPE, None, AGGREGATOR_APIVERSION, "http"))
 
         with mock.patch.dict(nmoscommon.aggregator._config, { 'prefer_ipv6' : prefer_ipv6 }):
             with mock.patch("requests.request", side_effect=request) as _request:

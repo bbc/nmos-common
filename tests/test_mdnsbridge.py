@@ -20,6 +20,9 @@ import json
 
 from nmoscommon.nmoscommonconfig import config as _config
 
+DEFAULT_VERSIONS = ["v1.0", "v1.1", "v1.2"]
+
+
 class TestIppmDNSBridge(unittest.TestCase):
 
     @mock.patch('nmoscommon.mdnsbridge.Logger')
@@ -41,9 +44,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 100, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
         ]
 
         get.return_value.status_code=200
@@ -59,9 +62,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 100, "protocol" : "http", "address" : "CAFE:FACE:BBC1:BBC2:BBC4:1337:DEED:2323", "port" : 12345, "hostname": None },
-            { "priority" : 100, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": None },
-            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": None },
+            { "priority" : 100, "protocol" : "http", "address" : "CAFE:FACE:BBC1:BBC2:BBC4:1337:DEED:2323", "port" : 12345, "hostname": None, "versions": DEFAULT_VERSIONS },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": None, "versions": DEFAULT_VERSIONS },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": None, "versions": DEFAULT_VERSIONS },
             ]
 
         get.return_value.status_code=200
@@ -77,14 +80,69 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
             ]
 
         get.return_value.status_code=200
         get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
         href = self.UUT.getHref(srv_type)
+        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
+
+    @mock.patch('requests.get')
+    @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
+    def test_gethref_returns_only_service_with_matching_version(self, rand, get):
+        srv_type = "potato"
+        self.UUT.config['priority'] = 0
+        self.UUT.config['https_mode'] = "disabled"
+        self.UUT.config['nodefacade']["NODE_REGVERSION"] = "v1.1"
+
+        services = [
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": ["v1.0", "v1.1"] },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": ["v1.2"] },
+            { "priority" : 43, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": ["v1.0"] },
+            ]
+
+        get.return_value.status_code=200
+        get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
+        href = self.UUT.getHref(srv_type, None, "v1.1", None)
+        self.assertEqual(href, services[0]["protocol"] + "://" + services[0]["address"] + ":" + str(services[0]["port"]))
+
+    @mock.patch('requests.get')
+    @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
+    def test_gethref_returns_only_service_with_matching_protocol_https(self, rand, get):
+        srv_type = "potato"
+        self.UUT.config['priority'] = 0
+        self.UUT.config['https_mode'] = "enabled"
+
+        services = [
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 43, "protocol" : "https", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
+            ]
+
+        get.return_value.status_code=200
+        get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
+        href = self.UUT.getHref(srv_type, None, None, "https")
+        self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
+
+    @mock.patch('requests.get')
+    @mock.patch('random.randint', return_value=0) # guaranteed random, chosen by roll of fair die
+    def test_gethref_returns_only_service_with_matching_protocol_http(self, rand, get):
+        srv_type = "potato"
+        self.UUT.config['priority'] = 0
+        self.UUT.config['https_mode'] = "disabled"
+
+        services = [
+            { "priority" : 97, "protocol" : "https", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "https", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 43, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
+            ]
+
+        get.return_value.status_code=200
+        get.return_value.json.return_value = { "representation" : json.loads(json.dumps(services)) }
+        href = self.UUT.getHref(srv_type, None, None, "http")
         self.assertEqual(href, services[2]["protocol"] + "://" + services[2]["address"] + ":" + str(services[2]["port"]))
 
     @mock.patch('requests.get')
@@ -95,9 +153,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "enabled"
 
         services = [
-            { "priority" : 97, "protocol" : "https", "address" : "service_address0", "port" : 12345, "hostname": "service_host0"},
-            { "priority" : 13, "protocol" : "https", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 100, "protocol" : "https", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
+            { "priority" : 97, "protocol" : "https", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "https", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 100, "protocol" : "https", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
             ]
 
         get.return_value.status_code=200
@@ -113,9 +171,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
             ]
 
         get.return_value.status_code=200
@@ -131,13 +189,13 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address3", "port" : 12348, "hostname": "service_host3" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address4", "port" : 12349, "hostname": "service_host4" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address5", "port" : 12350, "hostname": "service_host5" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address6", "port" : 12351, "hostname": "service_host6" },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address3", "port" : 12348, "hostname": "service_host3", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address4", "port" : 12349, "hostname": "service_host4", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address5", "port" : 12350, "hostname": "service_host5", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address6", "port" : 12351, "hostname": "service_host6", "versions": DEFAULT_VERSIONS },
             ]
 
         get.return_value.status_code=200
@@ -153,9 +211,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 100, "protocol" : "https", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
+            { "priority" : 100, "protocol" : "https", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
             ]
 
         get.return_value.status_code=200
@@ -171,9 +229,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "enabled"
 
         services = [
-            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 53, "protocol" : "https", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 53, "protocol" : "https", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
             ]
 
         get.return_value.status_code=200
@@ -189,9 +247,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
             ]
 
         get.return_value.status_code=200
@@ -207,9 +265,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
             ]
 
         get.side_effect = [ mock.DEFAULT, Exception ]
@@ -226,9 +284,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 53, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
             ]
 
         get.side_effect=Exception
@@ -244,9 +302,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0"},
-            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1"},
-            { "priority" : 13, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2"},
+            { "priority" : 97, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS},
+            { "priority" : 13, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS},
+            { "priority" : 13, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS},
             ]
 
         get.side_effect = [ mock.DEFAULT, Exception ]
@@ -269,9 +327,9 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0"},
-            { "priority" : 100, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1"},
-            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2"},
+            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS},
+            { "priority" : 100, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS},
+            { "priority" : 100, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS},
             ]
 
         get.side_effect = [ mock.DEFAULT, Exception ]
@@ -293,16 +351,16 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['https_mode'] = "disabled"
 
         services = [
-            { "priority" : 200, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 300, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 400, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
+            { "priority" : 200, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 300, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 400, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
             ]
 
         second_services = [
-            { "priority" : 200, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0" },
-            { "priority" : 300, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1" },
-            { "priority" : 400, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2" },
-            { "priority" : 100, "protocol" : "http", "address" : "service_address3", "port" : 12348, "hostname": "service_host3" },
+            { "priority" : 200, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_host0", "versions": DEFAULT_VERSIONS },
+            { "priority" : 300, "protocol" : "http", "address" : "service_address1", "port" : 12346, "hostname": "service_host1", "versions": DEFAULT_VERSIONS },
+            { "priority" : 400, "protocol" : "http", "address" : "service_address2", "port" : 12347, "hostname": "service_host2", "versions": DEFAULT_VERSIONS },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address3", "port" : 12348, "hostname": "service_host3", "versions": DEFAULT_VERSIONS },
             ]
 
         getmocks = [ mock.MagicMock(name="get1()"), mock.MagicMock(name="get2()") ]
@@ -345,7 +403,7 @@ class TestIppmDNSBridge(unittest.TestCase):
         self.UUT.config['prefer_hostnames'] = True
 
         services = [
-            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_hostname0" },
+            { "priority" : 100, "protocol" : "http", "address" : "service_address0", "port" : 12345, "hostname": "service_hostname0", "versions": DEFAULT_VERSIONS },
         ]
 
         get.return_value.status_code=200

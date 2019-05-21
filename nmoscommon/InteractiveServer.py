@@ -18,6 +18,7 @@ from code import InteractiveConsole
 
 interpreter_globals = {}
 
+
 class InteractiveServer(socketserver.BaseRequestHandler):
     def handle(self):
         global interpreter_globals
@@ -44,12 +45,14 @@ class Shell(InteractiveConsole):
         self.write(prompt)
         return self.file.readline()
 
-def interact(address=("0.0.0.0",9999)):
+
+def interact(address=("0.0.0.0", 9999)):
     server = socketserver.TCPServer(address, InteractiveServer)
     server.serve_forever()
 
+
 port = 9999
-if __name__ == '__main__': # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
     if len(sys.argv) > 1:
         port = int(sys.argv[1])
-    interact(("0.0.0.0",port))
+    interact(("0.0.0.0", port))

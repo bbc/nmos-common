@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.3
+- Add Python2 & 3 linting stages to CI and fix linting
+
 ## 0.19.2
 - Add empty list as default config for interfaces, makes mDNS use default gateway interface
 

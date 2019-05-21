@@ -173,7 +173,7 @@ class Aggregator(object):
                     else:
                         self.logger.writeWarning("Method {} not supported for Registration API interactions"
                                                  .format(queue_item["method"]))
-                except Exception as e:
+                except Exception:
                     self._registered["registered"] = False
                     if(self._mdns_updater is not None):
                         self._mdns_updater.P2P_disable()

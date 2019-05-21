@@ -13,26 +13,24 @@
 # limitations under the License.
 
 from __future__ import print_function
-
-from six.moves import range as xrange
-
 from gevent import monkey
 monkey.patch_all()
 
-import gevent
-import json
-import requests
-import websocket
-import itertools
+from six.moves import range as xrange # noqa E402
+import gevent # noqa E402
+import json # noqa E402
+import requests # noqa E402
+import websocket # noqa E402
+import itertools # noqa E402
 
-from nmoscommon.logger import Logger
-
-from nmoscommon.nmoscommonconfig import config as _config
+from nmoscommon.logger import Logger # noqa E402
+from nmoscommon.nmoscommonconfig import config as _config # noqa E402
 
 QUERY_APIVERSION = _config.get('nodefacade').get('NODE_REGVERSION')
 QUERY_APINAMESPACE = "x-nmos"
 QUERY_APINAME = "query"
 QUERY_MDNSTYPE = "nmos-query"
+
 
 class BadSubscriptionError(Exception):
     pass
@@ -48,7 +46,7 @@ class QueryService(object):
         self.mdns_bridge = mdns_bridge
         self._query_url = self.mdns_bridge.getHref(QUERY_MDNSTYPE, priority)
         iter = 0
-        #TODO FIXME: Remove once IPv6 work complete and Python can use link local v6 correctly
+        # TODO FIXME: Remove once IPv6 work complete and Python can use link local v6 correctly
         while "fe80:" in self._query_url:
             self._query_url = self.mdns_bridge.getHref(QUERY_MDNSTYPE, priority)
             iter += 1
@@ -62,7 +60,9 @@ class QueryService(object):
         backoff = [0.3, 0.7, 1.0]
         for try_i in xrange(len(backoff)):
             try:
-                response = requests.get("{}/{}/{}/{}{}".format(self._query_url, QUERY_APINAMESPACE, QUERY_APINAME, self.apiversion, url))
+                response = requests.get(
+                    "{}/{}/{}/{}{}".format(self._query_url, QUERY_APINAMESPACE, QUERY_APINAME, self.apiversion, url)
+                )
                 response.raise_for_status()
                 return response
             except Exception as e:
@@ -75,7 +75,7 @@ class QueryService(object):
                 self.logger.writeInfo("Trying query at: {}".format(self._query_url))
 
         # Shouldn't get this far, but don't return None
-        raise QueryNotFoundError("Could not find a query service (should be unreachable!)") # pragma: no cover
+        raise QueryNotFoundError("Could not find a query service (should be unreachable!)")  # pragma: no cover
 
     def get_services(self, service_urn, node_id=None):
         """
@@ -92,7 +92,7 @@ class QueryService(object):
 
         services = []
 
-        if node_id == None:
+        if node_id is None:
             services = itertools.chain.from_iterable([n.get('services', []) for n in nodes])
         else:
             services = itertools.chain.from_iterable([n.get('services', []) for n in nodes if n["id"] == node_id])
@@ -120,7 +120,7 @@ class QueryService(object):
             raise BadSubscriptionError("{}: {}".format(r.status_code, r.text))
 
         r_json = r.json()
-        if not "ws_href" in r_json:
+        if "ws_href" not in r_json:
             raise BadSubscriptionError("Result has no 'ws_href': {}".format(r_json))
 
         assert(query_url.startswith("http://"))
@@ -150,7 +150,8 @@ class QueryService(object):
 
         sock.run_forever()
 
-if __name__ == '__main__': # pragma: no cover
+
+if __name__ == '__main__':  # pragma: no cover
     from nmoscommon.mdnsbridge import IppmDNSBridge
     from pprint import pprint
 

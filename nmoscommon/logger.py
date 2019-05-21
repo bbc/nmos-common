@@ -53,7 +53,7 @@ class PurePythonLogger:
                     fileHandler.setLevel(logLevel)
                     fileHandler.setFormatter(logFormat)
                     self.log.addHandler(fileHandler)
-                except:
+                except Exception:
                     pass
 
             if "stdout" in logOutputs:

@@ -24,7 +24,7 @@ import json
 import traceback
 import time
 
-from flask import Flask, Response, request, abort, jsonify
+from flask import Flask, Response, request, abort
 from flask_sockets import Sockets
 from nmoscommon.flask_cors import crossdomain
 from functools import wraps
@@ -113,9 +113,9 @@ def MostAcceptableType(type_strings, accept_string):
         elif b is None:
             return -1
         elif a.priority == b.priority:
-            return cmp(a.accept_index, b.accept_index)
+            return (a.accept_index > b.accept_index) - (a.accept_index < b.accept_index)
         else:
-            return -cmp(a.priority, b.priority)
+            return -((a.priority > b.priority) - (a.priority < b.priority))
 
     return sorted(
                 [(mt, AcceptableType(MediaType(mt), accept_string)) for mt in type_strings],

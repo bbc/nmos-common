@@ -81,7 +81,7 @@ class WebSocketClient(threading.Thread):
         self.ws.close()
 
 
-if __name__ == "__main__": # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     websocketClient = WebSocketClient("ws://localhost:8090/ws/")
 
     def signal_handler(rxsignal, frame):

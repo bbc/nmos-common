@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.4
+- Add log messages indicating deprecation of classes moved elsewhere
+
 ## 0.19.3
 - Add Python2 & 3 linting stages to CI and fix linting
 

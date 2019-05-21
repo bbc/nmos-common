@@ -39,9 +39,9 @@ MDNS_SERVICE_TYPE = "nmos-auth"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OAUTH_MODE = _config.get('oauth_mode', True)
 
-NMOSOAUTH_DIR = '/var/nmosoauth'  # LINUX ONLY
+NMOSAUTH_DIR = '/var/nmosauth'  # LINUX ONLY
 CERT_FILE = 'certificate.pem'
-CERT_PATH = os.path.join(NMOSOAUTH_DIR, CERT_FILE)
+CERT_PATH = os.path.join(NMOSAUTH_DIR, CERT_FILE)
 CERT_ENDPOINT = '/certs'
 CERT_KEY = 'default'
 

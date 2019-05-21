@@ -71,33 +71,16 @@ An example configuration file is shown below:
 }
 ```
 
-## Usage
-
-The following code snippet demonstrates registering a service and its resources with the Node API.
-
-```python
-from nmoscommon.facade import Facade
-
-# Initialise service name to use for Node API interactions
-nodeapi = Facade("myservice/v1.0")
-
-# Register the service with the Node API including its own API endpoint
-nodeapi.register_service("http://127.0.0.1", "myservice/v1.0")
-
-# Heartbeat with the Node API - You'll need to call this every 5 seconds from another thread
-nodeapi.heartbeat_service()
-
-# Register your resources with the Node API
-nodeapi.addResource("device", "my-device-uuid", "my-device-json-here")
-```
-
 ## Documentation
 
 ### Deprecated Components
 
 The following components are deprecated and are maintained here as a compatibility interface to alternative underlying libraries. New code should make direct use of the underlying libraries as opposed to the classes and functions provided here.
 
+*   aggregator.py: Now provided by 'nmosnode'
+*   facade.py: Now provided by 'nmosnode'
 *   json.py: Now provided by 'mediajson'
+*   mdnsbridge.py: Now provided by 'mdnsbridge'
 *   ptptime.py: Now provided by 'mediatimestamp'
 *   timestamp.py: Now provided by 'mediatimestamp'
 

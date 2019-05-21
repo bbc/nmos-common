@@ -35,6 +35,7 @@ class Facade(object):
     def __init__(self, srv_type, address="ipc:///tmp/ips-nodefacade", logger=None):
 
         self.logger = Logger("facade_proxy", logger)
+        self.logger.writeWarning("This class is deprecated. Please use the matching one in nmos-node instead.")
         self.ipc = None
         self.srv_registered = False  # Flag whether service is registered
         self.reregister = False  # Flag whether resources are correctly registered

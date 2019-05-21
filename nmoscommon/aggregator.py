@@ -65,6 +65,7 @@ class Aggregator(object):
     disappears, and resending data as needed."""
     def __init__(self, logger=None, mdns_updater=None):
         self.logger = Logger("aggregator_proxy", logger)
+        self.logger.writeWarning("This class is deprecated. Please use the matching one in nmos-node instead.")
         self.mdnsbridge = IppmDNSBridge(logger=self.logger)
         self.aggregator = ""
         self.registration_order = ["device", "source", "flow", "sender", "receiver"]
@@ -388,6 +389,7 @@ class MDNSUpdater(object):
         if txt_recs:
             self.txt_rec_base = txt_recs
         self.logger = logger
+        self.logger.writeWarning("This class is deprecated. Please use the matching one in nmos-node instead.")
         self.p2p_enable = p2p_enable
         self.p2p_enable_count = 0
         self.p2p_cut_in_count = p2p_cut_in_count

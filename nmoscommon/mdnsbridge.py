@@ -25,6 +25,7 @@ from .logger import Logger
 class IppmDNSBridge(object):
     def __init__(self, logger=None):
         self.logger = Logger("mdnsbridge", logger)
+        self.logger.writeWarning("This class is deprecated. Please use the matching one in nmos-mdns-bridge instead.")
         self.services = {}
         self.config = {}
         self.config.update(_config)

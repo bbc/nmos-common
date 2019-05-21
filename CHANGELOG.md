@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.5
+- Change from nmos-oauth to nmos-auth
+
 ## 0.19.4
 - Add log messages indicating deprecation of classes moved elsewhere
 

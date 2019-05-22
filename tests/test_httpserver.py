@@ -36,8 +36,16 @@ class TestHttpServer(unittest.TestCase):
         self.assertEqual(UUT.host, '0.0.0.0')
         self.assertIsNone(UUT.ssl)
 
-    def assert_run_operates(self, host="0.0.0.0", ports=[12345,], port_errors=[], send_port_at_start=False, ssl=None):
-        api_class = mock.MagicMock()
+    def assert_run_operates(self,
+                            host="0.0.0.0",
+                            ports=[12345,],
+                            port_errors=[],
+                            send_port_at_start=False,
+                            ssl=None,
+                            api_class=None,
+                            expect_failure=None):
+        if api_class is None:
+            api_class = mock.MagicMock()
         api_instance = api_class.return_value
         api_args   = [ mock.MagicMock(), ]
         api_kwargs = { "dummyparam" : mock.MagicMock() }
@@ -56,6 +64,9 @@ class TestHttpServer(unittest.TestCase):
                 else:
                     unknown_socket_exception_expected = e
                     break
+
+        if expect_failure is None:
+            expect_failure = unknown_socket_exception_expected
 
         with mock.patch('nmoscommon.httpserver.WSGIServer') as WSGIServer:
             with mock.patch('socket.socket') as socket:
@@ -83,22 +94,23 @@ class TestHttpServer(unittest.TestCase):
 
                 try:
                     UUT.run()
-                except TestExitLoop as e:
-                    if ports[0] == 0:
-                        self.fail(msg="run didn't bail early when no port found")
-                except socket_error as e:
-                    if send_port_at_start and len(port_errors) > 0:
-                        # It *should* fail in this case
-                        raised = True
-                    else:
-                        self.fail(msg="run raised unexpected exception: %s" % (traceback.format_exc(),))
                 except:
                     self.fail(msg="run raised unexpected exception: %s" % (traceback.format_exc(),))
 
-                api_class.assert_called_once_with(*api_args, **api_kwargs)
+                if isinstance(UUT.failed, TestExitLoop):
+                    if ports[0] == 0:
+                        self.fail(msg="run didn't bail early when no port found")
+                if isinstance(UUT.failed, socket_error):
+                    if unknown_socket_exception_expected or (send_port_at_start and len(port_errors) > 0):
+                        # It *should* fail in this case
+                        raised = True
+                    else:
+                        self.fail(msg="run raised unexpected exception: %s" % (repr(UUT.failed),))
 
-                if unknown_socket_exception_expected is not None:
-                    self.assertEqual(UUT.failed, unknown_socket_exception_expected)
+                if expect_failure:
+                    self.assertEqual(UUT.failed, expect_failure)
+
+                api_class.assert_called_once_with(*api_args, **api_kwargs)
 
                 if send_port_at_start:
                     socket.return_value.getsockname.assert_not_called()
@@ -152,3 +164,10 @@ class TestHttpServer(unittest.TestCase):
         e = socket_error()
         e.errno = 49
         self.assert_run_operates(ports=[12345,12346], port_errors=[e,])
+
+    def test_run_fails_on_exception_from_api_class(self):
+        e = Exception("Test Exception")
+        def raise_test_exception(*args, **kwargs):
+            raise e
+        api_class = mock.MagicMock(side_effect=raise_test_exception)
+        self.assert_run_operates(api_class=api_class, expect_failure=e, ports=[0,])

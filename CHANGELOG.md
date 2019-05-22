@@ -1,5 +1,9 @@
 # NMOS Common Library Changelog
 
+## 0.19.6
+- Better error handling for when the `api_class` provided to
+  `http_server` raises an exception during construction.
+
 ## 0.19.5
 - Change from nmos-oauth to nmos-auth
 

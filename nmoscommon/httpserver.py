@@ -32,6 +32,7 @@ class HttpServer(threading.Thread):
         if self.api_kwargs is None:
             self.api_kwargs = {}
         self.api_class = api
+        self.api = None
         self.port = port
         self.host = host
         self.started = threading.Event()
@@ -41,46 +42,55 @@ class HttpServer(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        self.api = self.api_class(*self.api_args, **self.api_kwargs)
-        port = self.port
-        while True:
-            if self.port == 0:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.bind(('localhost', 0))
-                self.port = sock.getsockname()[1]
-                sock.close()
+        try:
+            self.api = self.api_class(*self.api_args, **self.api_kwargs)
+            port = self.port
+            while True:
+                if self.port == 0:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.bind(('localhost', 0))
+                    self.port = sock.getsockname()[1]
+                    sock.close()
 
-            if self.port == 0:
-                print("ERROR! Port still 0!")
-                break
+                if self.port == 0:
+                    print("ERROR! Port still 0!")
+                    raise Exception("Port still 0 after socket binding")
 
-            try:
-                # self.api.app.before_first_request = self.__setstarted()
-                if self.ssl is not None:
-                    self.server = WSGIServer((self.host, self.port), self.api.app, handler_class=WebSocketHandler, **self.ssl)
-                else:
-                    self.server = WSGIServer((self.host, self.port), self.api.app, handler_class=WebSocketHandler)
-
-                self.server.start()
-                self.__setstarted()
-                self.server.serve_forever()
-            except socket.error as e:
-                if e.errno == 48:
-                    if port != 0:
-                        raise
+                try:
+                    # self.api.app.before_first_request = self.__setstarted()
+                    if self.ssl is not None:
+                        self.server = WSGIServer((self.host, self.port), self.api.app, handler_class=WebSocketHandler, **self.ssl)
                     else:
-                        self.port = port
-                        continue
-                else:
-                    self.failed = e
+                        self.server = WSGIServer((self.host, self.port), self.api.app, handler_class=WebSocketHandler)
+
+                    self.server.start()
                     self.__setstarted()
-            break
+                    self.server.serve_forever()
+                except socket.error as e:
+                    if e.errno == 48:
+                        if port != 0:
+                            raise
+                        else:
+                            self.port = port
+                            continue
+                    else:
+                        self.failed = e
+                        self.__setstarted()
+                break
+        except Exception as e:
+            self.failed = e
+            if not self.started.is_set():
+                self.__setstarted()
 
     def stop(self):
         self.api.stop()
 
     def __setstarted(self):
-        self.api.port = self.port
+        if self.api is not None:
+            try:
+                self.api.port = self.port
+            except Exception as e:
+                self.failed = e
         self.started.set()
         if self.failed is None:
             print("HttpServer running")

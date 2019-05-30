@@ -79,7 +79,7 @@ class TestRequiresAuth(unittest.TestCase):
             method="getCertFromEndpoint"
         )
 
-        self.assertEqual(cert, CERT["default"])
+        self.assertEqual(cert, CERT[0])
         self.assertRaises(HTTPError, self.mockGetResponse,
                           code=400,
                           content=CERT,
@@ -97,13 +97,13 @@ class TestRequiresAuth(unittest.TestCase):
 
     def testGetPublicKey(self):
         self.assertRaises(Exception, self.security.extractPublicKey, "")
-        self.assertEqual(self.security.extractPublicKey(CERT['default']), PUB_KEY)
+        self.assertEqual(self.security.extractPublicKey(CERT[0]), PUB_KEY)
 
     @mock.patch.object(RequiresAuth, "getCertFromEndpoint")
     @mock.patch("nmoscommon.auth.nmos_auth.request")
     def testJWTClaimsValidator(self, mockRequest, mockGetCert):
         mockRequest.headers.get.return_value = "Bearer " + BEARER_TOKEN["access_token"]
-        mockGetCert.return_value = CERT['default']
+        mockGetCert.return_value = CERT[0]
 
         self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
         self.assertRaises(InvalidClaimError, self.security(self.dummy))

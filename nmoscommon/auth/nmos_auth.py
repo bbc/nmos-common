@@ -43,7 +43,6 @@ NMOSAUTH_DIR = '/var/nmosauth'  # LINUX ONLY
 CERT_FILE = 'certificate.pem'
 CERT_PATH = os.path.join(NMOSAUTH_DIR, CERT_FILE)
 CERT_ENDPOINT = '/certs'
-CERT_KEY = 'default'
 
 
 class RequiresAuth(object):
@@ -77,7 +76,7 @@ class RequiresAuth(object):
             try:
                 if len(cert) > 1:
                     self.logger.writeWarning("Multiple certificates at Endpoint. Returning First Instance.")
-                cert = cert[CERT_KEY]
+                cert = cert[0]
                 return cert
             except KeyError as e:
                 self.logger.writeError("Error: {}. Endpoint contains: {}".format(str(e), cert))

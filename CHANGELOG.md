@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.7
+- Change OAuth2 public cert endpoint access from dict to list
+
 ## 0.19.6
 - Better error handling for when the `api_class` provided to
   `http_server` raises an exception during construction.

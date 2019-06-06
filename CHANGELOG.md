@@ -1,5 +1,9 @@
 # NMOS Common Library Changelog
 
+## 0.19.8
+- Update Werkzeug to deal with URL map ordering bugs
+- https://github.com/pallets/werkzeug/pull/907
+
 ## 0.19.7
 - Change OAuth2 public cert endpoint access from dict to list
 

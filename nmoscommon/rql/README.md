@@ -23,4 +23,4 @@ Use `nosetest` / `nose2` / `green` or similar if you want to run all the `parser
 Translates between the abstract syntax tree outputted by `parser.parse` and mongodb query dictionaries.
 
 ### Tests
-Tests for `uery.mongodb.unparse` use unittest so `python -m unittest discover -s .` (as used in by make deb) will work.
+Tests for `query.mongodb.unparse` use unittest so `python -m unittest discover -s .` (as used by make deb) will work.

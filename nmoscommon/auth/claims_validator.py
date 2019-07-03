@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from authlib.specs.rfc7519.claims import JWTClaims
-from authlib.specs.rfc7519.errors import InvalidClaimError, MissingClaimError
+from authlib.jose import JWTClaims
+from authlib.jose.errors import InvalidClaimError, MissingClaimError
 
 
 class JWTClaimsValidator(JWTClaims):
@@ -41,6 +41,7 @@ class JWTClaimsValidator(JWTClaims):
         if not valid_claim_value:
             return
 
+        # TODO - add validation for versions and read/write
         for attr in valid_claim_value:
             if actual_claim_value.get(attr) != valid_claim_value.get(attr):
                 raise InvalidClaimError(claim_name)

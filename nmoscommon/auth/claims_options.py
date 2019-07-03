@@ -17,16 +17,16 @@ IS_04_REG_CLAIMS = {
     "sub": {"essential": True},
     "aud": {"essential": True},
     "scope": {
-                "essential": True,
-                "value": "is-04"
-             },
+        "essential": True,
+        "value": "is-04"
+    },
     "x-nmos-api": {
-                    "essential": True,
-                    "value": {
-                                "name": "is-04",
-                                "access": "write"
-                            }
-                   }
+        "essential": True,
+        "value": {
+            "name": "is-04",
+            "access": "write"
+        }
+    }
 }
 
 IS_04_QUERY_CLAIMS = {
@@ -37,16 +37,16 @@ IS_04_QUERY_CLAIMS = {
     "sub": {"essential": True},
     "aud": {"essential": True},
     "scope": {
-                "essential": True,
-                "value": "is-04"
-             },
+        "essential": True,
+        "value": "is-04"
+    },
     "x-nmos-api": {
-                    "essential": True,
-                    "value": {
-                                "name": "is-04",
-                                "access": "write"
-                            }
-                   }
+        "essential": True,
+        "value": {
+            "name": "is-04",
+            "access": "write"
+        }
+    }
 }
 
 IS_04_NODE_CLAIMS = {
@@ -57,16 +57,16 @@ IS_04_NODE_CLAIMS = {
     "sub": {"essential": True},
     "aud": {"essential": True},
     "scope": {
-                "essential": True,
-                "value": "is-04"
-             },
+        "essential": True,
+        "value": "is-04"
+    },
     "x-nmos-api": {
-                    "essential": True,
-                    "value": {
-                                "name": "is-04",
-                                "access": "write"
-                            }
-                   }
+        "essential": True,
+        "value": {
+            "name": "is-04",
+            "access": "write"
+        }
+    }
 }
 
 IS_05_CLAIMS = {
@@ -77,14 +77,14 @@ IS_05_CLAIMS = {
     "sub": {"essential": True},
     "aud": {"essential": True},
     "scope": {
-                "essential": True,
-                "value": "is-05"
-             },
+        "essential": True,
+        "value": "is-05"
+    },
     "x-nmos-api": {
-                    "essential": True,
-                    "value": {
-                                "name": "is-05",
-                                "access": "write"
-                            }
-                   }
+        "essential": True,
+        "value": {
+            "name": "is-05",
+            "access": "write"
+        }
+    }
 }

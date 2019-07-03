@@ -27,8 +27,8 @@ from OpenSSL import crypto
 from nmoscommon.mdnsbridge import IppmDNSBridge
 from nmoscommon.nmoscommonconfig import config as _config
 from nmoscommon.logger import Logger as defaultLogger
-from authlib.specs.rfc7519 import jwt
-from authlib.specs.rfc6749.errors import MissingAuthorizationError, \
+from authlib.jose import jwt
+from authlib.oauth2.rfc6749.errors import MissingAuthorizationError, \
     UnsupportedTokenTypeError
 from authlib.common.errors import AuthlibBaseError
 
@@ -53,7 +53,7 @@ class RequiresAuth(object):
         self.claimsOptions = claimsOptions
         self.certificate = certificate
         self.bridge = IppmDNSBridge()
-        self.logger = defaultLogger("nmossecurity")
+        self.logger = defaultLogger("authresource")
 
     def getHrefFromService(self, serviceType):
         return self.bridge.getHref(serviceType)
@@ -78,7 +78,7 @@ class RequiresAuth(object):
                     self.logger.writeWarning("Multiple certificates at Endpoint. Returning First Instance.")
                 cert = cert[0]
                 return cert
-            except KeyError as e:
+            except Exception as e:
                 self.logger.writeError("Error: {}. Endpoint contains: {}".format(str(e), cert))
                 raise
         else:

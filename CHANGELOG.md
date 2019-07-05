@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.9
+- Allow use of newer Werkzeug by trying both import paths. Fixes #92 and improves on change in v0.17.2.
+
 ## 0.19.8
 - Update Werkzeug to deal with URL map ordering bugs
 - https://github.com/pallets/werkzeug/pull/907

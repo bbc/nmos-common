@@ -33,7 +33,7 @@ This library provides a number of configuration options which are used by its ow
 *   **prefer_ipv6:** \[boolean\] Switches the libary into IPv6 mode. Default: false.
 *   **prefer_hostnames:** \[boolean\] Causes hostnames to be surfaced via APIs rather than IP addresses, and to cause any HTTP requests to use hostnames rather than IP addresses where possible. This is important when operating in HTTPS mode. Default: false.
 *   **node_hostname:** \[string\] Overrides the default fully qualified DNS name for the system. Default: null.
-*   **fix_proxy:** \[boolean\] Corrects the appearance of URLs and links (including some headers) returned by APIs when operating behind a reverse proxy. Default: "disabled".
+*   **fix_proxy:** \[string\] The number (e.g. "1", "2") of reverse proxies the API is running behind, enabling URLs and headers to show the correct address. Also accepts "enabled" (same as "1") or "disabled". Default: "disabled".
 *   **logging.level:** \[string\] Sets the log level to one of "DEBUG", "INFO", "WARN", "ERROR" or "FATAL". Default: "DEBUG".
 *   **logging.fileLocation:** \[string\] The path to write the log file to. Default: "/var/log/nmos.log".
 *   **logging.output:** \[array\] An array of locations to write log messages to, which may include "file" and "stdout". Default: \["file", "stdout"\].

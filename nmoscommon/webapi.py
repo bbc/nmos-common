@@ -38,7 +38,14 @@ import sys
 
 from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import BaseResponse
-from werkzeug.contrib.fixers import ProxyFix
+
+# This moved in Werkzeug 0.15.0, but if it's not there try the old location in case we're on Bionic with 0.14.1
+try:
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    HAS_WERKZEUG_MIDDLEWARE = True
+except ImportError:
+    from werkzeug.contrib.fixers import ProxyFix
+    HAS_WERKZEUG_MIDDLEWARE = False
 
 from requests.structures import CaseInsensitiveDict
 
@@ -603,9 +610,27 @@ class WebAPI(object):
 
         self.add_routes(self, basepath='')
 
-        # Enable ProxyFix middleware if required
+        # If the `fix_proxy` option is "enabled", interpret it as "use one proxy"
         if _config.get('fix_proxy') == 'enabled':
-            self.app.wsgi_app = ProxyFix(self.app.wsgi_app)
+            if HAS_WERKZEUG_MIDDLEWARE:
+                self.app.wsgi_app = ProxyFix(self.app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
+            else:
+                self.app.wsgi_app = ProxyFix(self.app.wsgi_app)
+        # If the `fix_proxy` option is a number, interpret it as the number of proxies to trust (Werkzeug>=0.15.0)
+        elif HAS_WERKZEUG_MIDDLEWARE:
+            try:
+                proxy_count = int(_config.get('fix_proxy'))
+                if proxy_count > 0:
+                    self.app.wsgi_app = ProxyFix(
+                        self.app.wsgi_app,
+                        x_for=proxy_count,
+                        x_proto=proxy_count,
+                        x_host=proxy_count,
+                        x_port=proxy_count,
+                        x_prefix=proxy_count)
+            except ValueError:
+                # The `fix_proxy` option wasn't a number, so leave it off
+                pass
 
     def add_routes(self, routesObject, basepath):
 

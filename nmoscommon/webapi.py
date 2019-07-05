@@ -38,7 +38,12 @@ import sys
 
 from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers import BaseResponse
-from werkzeug.contrib.fixers import ProxyFix
+
+# This moved in Werkzeug 0.15.0, but if it's not there try the old location in case we're on Bionic with 0.14.1
+try:
+    from werkzeug.middleware.proxy_fix import ProxyFix
+except ImportError:
+    from werkzeug.contrib.fixers import ProxyFix
 
 from requests.structures import CaseInsensitiveDict
 

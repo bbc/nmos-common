@@ -120,11 +120,16 @@ class RequiresAuth(object):
         return pubKey
 
     def processAccessToken(self, auth_string):
-        token_type, token_string = auth_string.split(None, 1)
+        # Auth string is of type 'Bearer xAgy65..'
+        if auth_string.find(' ') > -1:
+            token_type, token_string = auth_string.split(None, 1)
+            if token_type.lower() != "bearer":
+                raise UnsupportedTokenTypeError()
+        # Otherwise string is access token 'xAg65..'
+        else:
+            token_string = auth_string
         if token_string == "null" or token_string == "":
             raise MissingAuthorizationError()
-        if token_type.lower() != "bearer":
-            raise UnsupportedTokenTypeError()
         pubKey = self.getPublicKey()
         claims = jwt.decode(s=token_string, key=pubKey,
                             claims_cls=JWTClaimsValidator,
@@ -140,7 +145,7 @@ class RequiresAuth(object):
         self.processAccessToken(auth_string)
 
     def handleSocketAuth(self, *args, **kwargs):
-        """Handle bearer token string ("Bearer xAgy65...") in Websocket URL Query Param"""
+        """Handle bearer token string ("access_token=xAgy65...") in Websocket URL Query Param"""
         ws = args[0]
         environment = ws.environ
         auth_header = environment.get('HTTP_AUTHORIZATION', None)
@@ -153,7 +158,7 @@ class RequiresAuth(object):
             try:
                 if query_string is not None:
                     try:
-                        auth_string = parse_qs(query_string)['authorization'][0]
+                        auth_string = parse_qs(query_string)['access_token'][0]
                     except KeyError:
                         self.logger.writeError("""
                             'authorization' URL param doesn't exist. Websocket authentication failed.

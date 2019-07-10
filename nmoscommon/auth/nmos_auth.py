@@ -161,7 +161,7 @@ class RequiresAuth(object):
                         auth_string = parse_qs(query_string)['access_token'][0]
                     except KeyError:
                         self.logger.writeError("""
-                            'authorization' URL param doesn't exist. Websocket authentication failed.
+                            'access_token' URL param doesn't exist. Websocket authentication failed.
                         """)
                         raise MissingAuthorizationError()
                 self.processAccessToken(auth_string)

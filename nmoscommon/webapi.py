@@ -802,7 +802,7 @@ class WebAPI(object):
                 mimetype='text/html'
             )
         else:
-            headers = (e.headers if 'headers' in e else None)
+            headers = e.headers if hasattr(e, 'headers') else None
             if isinstance(e, HTTPException):
                 status_code = e.code
                 error_description = e.description

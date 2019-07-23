@@ -36,7 +36,6 @@ from .claims_options import IS_XX_CLAIMS
 from .claims_validator import JWTClaimsValidator
 
 MDNS_SERVICE_TYPE = "nmos-auth"
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OAUTH_MODE = _config.get('oauth_mode', True)
 
 NMOSAUTH_DIR = '/var/nmosauth'  # LINUX ONLY
@@ -125,7 +124,7 @@ class RequiresAuth(object):
             token_type, token_string = auth_string.split(None, 1)
             if token_type.lower() != "bearer":
                 raise UnsupportedTokenTypeError()
-        # Otherwise string is access token 'xAg65..'
+        # Otherwise string is access token 'xAgy65..'
         else:
             token_string = auth_string
         if token_string == "null" or token_string == "":

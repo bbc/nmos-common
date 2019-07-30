@@ -776,73 +776,55 @@ class WebAPI(object):
                 return IppResponse('', 500)
 
         bm = request.accept_mimetypes.best_match(['application/json', 'text/html'])
+        (exceptionType, exceptionParam, trace) = sys.exc_info()
         if bm == 'text/html':
             if isinstance(e, HTTPException):
                 if e.code == 400:
-                    (exceptionType, exceptionParam, trace) = sys.exc_info()
-                    return IppResponse(highlight(
-                                            '\n'.join(traceback.format_exception(exceptionType, exceptionParam, trace)),
-                                            PythonTracebackLexer(),
-                                            HtmlFormatter(linenos='table',
-                                                          full=True,
-                                                          title="{}: {}".format(e.code, e.description))),
-                                       status=e.code,
-                                       mimetype='text/html')
-                return e.get_response()
+                    status_code = e.code
+                    response_title = "{}: {}".format(e.code, e.description)
+                else:
+                    return e.get_response()
+            else:
+                status_code = 500
+                response_title = '500: Internal Exception'
 
-            (exceptionType, exceptionParam, trace) = sys.exc_info()
-            return IppResponse(highlight(
-                                    '\n'.join(traceback.format_exception(exceptionType, exceptionParam, trace)),
-                                    PythonTracebackLexer(),
-                                    HtmlFormatter(linenos='table',
-                                                  full=True,
-                                                  title='500: Internal Exception')),
-                               status=500,
-                               mimetype='text/html')
+            return IppResponse(
+                highlight(
+                    '\n'.join(traceback.format_exception(exceptionType, exceptionParam, trace)),
+                    PythonTracebackLexer(),
+                    HtmlFormatter(
+                        linenos='table',
+                        full=True,
+                        title=response_title
+                    )
+                ),
+                status=status_code,
+                mimetype='text/html'
+            )
         else:
-            (exceptionType, exceptionParam, trace) = sys.exc_info()
+            headers = e.headers if hasattr(e, 'headers') else None
             if isinstance(e, HTTPException):
-                response = {
-                    'code': e.code,
-                    'error': e.description,
-                    'debug': str({
-                        'traceback': [str(x) for x in traceback.extract_tb(trace)],
-                        'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
-                    })
-                }
-                return IppResponse(json.dumps(response), status=e.code, mimetype='application/json')
-
-            if isinstance(e, AuthlibHTTPError):
-                response = {
-                    'code': e.status_code,
-                    'error': e.get_error_description() if e.get_error_description() else e.error,
-                    'debug': str({
-                        'traceback': [str(x) for x in traceback.extract_tb(trace)],
-                        'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
-                    })
-                }
-                return IppResponse(json.dumps(response), status=e.status_code, mimetype='application/json')
-
-            if isinstance(e, AuthlibBaseError):
-                response = {
-                    'code': 400,
-                    'error': e.message if e.description else e.error,
-                    'debug': str({
-                        'traceback': [str(x) for x in traceback.extract_tb(trace)],
-                        'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
-                    })
-                }
-                return IppResponse(json.dumps(response), status=400, mimetype='application/json')
+                status_code = e.code
+                error_description = e.description
+            elif isinstance(e, AuthlibHTTPError):
+                status_code = e.status_code
+                error_description = e.get_error_description() if e.get_error_description() else e.error
+            elif isinstance(e, AuthlibBaseError):
+                status_code = 400
+                error_description = e.message if e.description else e.error  # message = error : description
+            else:
+                status_code = 500
+                error_description = 'Internal Error'
 
             response = {
-                'code': 500,
-                'error': 'Internal Error',
+                'code': status_code,
+                'error': error_description,
                 'debug': str({
                     'traceback': [str(x) for x in traceback.extract_tb(trace)],
                     'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
                 })
             }
-            return IppResponse(json.dumps(response), status=500, mimetype='application/json')
+            return IppResponse(json.dumps(response), status=status_code, mimetype='application/json', headers=headers)
 
     def torun(self):  # pragma: no cover
         pass

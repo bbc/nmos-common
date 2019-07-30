@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.10
+- Change name of access token query param during websocket authentication, change authlib imports, tidy error handlers
+
 ## 0.19.9
 - Allow use of newer Werkzeug by trying both import paths. Fixes #92 and improves on change in v0.17.2.
 

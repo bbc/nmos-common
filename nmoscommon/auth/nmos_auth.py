@@ -27,8 +27,8 @@ from OpenSSL import crypto
 from nmoscommon.mdnsbridge import IppmDNSBridge
 from nmoscommon.nmoscommonconfig import config as _config
 from nmoscommon.logger import Logger as defaultLogger
-from authlib.specs.rfc7519 import jwt
-from authlib.specs.rfc6749.errors import MissingAuthorizationError, \
+from authlib.jose import jwt
+from authlib.oauth2.rfc6749.errors import MissingAuthorizationError, \
     UnsupportedTokenTypeError
 from authlib.common.errors import AuthlibBaseError
 
@@ -36,7 +36,6 @@ from .claims_options import IS_XX_CLAIMS
 from .claims_validator import JWTClaimsValidator
 
 MDNS_SERVICE_TYPE = "nmos-auth"
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OAUTH_MODE = _config.get('oauth_mode', True)
 
 NMOSAUTH_DIR = '/var/nmosauth'  # LINUX ONLY
@@ -53,7 +52,7 @@ class RequiresAuth(object):
         self.claimsOptions = claimsOptions
         self.certificate = certificate
         self.bridge = IppmDNSBridge()
-        self.logger = defaultLogger("nmossecurity")
+        self.logger = defaultLogger("authresource")
 
     def getHrefFromService(self, serviceType):
         return self.bridge.getHref(serviceType)
@@ -78,7 +77,7 @@ class RequiresAuth(object):
                     self.logger.writeWarning("Multiple certificates at Endpoint. Returning First Instance.")
                 cert = cert[0]
                 return cert
-            except KeyError as e:
+            except Exception as e:
                 self.logger.writeError("Error: {}. Endpoint contains: {}".format(str(e), cert))
                 raise
         else:
@@ -120,11 +119,16 @@ class RequiresAuth(object):
         return pubKey
 
     def processAccessToken(self, auth_string):
-        token_type, token_string = auth_string.split(None, 1)
+        # Auth string is of type 'Bearer xAgy65..'
+        if auth_string.find(' ') > -1:
+            token_type, token_string = auth_string.split(None, 1)
+            if token_type.lower() != "bearer":
+                raise UnsupportedTokenTypeError()
+        # Otherwise string is access token 'xAgy65..'
+        else:
+            token_string = auth_string
         if token_string == "null" or token_string == "":
             raise MissingAuthorizationError()
-        if token_type.lower() != "bearer":
-            raise UnsupportedTokenTypeError()
         pubKey = self.getPublicKey()
         claims = jwt.decode(s=token_string, key=pubKey,
                             claims_cls=JWTClaimsValidator,
@@ -140,7 +144,7 @@ class RequiresAuth(object):
         self.processAccessToken(auth_string)
 
     def handleSocketAuth(self, *args, **kwargs):
-        """Handle bearer token string ("Bearer xAgy65...") in Websocket URL Query Param"""
+        """Handle bearer token string ("access_token=xAgy65...") in Websocket URL Query Param"""
         ws = args[0]
         environment = ws.environ
         auth_header = environment.get('HTTP_AUTHORIZATION', None)
@@ -153,10 +157,10 @@ class RequiresAuth(object):
             try:
                 if query_string is not None:
                     try:
-                        auth_string = parse_qs(query_string)['authorization'][0]
+                        auth_string = parse_qs(query_string)['access_token'][0]
                     except KeyError:
                         self.logger.writeError("""
-                            'authorization' URL param doesn't exist. Websocket authentication failed.
+                            'access_token' URL param doesn't exist. Websocket authentication failed.
                         """)
                         raise MissingAuthorizationError()
                 self.processAccessToken(auth_string)

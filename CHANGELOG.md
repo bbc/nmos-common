@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.11
+- Fix bug when requesting auth server url using mDNS
+
 ## 0.19.10
 - Change name of access token query param during websocket authentication, change authlib imports, tidy error handlers
 

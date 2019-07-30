@@ -12,17 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import requests
 import json
-from requests.exceptions import RequestException
+from os import path, sep
 from functools import wraps
 from flask import request
-try:
-    from urlparse import parse_qs
-except ImportError:
-    from urllib.parse import parse_qs
 from OpenSSL import crypto
+from six.moves.urllib.parse import urljoin, parse_qs
+from requests.exceptions import RequestException
 
 from nmoscommon.mdnsbridge import IppmDNSBridge
 from nmoscommon.nmoscommonconfig import config as _config
@@ -38,10 +35,15 @@ from .claims_validator import JWTClaimsValidator
 MDNS_SERVICE_TYPE = "nmos-auth"
 OAUTH_MODE = _config.get('oauth_mode', True)
 
-NMOSAUTH_DIR = '/var/nmosauth'  # LINUX ONLY
+NMOSAUTH_DIR = path.abspath(path.join(sep, 'var', 'nmosauth'))
 CERT_FILE = 'certificate.pem'
-CERT_PATH = os.path.join(NMOSAUTH_DIR, CERT_FILE)
-CERT_ENDPOINT = '/certs'
+CERT_FILE_PATH = path.join(NMOSAUTH_DIR, CERT_FILE)
+
+APINAMESPACE = "x-nmos"
+APINAME = "auth"
+APIVERSION = "v1.0"
+CERT_ENDPOINT = 'certs'
+CERT_URL_PATH = '/{}/{}/{}/{}'.format(APINAMESPACE, APINAME, APIVERSION, CERT_ENDPOINT)
 
 
 class RequiresAuth(object):
@@ -60,7 +62,7 @@ class RequiresAuth(object):
     def getCertFromEndpoint(self):
         try:
             href = self.getHrefFromService(MDNS_SERVICE_TYPE)
-            certHref = href + CERT_ENDPOINT
+            certHref = urljoin(href, CERT_URL_PATH)
             self.logger.writeInfo('cert href is: {}'.format(certHref))
             cert_resp = requests.get(certHref, timeout=0.5, proxies={'http': ''})
             cert_resp.raise_for_status()  # Raise error if status !=200
@@ -113,7 +115,7 @@ class RequiresAuth(object):
                 cert = self.getCertFromEndpoint()
             except Exception as e:
                 self.logger.writeError("Error: {0!s}. Trying to fetch Cert From File...".format(e))
-                cert = self.getCertFromFile(CERT_PATH)
+                cert = self.getCertFromFile(CERT_FILE_PATH)
             self.certificate = cert
         pubKey = self.extractPublicKey(self.certificate)
         return pubKey

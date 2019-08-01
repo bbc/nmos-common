@@ -54,3 +54,77 @@ def getLocalIP():
                 pass
     # Could not find an interface
     return None
+
+
+def downgrade_api_version(obj, rtype, target_ver, downgrade_map, downgrade_ver=None):
+
+    # Sort version list in ascending order
+    version_list = sorted(downgrade_map.keys())
+    # Add 'v1.0' as first element in version list
+    version_list.insert(0, 'v1.0')
+    # Set the max version as last element in list
+    max_ver = version_list[-1]
+
+    # Get current API version, or default to max API version
+    current_api_version = obj.get("@_apiversion", max_ver)
+
+    # Fail if target API version is greater than maximum
+    if api_ver_compare(target_ver, max_ver) > 0:
+        return None
+
+    # Downgrade API object, for a given resource, until it reaches target_version
+    while api_ver_compare(target_ver, current_api_version) < 0:
+        print("Processing downgrading from {}".format(current_api_version))
+        obj = remove_keys_from_resource(obj, rtype, downgrade_map[current_api_version])
+        current_api_version = version_list[version_list.index(current_api_version) - 1]
+
+    # Set api version key to new downgraded api version
+    if "@_apiversion" in obj:
+        obj["@_apiversion"] = current_api_version
+
+    # Check if the object's API version is permitted in the output
+    if target_ver == current_api_version:
+        return obj
+    elif downgrade_ver and api_ver_compare(current_api_version, downgrade_ver) >= 0:
+        return obj
+
+    # Fallback
+    return None
+
+
+def api_ver_compare(first, second):
+    ver_first = first[1:].split(".")
+    ver_second = second[1:].split(".")
+    if ver_first[0] < ver_second[0]:
+        return -1
+    elif ver_first[0] > ver_second[0]:
+        return 1
+    elif ver_first[1] < ver_second[1]:
+        return -2
+    elif ver_first[1] > ver_second[1]:
+        return 2
+    else:
+        return 0
+
+
+def remove_keys_from_resource(obj, rtype, downgrade_mapping):
+    if rtype in downgrade_mapping:
+        for key in downgrade_mapping[rtype]:
+            _remove_if_present(obj, key)
+    return obj
+
+
+def _remove_if_present(obj, delete_key):
+    if isinstance(obj, list):
+        for element in obj:
+            _remove_if_present(element, delete_key)
+    if isinstance(obj, dict):
+        for key, val in obj.copy().items():
+            if isinstance(val, dict):
+                val = _remove_if_present(val, delete_key)
+            if isinstance(val, list):
+                for element in val:
+                    val = _remove_if_present(element, delete_key)
+            if key == delete_key:
+                del obj[delete_key]
+    return obj

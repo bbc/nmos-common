@@ -22,6 +22,29 @@ import netifaces
 
 from .logger import Logger
 
+DOWNGRADE_MAP = {
+    "v1.1": {
+        "node": ["description", "tags", "api", "clocks"],
+        "device": ["description", "tags", "controls"],
+        "source": ["clock_name", "grain_rate", "channels"],
+        "flow": [
+            "device_id", "grain_rate", "media_type", "sample_rate", "bit_depth", "DID_SDID", "frame_width",
+            "frame_height", "interlace_mode", "colorspace", "components", "transfer_characteristic"
+        ],
+    },
+    "v1.2": {
+        "node": ["interfaces"],
+        "sender": ["interface_bindings", "caps", "subscription"],
+        "receiver": ["interface_bindings"]
+    },
+    "v1.3": {
+        "node": ["attached_network_device", "authorization"],
+        "device": ["authorization"],
+        "source": ["event_type"],
+        "flow": ["event_type"],
+    }
+}
+
 
 def get_node_id():
     logger = Logger("utils", None)
@@ -56,7 +79,9 @@ def getLocalIP():
     return None
 
 
-def downgrade_api_version(obj, rtype, target_ver, downgrade_map, downgrade_ver=None):
+def downgrade_api_version(
+    obj, rtype, target_ver, downgrade_ver=None, downgrade_map=DOWNGRADE_MAP, remove_keys=["max_api_version"]
+):
 
     # Sort version list in ascending order
     version_list = sorted(downgrade_map.keys())
@@ -81,6 +106,9 @@ def downgrade_api_version(obj, rtype, target_ver, downgrade_map, downgrade_ver=N
     # Set api version key to new downgraded api version
     if "@_apiversion" in obj:
         obj["@_apiversion"] = current_api_version
+
+    # Delete any implementation-specific keys not in the spec
+    [obj.pop(key) for key in remove_keys if key in obj]
 
     # Check if the object's API version is permitted in the output
     if target_ver == current_api_version:

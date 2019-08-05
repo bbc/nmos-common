@@ -22,6 +22,8 @@ import netifaces
 
 from .logger import Logger
 
+logger = Logger("utils", None)
+
 DOWNGRADE_MAP = {
     "v1.1": {
         "node": ["description", "tags", "api", "clocks"],
@@ -47,7 +49,6 @@ DOWNGRADE_MAP = {
 
 
 def get_node_id():
-    logger = Logger("utils", None)
     node_id_path = "/var/nmos-node/facade.json"
     node_id = str(uuid.uuid1())
     try:
@@ -99,7 +100,7 @@ def downgrade_api_version(
 
     # Downgrade API object, for a given resource, until it reaches target_version
     while api_ver_compare(target_ver, current_api_version) < 0:
-        print("Processing downgrading from {}".format(current_api_version))
+        logger.writeDebug("Processing downgrading from {}".format(current_api_version))
         obj = remove_keys_from_resource(obj, rtype, downgrade_map[current_api_version])
         current_api_version = version_list[version_list.index(current_api_version) - 1]
 

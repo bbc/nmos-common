@@ -17,8 +17,9 @@ from six import PY2
 import unittest
 import mock
 import json
+import netifaces
 
-from nmoscommon.utils import *
+from nmoscommon.utils import get_node_id, getLocalIP, api_ver_compare, translate_api_version,DOWNGRADE_MAP
 
 if PY2:
     BUILTINS = "__builtin__"
@@ -35,7 +36,7 @@ class TestUtils(unittest.TestCase):
         path_exists.return_value = True
         old_uuid = "59e31199-da85-11e7-9295-dca904824eec"
         new_uuid = "bdd54042-da85-11e7-a433-dca904824eec"
-        _open.return_value.read.return_value = json.dumps({ 'node_id' : old_uuid })
+        _open.return_value.read.return_value = json.dumps({'node_id': old_uuid})
         uuid1.return_value = new_uuid
         self.assertEqual(get_node_id(), old_uuid)
         _open.assert_called_once_with("/var/nmos-node/facade.json", "r")
@@ -48,11 +49,11 @@ class TestUtils(unittest.TestCase):
         path_exists.return_value = False
         old_uuid = "59e31199-da85-11e7-9295-dca904824eec"
         new_uuid = "bdd54042-da85-11e7-a433-dca904824eec"
-        _open.return_value.read.return_value = json.dumps({ 'node_id' : old_uuid })
+        _open.return_value.read.return_value = json.dumps({'node_id': old_uuid})
         uuid1.return_value = new_uuid
         self.assertEqual(get_node_id(), new_uuid)
         _open.assert_called_once_with("/var/nmos-node/facade.json", "w")
-        _open.return_value.write.assert_called_once_with(json.dumps({ 'node_id' : new_uuid }))
+        _open.return_value.write.assert_called_once_with(json.dumps({'node_id': new_uuid}))
 
     @mock.patch("uuid.uuid1")
     @mock.patch(BUILTINS + ".open")
@@ -62,7 +63,7 @@ class TestUtils(unittest.TestCase):
         path_exists.return_value = True
         old_uuid = "59e31199-da85-11e7-9295-dca904824eec"
         new_uuid = "bdd54042-da85-11e7-a433-dca904824eec"
-        _open.return_value.read.return_value = json.dumps({ 'node_id' : old_uuid })
+        _open.return_value.read.return_value = json.dumps({'node_id': old_uuid})
         _open.side_effect = Exception
         uuid1.return_value = new_uuid
         self.assertEqual(get_node_id(), new_uuid)
@@ -73,14 +74,14 @@ class TestUtils(unittest.TestCase):
     @mock.patch("netifaces.ifaddresses")
     @mock.patch("netifaces.interfaces")
     def test_getLocalIP(self, interfaces, ifaddresses):
-        interfaces.return_value = [ mock.sentinel.if0, mock.sentinel.if1, mock.sentinel.if2, ]
+        interfaces.return_value = [mock.sentinel.if0, mock.sentinel.if1, mock.sentinel.if2, ]
         addresses = {
-            mock.sentinel.if0 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if0_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if0_AF_INET_1_addr } ] },
-            mock.sentinel.if1 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if1_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if1_AF_INET_1_addr } ] },
-            mock.sentinel.if2 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if2_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if2_AF_INET_1_addr } ] },
+            mock.sentinel.if0 : { netifaces.AF_INET: [{'addr': mock.sentinel.if0_AF_INET_0_addr},
+                                                          {'addr': mock.sentinel.if0_AF_INET_1_addr}]},
+            mock.sentinel.if1 : { netifaces.AF_INET: [{'addr': mock.sentinel.if1_AF_INET_0_addr},
+                                                          {'addr': mock.sentinel.if1_AF_INET_1_addr}]},
+            mock.sentinel.if2 : { netifaces.AF_INET: [{'addr': mock.sentinel.if2_AF_INET_0_addr },
+                                                          {'addr': mock.sentinel.if2_AF_INET_1_addr}]},
             }
         ifaddresses.side_effect = lambda x : addresses[x]
         self.assertEqual(getLocalIP(), mock.sentinel.if0_AF_INET_0_addr)
@@ -172,3 +173,48 @@ class TestUtils(unittest.TestCase):
             }
         ifaddresses.side_effect = lambda x : addresses[x]
         self.assertIsNone(getLocalIP())
+
+    def test_api_ver_compare(self):
+        self.assertTrue(api_ver_compare('v1.0', 'v1.2') < 0)
+        self.assertTrue(api_ver_compare('v1.1', 'v1.0') > 0)
+        self.assertEqual(api_ver_compare('v1.3', 'v1.3'), 0)
+
+    def test_translate_api_version(self):
+        flow_obj = {
+            "description": "IS-07 Temperature Readings (C)",
+            "tags": {},
+            "format": "urn:x-nmos:format:data",
+            "event_type": "number/temperature/C",
+            "caps": {},
+            "version": "1453880605:374934072",
+            "parents": [],
+            "label": "IS-07 Temperature Readings (C)",
+            "id": "6327c381-1239-41d1-b314-efc719600e26",
+            "source_id": "33e28c6f-d5ab-4ae5-b00d-f1cccab29af4",
+            "device_id": "9126cc2f-4c26-4c9b-a6cd-93c4381c9be5",
+            "media_type": "application/json"
+        }
+        translated_obj = translate_api_version(flow_obj, "flow", "v1.2")
+        self.assertTrue("event_type" not in translated_obj)
+
+        flow_obj = {
+            "description": "Test Card",
+            "tags": {},
+            "format": "urn:x-nmos:format:video",
+            "label": "Test Card",
+            "version": "1441704616:587121295",
+            "parents": [],
+            "source_id": "02c46999-d532-4c52-905f-2e368a2af6cb",
+            "device_id": "9126cc2f-4c26-4c9b-a6cd-93c4381c9be5",
+            "id": "5fbec3b1-1b0f-417d-9059-8b94a47197ed",
+            "media_type": "video/raw",
+            "frame_width": 1920,
+            "frame_height": 1080,
+            "interlace_mode": "interlaced_tff",
+            "colorspace": "BT709",
+        }
+        translated_obj = translate_api_version(flow_obj, "flow", "v1.0")
+        self.assertTrue(all(elem not in translated_obj.keys() for elem in DOWNGRADE_MAP['v1.1']['flow']))
+
+        translated_obj = translate_api_version(flow_obj, "flow", "v1.5")
+        self.assertEqual(translated_obj, None)

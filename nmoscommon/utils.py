@@ -80,18 +80,20 @@ def getLocalIP():
     return None
 
 
-def downgrade_api_version(
-    obj, rtype, target_ver, downgrade_ver=None, downgrade_map=DOWNGRADE_MAP, remove_keys=["max_api_version"]
+def translate_api_version(
+    obj, rtype, target_ver, downgrade_ver=None, translation_map=None, remove_keys=["max_api_version"]
 ):
+    if translation_map is None:
+        translation_map = DOWNGRADE_MAP
 
     # Sort version list in ascending order
-    version_list = sorted(downgrade_map.keys())
+    version_list = sorted(translation_map.keys())
     # Add 'v1.0' as first element in version list
     version_list.insert(0, 'v1.0')
     # Set the max version as last element in list
     max_ver = version_list[-1]
 
-    # Get current API version, or default to max API version
+    # Get current API version (present in the query API implementation), or default to max API version if absent
     current_api_version = obj.get("@_apiversion", max_ver)
 
     # Fail if target API version is greater than maximum
@@ -101,7 +103,7 @@ def downgrade_api_version(
     # Downgrade API object, for a given resource, until it reaches target_version
     while api_ver_compare(target_ver, current_api_version) < 0:
         logger.writeDebug("Processing downgrading from {}".format(current_api_version))
-        obj = remove_keys_from_resource(obj, rtype, downgrade_map[current_api_version])
+        obj = remove_keys_from_resource(obj, rtype, translation_map[current_api_version])
         current_api_version = version_list[version_list.index(current_api_version) - 1]
 
     # Set api version key to new downgraded api version
@@ -114,6 +116,7 @@ def downgrade_api_version(
     # Check if the object's API version is permitted in the output
     if target_ver == current_api_version:
         return obj
+    # Where `downgrade_ver` relates to the query.downgrade query parameter of the Query API
     elif downgrade_ver and api_ver_compare(current_api_version, downgrade_ver) >= 0:
         return obj
 
@@ -136,9 +139,9 @@ def api_ver_compare(first, second):
         return 0
 
 
-def remove_keys_from_resource(obj, rtype, downgrade_mapping):
-    if rtype in downgrade_mapping:
-        for key in downgrade_mapping[rtype]:
+def remove_keys_from_resource(obj, rtype, translation_map):
+    if rtype in translation_map:
+        for key in translation_map[rtype]:
             _remove_if_present(obj, key)
     return obj
 

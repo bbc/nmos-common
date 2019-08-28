@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.12
+- Add `downgrade_api_version` common function to utils
+
 ## 0.19.11
 - Fix bug when requesting auth server url using mDNS
 

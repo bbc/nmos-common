@@ -31,7 +31,7 @@ pipeline {
     environment {
         http_proxy = "http://www-cache.rd.bbc.co.uk:8080"
         https_proxy = "http://www-cache.rd.bbc.co.uk:8080"
-        NMOS_RI_COMMON_BRANCH = "${env.CHANGE_ID}"
+        NMOS_RI_COMMON_BRANCH = "${env.CHANGE_BRANCH}"
     }
     stages {
         stage("Clean Environment") {

@@ -1,7 +1,7 @@
 # NMOS Common Library Changelog
 
 ## 0.19.13
-- Fix bug in `downgrade_api_version` by adding deep copy of API object
+- Fix bug in `downgrade_api_version` by adding deep copy of API object. Alter COMMON_BRANCH env-var in Jenkinsfile.
 
 ## 0.19.12
 - Add `downgrade_api_version` common function to utils

@@ -133,3 +133,7 @@ Please ensure you have run the test suite before submitting a Pull Request, and 
 ## License
 
 See [LICENSE.md](LICENSE.md)
+
+## Author
+
+Captain NMOS AKA The BonBon

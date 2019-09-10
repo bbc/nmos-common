@@ -18,6 +18,7 @@ from __future__ import print_function
 import uuid
 import json
 import os
+import copy
 import netifaces
 
 from .logger import Logger
@@ -92,6 +93,9 @@ def translate_api_version(
     version_list.insert(0, 'v1.0')
     # Set the max version as last element in list
     max_ver = version_list[-1]
+
+    # Create deep copy of object so as to not mutate original
+    obj = copy.deepcopy(obj)
 
     # Get current API version (present in the query API implementation), or default to max API version if absent
     current_api_version = obj.get("@_apiversion", max_ver)

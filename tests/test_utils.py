@@ -18,8 +18,9 @@ import unittest
 import mock
 import json
 import netifaces
+import copy
 
-from nmoscommon.utils import get_node_id, getLocalIP, api_ver_compare, translate_api_version,DOWNGRADE_MAP
+from nmoscommon.utils import get_node_id, getLocalIP, api_ver_compare, translate_api_version, DOWNGRADE_MAP
 
 if PY2:
     BUILTINS = "__builtin__"
@@ -180,27 +181,12 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(api_ver_compare('v1.3', 'v1.3'), 0)
 
     def test_translate_api_version(self):
-        flow_obj = {
-            "description": "IS-07 Temperature Readings (C)",
-            "tags": {},
-            "format": "urn:x-nmos:format:data",
-            "event_type": "number/temperature/C",
-            "caps": {},
-            "version": "1453880605:374934072",
-            "parents": [],
-            "label": "IS-07 Temperature Readings (C)",
-            "id": "6327c381-1239-41d1-b314-efc719600e26",
-            "source_id": "33e28c6f-d5ab-4ae5-b00d-f1cccab29af4",
-            "device_id": "9126cc2f-4c26-4c9b-a6cd-93c4381c9be5",
-            "media_type": "application/json"
-        }
-        translated_obj = translate_api_version(flow_obj, "flow", "v1.2")
-        self.assertTrue("event_type" not in translated_obj)
 
-        flow_obj = {
+        flow_obj_v1_3 = {
             "description": "Test Card",
             "tags": {},
             "format": "urn:x-nmos:format:video",
+            "event_type": "test_event",
             "label": "Test Card",
             "version": "1441704616:587121295",
             "parents": [],
@@ -213,8 +199,15 @@ class TestUtils(unittest.TestCase):
             "interlace_mode": "interlaced_tff",
             "colorspace": "BT709",
         }
-        translated_obj = translate_api_version(flow_obj, "flow", "v1.0")
-        self.assertTrue(all(elem not in translated_obj.keys() for elem in DOWNGRADE_MAP['v1.1']['flow']))
+        versions = ["v1.0", "v1.1", "v1.2", "v1.3"]
+        flow_object_copy = copy.deepcopy(flow_obj_v1_3)
 
-        translated_obj = translate_api_version(flow_obj, "flow", "v1.5")
-        self.assertEqual(translated_obj, None)
+        for i, version in enumerate(versions):
+            translated_obj = translate_api_version(flow_obj_v1_3, "flow", version)
+            if i + 1 < len(versions) and versions[i+1] in DOWNGRADE_MAP and 'flow' in DOWNGRADE_MAP[versions[i+1]]:
+                self.assertTrue(all(elem not in translated_obj.keys() for elem in DOWNGRADE_MAP[versions[i+1]]['flow']))
+
+        self.assertEqual(flow_obj_v1_3, flow_object_copy)  # Ensure original object hasn't been mutated
+
+        translated_obj = translate_api_version(flow_obj_v1_3, "flow", "v1.5")
+        self.assertEqual(translated_obj, None)  # Check incorrect version number returns None

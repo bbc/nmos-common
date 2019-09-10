@@ -37,6 +37,7 @@ pipeline {
         stage("Clean Environment") {
             steps {
                 sh 'git clean -dfx'
+                sh 'env'
             }
         }
         stage ("Unit Tests") {

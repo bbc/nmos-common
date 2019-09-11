@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.14
+- Strip trailing 's' character from resource types in `downgrade_api_version`.
+
 ## 0.19.13
 - Fix bug in `downgrade_api_version` by adding deep copy of API object. Alter COMMON_BRANCH env-var in Jenkinsfile.
 

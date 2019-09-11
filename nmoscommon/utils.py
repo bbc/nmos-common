@@ -82,10 +82,13 @@ def getLocalIP():
 
 
 def translate_api_version(
-    obj, rtype, target_ver, downgrade_ver=None, translation_map=None, remove_keys=["max_api_version"]
+    obj, resource_type, target_ver, downgrade_ver=None, translation_map=None, remove_keys=["max_api_version"]
 ):
     if translation_map is None:
         translation_map = DOWNGRADE_MAP
+
+    # Ensure rtype matches keys inside downgrade map
+    rtype = resource_type.rstrip('s')
 
     # Sort version list in ascending order
     version_list = sorted(translation_map.keys())

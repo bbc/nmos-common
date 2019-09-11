@@ -31,7 +31,6 @@ pipeline {
     environment {
         http_proxy = "http://www-cache.rd.bbc.co.uk:8080"
         https_proxy = "http://www-cache.rd.bbc.co.uk:8080"
-        NMOS_RI_COMMON_BRANCH = "${env.CHANGE_BRANCH}"
     }
     stages {
         stage("Clean Environment") {
@@ -124,6 +123,11 @@ pipeline {
                     steps {
                         script {
                             env.int_result = "FAILURE"
+                            if (env.CHANGE_BRANCH != null) {
+                                env.NMOS_RI_COMMON_BRANCH = env.CHANGE_BRANCH
+                            } else {
+                                env.NMOS_RI_COMMON_BRANCH = env.BRANCH_NAME
+                            }
                         }
                         bbcGithubNotify(context: "tests/integration", status: "PENDING")
                         sh 'rm -r nmos-joint-ri || :'

@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.15
+- Avoid OPTIONS being added to both trailing slash and non trailing slash API paths causing non-deterministic routing
+
 ## 0.19.14
 - Strip trailing 's' character from resource types in `downgrade_api_version`.
 

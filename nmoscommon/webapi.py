@@ -395,6 +395,7 @@ def secure_route(path, methods=None, auto_json=True, headers=None, origin='*'):
 
 def basic_route(path):
     def annotate_function(func):
+        func.common_path = path
         func.response_route = path
         return func
     return annotate_function

@@ -383,6 +383,7 @@ def secure_route(path, methods=None, auto_json=True, headers=None, origin='*'):
         headers = []
 
     def annotate_function(func):
+        func.common_path = path
         func.secure_route = path
         func.app_methods = methods
         func.app_auto_json = auto_json
@@ -394,6 +395,7 @@ def secure_route(path, methods=None, auto_json=True, headers=None, origin='*'):
 
 def basic_route(path):
     def annotate_function(func):
+        func.common_path = path
         func.response_route = path
         return func
     return annotate_function
@@ -404,6 +406,7 @@ def route(path, methods=None, auto_json=True, headers=None, origin='*'):
         headers = []
 
     def annotate_function(func):
+        func.common_path = path
         func.app_route = path
         func.app_methods = methods
         func.app_auto_json = auto_json
@@ -415,6 +418,7 @@ def route(path, methods=None, auto_json=True, headers=None, origin='*'):
 
 def resource_route(path, methods=None):
     def annotate_function(func):
+        func.common_path = path
         func.app_resource_route = path
         func.app_methods = methods
         return func
@@ -423,6 +427,7 @@ def resource_route(path, methods=None):
 
 def file_route(path, methods=None, headers=None):
     def annotate_function(func):
+        func.common_path = path
         func.app_file_route = path
         func.app_methods = methods
         func.app_headers = headers
@@ -648,6 +653,14 @@ class WebAPI(object):
                 bases += getbases(x)
             return bases
 
+        # Populate a list of API paths to be used later for disambiguation
+        api_paths = []
+        for cls in [routesObject.__class__, ] + getbases(routesObject.__class__):
+            for attr in cls.__dict__.keys():
+                routesMethod = getattr(routesObject, attr)
+                if hasattr(routesMethod, "common_path"):
+                    api_paths.append(routesMethod.common_path)
+
         for cls in [routesObject.__class__, ] + getbases(routesObject.__class__):
             for attr in cls.__dict__.keys():
                 routesMethod = getattr(routesObject, attr)
@@ -662,11 +675,18 @@ class WebAPI(object):
                     else:
                         headers = []
 
+                    crossdomain_methods = []
+                    if hasattr(routesMethod, "common_path"):
+                        stripped_path = routesMethod.common_path.rstrip("/")
+                        trailing_slash = routesMethod.common_path.endswith("/")
+                        if trailing_slash and stripped_path not in api_paths or not trailing_slash:
+                            crossdomain_methods = ["OPTIONS", ]
+
                     if hasattr(routesMethod, "secure_route"):
                         self.app.route(
                             basepath + routesMethod.secure_route,
                             endpoint=endpoint,
-                            methods=methods + ["OPTIONS"])(
+                            methods=methods + crossdomain_methods)(
                                 crossdomain(
                                     origin=routesMethod.app_origin,
                                     methods=methods,
@@ -677,7 +697,7 @@ class WebAPI(object):
                         self.app.route(
                             basepath + routesMethod.response_route,
                             endpoint=endpoint,
-                            methods=["GET", "POST", "HEAD", "OPTIONS"])(
+                            methods=["GET", "POST", "HEAD"] + crossdomain_methods)(
                                 crossdomain(
                                     origin='*',
                                     methods=['GET', 'POST', 'HEAD'],
@@ -689,7 +709,7 @@ class WebAPI(object):
                             self.app.route(
                                 basepath + routesMethod.app_route,
                                 endpoint=endpoint,
-                                methods=methods + ["OPTIONS", ])(
+                                methods=methods + crossdomain_methods)(
                                     crossdomain(
                                         origin=routesMethod.app_origin,
                                         methods=methods,
@@ -699,7 +719,7 @@ class WebAPI(object):
                             self.app.route(
                                 basepath + routesMethod.app_route,
                                 endpoint=endpoint,
-                                methods=methods + ["OPTIONS", ])(
+                                methods=methods + crossdomain_methods)(
                                     crossdomain(
                                         origin=routesMethod.app_origin,
                                         methods=methods,
@@ -710,7 +730,7 @@ class WebAPI(object):
                         self.app.route(
                             basepath + routesMethod.app_file_route,
                             endpoint=endpoint,
-                            methods=methods + ["OPTIONS"])(
+                            methods=methods + crossdomain_methods)(
                                 crossdomain(
                                     origin='*',
                                     methods=methods,
@@ -724,12 +744,12 @@ class WebAPI(object):
                                             returns_json(obj_path_access(routesMethod)))
                         self.app.route(
                             basepath + routesMethod.app_resource_route,
-                            methods=methods + ["OPTIONS", ],
+                            methods=methods + crossdomain_methods,
                             endpoint=endpoint)(f)
                         f.__name__ = endpoint + '_path'
                         self.app.route(
                             basepath + routesMethod.app_resource_route + '<path:path>/',
-                            methods=methods + ["OPTIONS", ],
+                            methods=methods + crossdomain_methods,
                             endpoint=f.__name__)(f)
 
                     elif hasattr(routesMethod, "socket_path"):

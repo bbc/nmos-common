@@ -43,7 +43,7 @@ class TestRequiresAuth(unittest.TestCase):
 
         self.security = RequiresAuth(condition=True)
         self.security(self.dummy)
-        mockJWTRequired.assert_called_once()
+        mockJWTRequired.assert_called_once_with()
 
     @mock.patch("nmoscommon.auth.nmos_auth.request")
     def testJWTRequiredWithBadRequest(self, mockRequest):

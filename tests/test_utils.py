@@ -72,107 +72,15 @@ class TestUtils(unittest.TestCase):
         _open.return_value.read.assert_not_called()
         _open.return_value.write.assert_not_called()
 
-    @mock.patch("netifaces.ifaddresses")
-    @mock.patch("netifaces.interfaces")
-    def test_getLocalIP(self, interfaces, ifaddresses):
-        interfaces.return_value = [mock.sentinel.if0, mock.sentinel.if1, mock.sentinel.if2, ]
-        addresses = {
-            mock.sentinel.if0 : { netifaces.AF_INET: [{'addr': mock.sentinel.if0_AF_INET_0_addr},
-                                                          {'addr': mock.sentinel.if0_AF_INET_1_addr}]},
-            mock.sentinel.if1 : { netifaces.AF_INET: [{'addr': mock.sentinel.if1_AF_INET_0_addr},
-                                                          {'addr': mock.sentinel.if1_AF_INET_1_addr}]},
-            mock.sentinel.if2 : { netifaces.AF_INET: [{'addr': mock.sentinel.if2_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if2_AF_INET_1_addr}]},
-            }
-        ifaddresses.side_effect = lambda x : addresses[x]
-        self.assertEqual(getLocalIP(), mock.sentinel.if0_AF_INET_0_addr)
+    @mock.patch("nmoscommon.utils.InterfaceController")
+    def test_getLocalIP(self, interfaces):
+        interfaces.return_value.get_default_interfaces.return_value = [mock.sentinel.if0, mock.sentinel.if1]
+        self.assertEqual(getLocalIP(), mock.sentinel.if0)
 
-    @mock.patch("netifaces.ifaddresses")
-    @mock.patch("netifaces.interfaces")
-    def test_getLocalIP__ignores_loopback(self, interfaces, ifaddresses):
-        interfaces.return_value = [ "lo", mock.sentinel.if1, mock.sentinel.if2, ]
-        addresses = {
-            "lo" : { netifaces.AF_INET : [ {'addr': mock.sentinel.if0_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if0_AF_INET_1_addr } ] },
-            mock.sentinel.if1 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if1_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if1_AF_INET_1_addr } ] },
-            mock.sentinel.if2 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if2_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if2_AF_INET_1_addr } ] },
-            }
-        ifaddresses.side_effect = lambda x : addresses[x]
-        self.assertEqual(getLocalIP(), mock.sentinel.if1_AF_INET_0_addr)
+    @mock.patch("nmoscommon.utils.InterfaceController")
+    def test_getLocalIP__falls_back_to_returning_None(self, interfaces):
+        interfaces.return_value.get_default_interfaces.return_value = False
 
-    @mock.patch("netifaces.ifaddresses")
-    @mock.patch("netifaces.interfaces")
-    def test_getLocalIP__ignores_loopback_with_number(self, interfaces, ifaddresses):
-        interfaces.return_value = [ "lo0", mock.sentinel.if1, mock.sentinel.if2, ]
-        addresses = {
-            "lo" : { netifaces.AF_INET : [ {'addr': mock.sentinel.if0_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if0_AF_INET_1_addr } ] },
-            mock.sentinel.if1 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if1_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if1_AF_INET_1_addr } ] },
-            mock.sentinel.if2 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if2_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if2_AF_INET_1_addr } ] },
-            }
-        ifaddresses.side_effect = lambda x : addresses[x]
-        self.assertEqual(getLocalIP(), mock.sentinel.if1_AF_INET_0_addr)
-
-    @mock.patch("netifaces.ifaddresses")
-    @mock.patch("netifaces.interfaces")
-    def test_getLocalIP__ignores_linklocal_address(self, interfaces, ifaddresses):
-        interfaces.return_value = [ mock.sentinel.if0, mock.sentinel.if1, mock.sentinel.if2, ]
-        addresses = {
-            mock.sentinel.if0 : { netifaces.AF_INET : [ {'addr': "127.0.0.1" },
-                                                          {'addr': mock.sentinel.if0_AF_INET_1_addr } ] },
-            mock.sentinel.if1 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if1_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if1_AF_INET_1_addr } ] },
-            mock.sentinel.if2 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if2_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if2_AF_INET_1_addr } ] },
-            }
-        ifaddresses.side_effect = lambda x : addresses[x]
-        self.assertEqual(getLocalIP(), mock.sentinel.if0_AF_INET_1_addr)
-
-    @mock.patch("netifaces.ifaddresses")
-    @mock.patch("netifaces.interfaces")
-    def test_getLocalIP__skips_non_IPv4(self, interfaces, ifaddresses):
-        interfaces.return_value = [ mock.sentinel.if0, mock.sentinel.if1, mock.sentinel.if2, ]
-        addresses = {
-            mock.sentinel.if0 : { netifaces.AF_INET6 : [ {'addr': mock.sentinel.if0_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if0_AF_INET_1_addr } ] },
-            mock.sentinel.if1 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if1_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if1_AF_INET_1_addr } ] },
-            mock.sentinel.if2 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if2_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if2_AF_INET_1_addr } ] },
-            }
-        ifaddresses.side_effect = lambda x : addresses[x]
-        self.assertEqual(getLocalIP(), mock.sentinel.if1_AF_INET_0_addr)
-
-    @mock.patch("netifaces.ifaddresses")
-    @mock.patch("netifaces.interfaces")
-    def test_getLocalIP__skips_empty_IPv4(self, interfaces, ifaddresses):
-        interfaces.return_value = [ mock.sentinel.if0, mock.sentinel.if1, mock.sentinel.if2, ]
-        addresses = {
-            mock.sentinel.if0 : { netifaces.AF_INET : [] },
-            mock.sentinel.if1 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if1_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if1_AF_INET_1_addr } ] },
-            mock.sentinel.if2 : { netifaces.AF_INET : [ {'addr': mock.sentinel.if2_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if2_AF_INET_1_addr } ] },
-            }
-        ifaddresses.side_effect = lambda x : addresses[x]
-        self.assertEqual(getLocalIP(), mock.sentinel.if1_AF_INET_0_addr)
-
-    @mock.patch("netifaces.ifaddresses")
-    @mock.patch("netifaces.interfaces")
-    def test_getLocalIP__falls_back_to_returning_None(self, interfaces, ifaddresses):
-        interfaces.return_value = [ mock.sentinel.if0, mock.sentinel.if1, "lo", ]
-        addresses = {
-            mock.sentinel.if0 : { netifaces.AF_INET : [] },
-            mock.sentinel.if1 : { netifaces.AF_INET6 : [ {'addr': mock.sentinel.if1_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if1_AF_INET_1_addr } ] },
-            "lo" : { netifaces.AF_INET : [ {'addr': mock.sentinel.if2_AF_INET_0_addr },
-                                                          {'addr': mock.sentinel.if2_AF_INET_1_addr } ] },
-            }
-        ifaddresses.side_effect = lambda x : addresses[x]
         self.assertIsNone(getLocalIP())
 
     def test_api_ver_compare(self):

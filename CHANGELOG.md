@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.16
+- Pin back dateutil dependency to <2.8.1 to avoid downstream issue with boto3.
+
 ## 0.19.15
 - Avoid OPTIONS being added to both trailing slash and non trailing slash API paths causing non-deterministic routing
 

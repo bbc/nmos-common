@@ -178,7 +178,7 @@ deps_required = []
 
 setup(
     name="nmoscommon",
-    version="0.19.15",
+    version="0.19.16",
     description="Common components for the BBC's NMOS implementations",
     url='https://github.com/bbc/nmos-common',
     author='Peter Brightwell',

@@ -130,7 +130,7 @@ packages_required = [
     "flask-sockets>=0.1",
     "pyzmq>=15.2.0",
     "pygments>=1.6",
-    "python-dateutil>=2.4.2",
+    "python-dateutil>=2.4.2,<2.8.1",
     "oauthlib<3.0.0",
     "requests-oauthlib<1.2.0",
     "flask-oauthlib>=0.9.1",

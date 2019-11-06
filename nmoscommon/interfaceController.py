@@ -70,7 +70,9 @@ class InterfaceController():
     def _get_default_interface_from_gateway(self):
         defaultGateways = netifaces.gateways()
         try:
-            defaultInterfaceIp = defaultGateways['default'][netifaces.AF_INET][0]
+            defaultInterfaceName = defaultGateways['default'][netifaces.AF_INET][1]
+            defaultInterfaceDetails = netifaces.ifaddresses(defaultInterfaceName)
+            defaultInterfaceIp = defaultInterfaceDetails[netifaces.AF_INET][0]['addr']
         except KeyError:
             return []
         self.logger.writeDebug("Choosing interface using the default gateway:"

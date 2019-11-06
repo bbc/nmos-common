@@ -26,7 +26,7 @@ import time
 
 from flask import Flask, Response, request, abort
 from flask_sockets import Sockets
-from nmoscommon.flask_cors import crossdomain
+from .flask_cors import crossdomain
 from functools import wraps
 import re
 

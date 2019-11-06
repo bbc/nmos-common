@@ -16,7 +16,7 @@
 
 from .dnsListener import DNSListener
 from .dnsService import DNSService
-from nmoscommon.mdns import dnsUtils
+from . import dnsUtils
 from .mdnsExceptions import DNSRecordNotFound, NoDefaultDnsSearchDomain
 from threading import Timer
 

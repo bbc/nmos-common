@@ -21,9 +21,9 @@ from OpenSSL import crypto
 from six.moves.urllib.parse import urljoin, parse_qs
 from requests.exceptions import RequestException
 
-from nmoscommon.mdnsbridge import IppmDNSBridge
-from nmoscommon.nmoscommonconfig import config as _config
-from nmoscommon.logger import Logger as defaultLogger
+from ..mdnsbridge import IppmDNSBridge
+from ..nmoscommonconfig import config as _config
+from ..logger import Logger as defaultLogger
 from authlib.jose import jwt
 from authlib.oauth2.rfc6749.errors import MissingAuthorizationError, \
     UnsupportedTokenTypeError

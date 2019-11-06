@@ -152,7 +152,7 @@ class QueryService(object):
 
 
 if __name__ == '__main__':  # pragma: no cover
-    from nmoscommon.mdnsbridge import IppmDNSBridge
+    from .mdnsbridge import IppmDNSBridge
     from pprint import pprint
 
     qs = QueryService(IppmDNSBridge())

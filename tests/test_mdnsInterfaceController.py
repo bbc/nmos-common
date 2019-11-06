@@ -77,7 +77,7 @@ class TestMDNSInterfaceController(unittest.TestCase):
         """Check that when no default interfaces are found, an exception is raised"""
         with patch('nmoscommon.mdns.mdnsInterfaceController.InterfaceController') as interface:
             with self.assertRaises(NoNetworkInterfacesFoundException):
-                interface.return_value.get_default_interfaces.return_value = False
+                interface.return_value.get_default_interfaces.return_value = []
                 self.dut._set_default_interfaces()
 
 

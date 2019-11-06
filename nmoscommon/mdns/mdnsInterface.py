@@ -16,7 +16,7 @@
 
 import socket
 from zeroconf_monkey import Zeroconf
-from nmoscommon.logger import Logger
+from ..logger import Logger
 from .mdnsExceptions import InterfaceNotFoundException
 
 

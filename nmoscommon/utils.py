@@ -21,7 +21,7 @@ import os
 import copy
 
 from .logger import Logger
-from nmoscommon.interfaceController import InterfaceController
+from .interfaceController import InterfaceController
 
 logger = Logger("utils", None)
 
@@ -71,11 +71,10 @@ def getLocalIP():
     ifaceController = InterfaceController(logger)
     interfaces = ifaceController.get_default_interfaces()
 
-    if interfaces:
-        return interfaces[0]
-    else:
-        # Could not find an interface
+    if interfaces == []:
         return None
+    else:
+        return interfaces[0]
 
 
 def translate_api_version(

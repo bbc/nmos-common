@@ -15,8 +15,8 @@
 # limitations under the License.
 
 from .mdnsInterface import MDNSInterface
-from nmoscommon.mdns.mdnsExceptions import NoNetworkInterfacesFoundException
-from nmoscommon.interfaceController import InterfaceController
+from .mdnsExceptions import NoNetworkInterfacesFoundException
+from ..interfaceController import InterfaceController
 
 
 class MDNSInterfaceController(object):
@@ -50,7 +50,7 @@ class MDNSInterfaceController(object):
         ifaceController = InterfaceController(self.logger)
         interfaces = ifaceController.get_default_interfaces()
 
-        if not interfaces:
+        if interfaces == []:
             msg = "Could not find any interfaces for mDNS use"
             self.logger.writeError(msg)
             raise NoNetworkInterfacesFoundException(msg)

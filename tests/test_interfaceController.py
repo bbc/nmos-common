@@ -30,19 +30,19 @@ class TestInterfaceController(unittest.TestCase):
         self.helper_test_default_interface_logic()
 
     def test_get_default_interface_routing(self):
-        self.helper_prepare_interface_finders(False, ["192.168.0.5"])
+        self.helper_prepare_interface_finders([], ["192.168.0.5"])
         self.helper_test_default_interface_logic()
 
     def test_get_default_interface_gateway(self):
-        self.helper_prepare_interface_finders(False, False, ["192.168.0.5"])
+        self.helper_prepare_interface_finders([], [], ["192.168.0.5"])
         self.helper_test_default_interface_logic()
 
     def test_get_default_interface_none(self):
-        self.helper_prepare_interface_finders(False, False, False)
+        self.helper_prepare_interface_finders([], [], [])
         self.assertFalse(self.dut.get_default_interfaces())
 
     def test_get_default_interface_all(self):
-        self.helper_prepare_interface_finders(False, False, False, ["192.168.0.5"])
+        self.helper_prepare_interface_finders([], [], [], ["192.168.0.5"])
         self.helper_test_default_interface_logic()
 
     def helper_test_default_interface_logic(self):
@@ -94,7 +94,7 @@ class TestInterfaceController(unittest.TestCase):
         netifaces.ifaddresses = self.helper_netiface_interface()
         netifaces.AF_INET = 2
         actual = self.dut._get_default_interface_from_gateway()
-        expected = ["192.168.0.5"]
+        expected = ["192.168.0.2"]
         self.assertEqual(actual, expected)
 
     @patch('nmoscommon.interfaceController.netifaces')

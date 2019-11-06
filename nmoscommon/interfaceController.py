@@ -31,33 +31,31 @@ class InterfaceController():
     def get_default_interfaces(self):
         """Returns a list of interface IPs"""
         interfaces = self._get_default_interface_from_file()
-        if not interfaces:
+        if interfaces == []:
             interfaces = self._get_default_interface_from_routing_rules()
-        if not interfaces:
+        if interfaces == []:
             interfaces = self._get_default_interface_from_gateway()
-        if not interfaces:
+        if interfaces == []:
             interfaces = self._get_all_interfaces()
-        if not interfaces:
+        if interfaces == []:
             msg = "Could not find any interfaces"
             self.logger.writeError(msg)
         return interfaces
 
     def _get_all_interfaces(self):
-        toReturn = []
+        interfaces = []
         for interface in netifaces.interfaces():
             if (interface is not None) & (str(interface)[0:2] != 'lo'):
                 try:
                     ipv4Addr = netifaces.ifaddresses(interface)[netifaces.AF_INET][0]['addr']
                     if str(ipv4Addr)[0:4] != "127.":
-                        toReturn.append(ipv4Addr)
+                        interfaces.append(ipv4Addr)
                 except (KeyError, IndexError):
                     pass
-        if toReturn == []:
-            return False
-        else:
+        if interfaces != []:
             self.logger.writeDebug("Using all available IPv4 network interfaces:"
-                                   "{}".format(toReturn))
-        return toReturn
+                                   "{}".format(interfaces))
+        return interfaces
 
     def _get_default_interface_from_routing_rules(self):
         if ippUtilsAvailable:
@@ -67,16 +65,14 @@ class InterfaceController():
             return interfaces
         else:
             self.logger.writeDebug("Could not find ipp-utils, will try using default gateway interface")
-            return False
+            return []
 
     def _get_default_interface_from_gateway(self):
         defaultGateways = netifaces.gateways()
         try:
-            defaultInterfaceName = defaultGateways[netifaces.AF_INET][0][1]
+            defaultInterfaceIp = defaultGateways['default'][netifaces.AF_INET][0]
         except KeyError:
-            return False
-        defaultInterfaceDetails = netifaces.ifaddresses(defaultInterfaceName)
-        defaultInterfaceIp = defaultInterfaceDetails[netifaces.AF_INET][0]['addr']
+            return []
         self.logger.writeDebug("Choosing interface using the default gateway:"
                                " {}".format(defaultInterfaceIp))
         return [defaultInterfaceIp]
@@ -93,6 +89,5 @@ class InterfaceController():
                                    "file: {}".format(interfaces))
         except KeyError:
             self.logger.writeDebug("No interface config file - will try and use routing rules")
-            return False
-        else:
-            return interfaces
+
+        return interfaces

@@ -79,7 +79,7 @@ class TestUtils(unittest.TestCase):
 
     @mock.patch("nmoscommon.utils.InterfaceController")
     def test_getLocalIP__falls_back_to_returning_None(self, interfaces):
-        interfaces.return_value.get_default_interfaces.return_value = False
+        interfaces.return_value.get_default_interfaces.return_value = []
 
         self.assertIsNone(getLocalIP())
 

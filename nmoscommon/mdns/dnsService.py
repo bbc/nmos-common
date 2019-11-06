@@ -23,7 +23,7 @@ dnsServiceController to destroy it using a callback passed to it"""
 
 import socket
 from nmoscommon.mdns import dnsUtils
-from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound
+from .mdnsExceptions import DNSRecordNotFound
 from threading import Timer
 
 

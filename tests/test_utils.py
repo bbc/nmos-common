@@ -17,7 +17,6 @@ from six import PY2
 import unittest
 import mock
 import json
-import netifaces
 import copy
 
 from nmoscommon.utils import get_node_id, getLocalIP, api_ver_compare, translate_api_version, DOWNGRADE_MAP

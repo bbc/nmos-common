@@ -22,11 +22,11 @@ import time
 import gevent
 import gevent.queue
 
-from nmoscommon.logger import Logger
-from nmoscommon.mdnsbridge import IppmDNSBridge
-from nmoscommon.mdns.mdnsExceptions import ServiceNotFoundException
+from .logger import Logger
+from .mdnsbridge import IppmDNSBridge
+from .mdnsExceptions import ServiceNotFoundException
 
-from nmoscommon.nmoscommonconfig import config as _config
+from .nmoscommonconfig import config as _config
 import traceback
 
 AGGREGATOR_APIVERSION = _config.get('nodefacade').get('NODE_REGVERSION')

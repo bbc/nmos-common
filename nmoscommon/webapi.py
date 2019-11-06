@@ -62,7 +62,7 @@ except Exception:  # pragma: no cover
     from urllib import request as http
     from urllib.parse import urlparse
 
-from nmoscommon.nmoscommonconfig import config as _config
+from .nmoscommonconfig import config as _config
 
 
 class MediaType(object):

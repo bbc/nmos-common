@@ -15,8 +15,8 @@
 # limitations under the License.
 
 import zeroconf_monkey as zeroconf
-from nmoscommon.logger import Logger
-from nmoscommon.nmoscommonconfig import config
+from ..logger import Logger
+from ..nmoscommonconfig import config as _config
 from .dnsServiceController import DNSServiceController
 from .mdnsListener import MDNSListener
 from .mdnsCallbackHandler import MDNSAdvertisementCallbackHandler
@@ -102,8 +102,8 @@ class MDNSEngine(object):
 
     def callback_on_services(self, regtype, callback, registerOnly=True, domain=None):
         self._autostart_if_required()
-        doDNSDiscover = config['dns_discover']
-        domDNSDiscover = config['mdns_discover']
+        doDNSDiscover = _config['dns_discover']
+        domDNSDiscover = _config['mdns_discover']
         if domDNSDiscover:
             listener = MDNSListener(callback, registerOnly)
             self.subscriptionController.addSubscription(listener, regtype)

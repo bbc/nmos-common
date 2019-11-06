@@ -94,7 +94,7 @@ class TestInterfaceController(unittest.TestCase):
         netifaces.ifaddresses = self.helper_netiface_interface()
         netifaces.AF_INET = 2
         actual = self.dut._get_default_interface_from_gateway()
-        expected = ["192.168.0.2"]
+        expected = ["192.168.0.5"]
         self.assertEqual(actual, expected)
 
     @patch('nmoscommon.interfaceController.netifaces')

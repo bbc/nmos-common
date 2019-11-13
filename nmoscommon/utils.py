@@ -19,9 +19,9 @@ import uuid
 import json
 import os
 import copy
-import netifaces
 
 from .logger import Logger
+from .interfaceController import InterfaceController
 
 logger = Logger("utils", None)
 
@@ -68,17 +68,13 @@ def get_node_id():
 
 
 def getLocalIP():
-    interfaces = netifaces.interfaces()
-    for interface in interfaces:
-        if (interface is not None) & (str(interface)[0:2] != 'lo'):
-            try:
-                for addr in netifaces.ifaddresses(interface)[netifaces.AF_INET]:
-                    if str(addr['addr'])[0:4] != "127.":
-                        return addr['addr']
-            except KeyError:
-                pass
-    # Could not find an interface
-    return None
+    ifaceController = InterfaceController(logger)
+    interfaces = ifaceController.get_default_interfaces()
+
+    if interfaces == []:
+        return None
+    else:
+        return interfaces[0]
 
 
 def translate_api_version(

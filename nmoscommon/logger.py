@@ -15,7 +15,7 @@
 from __future__ import absolute_import
 import logging
 import sys
-from nmoscommon.nmoscommonconfig import config as _config
+from .nmoscommonconfig import config as _config
 
 # Check to see if BBC R&D internal logger is present
 try:  # pragma: no cover

@@ -26,7 +26,7 @@ import time
 
 from flask import Flask, Response, request, abort
 from flask_sockets import Sockets
-from nmoscommon.flask_cors import crossdomain
+from .flask_cors import crossdomain
 from functools import wraps
 import re
 
@@ -62,7 +62,7 @@ except Exception:  # pragma: no cover
     from urllib import request as http
     from urllib.parse import urlparse
 
-from nmoscommon.nmoscommonconfig import config as _config
+from .nmoscommonconfig import config as _config
 
 
 class MediaType(object):

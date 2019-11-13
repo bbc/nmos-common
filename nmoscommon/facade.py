@@ -18,7 +18,7 @@ import os
 from .ipc import Proxy
 import gevent
 from threading import Lock
-from nmoscommon.logger import Logger
+from .logger import Logger
 from copy import deepcopy
 
 FAC_SUCCESS = 0

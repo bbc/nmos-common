@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nmoscommon.mdns.dnsListener import DNSListener
-from nmoscommon.mdns.dnsService import DNSService
-from nmoscommon.mdns import dnsUtils
-from nmoscommon.mdns.mdnsExceptions import DNSRecordNotFound, NoDefaultDnsSearchDomain
+from .dnsListener import DNSListener
+from .dnsService import DNSService
+from . import dnsUtils
+from .mdnsExceptions import DNSRecordNotFound, NoDefaultDnsSearchDomain
 from threading import Timer
 
 

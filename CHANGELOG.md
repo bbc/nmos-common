@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.17
+- Make behaviour of getLocalIP() consistent with mdns interface selection
+
 ## 0.19.16
 - Pin back dateutil dependency to <2.8.1 to avoid downstream issue with boto3.
 

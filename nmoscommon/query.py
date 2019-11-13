@@ -23,8 +23,8 @@ import requests # noqa E402
 import websocket # noqa E402
 import itertools # noqa E402
 
-from nmoscommon.logger import Logger # noqa E402
-from nmoscommon.nmoscommonconfig import config as _config # noqa E402
+from .logger import Logger # noqa E402
+from .nmoscommonconfig import config as _config # noqa E402
 
 QUERY_APIVERSION = _config.get('nodefacade').get('NODE_REGVERSION')
 QUERY_APINAMESPACE = "x-nmos"
@@ -152,7 +152,7 @@ class QueryService(object):
 
 
 if __name__ == '__main__':  # pragma: no cover
-    from nmoscommon.mdnsbridge import IppmDNSBridge
+    from .mdnsbridge import IppmDNSBridge
     from pprint import pprint
 
     qs = QueryService(IppmDNSBridge())

@@ -150,6 +150,11 @@ pipeline {
                         }
                     }
                 }
+                stage ("Analyse JUnit files") {
+                    steps {
+                        junit 'tests/*.xml'
+                    }
+                }
             }
             post {
                 always {

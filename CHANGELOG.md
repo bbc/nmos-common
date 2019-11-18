@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.18
+- Clear mDNS announcements from hosts which have terminated ungracefully
+
 ## 0.19.17
 - Make behaviour of getLocalIP() consistent with mdns interface selection
 

@@ -45,6 +45,8 @@ class MDNSListener(object):
         if info is not None:
             self._update_record(srv_type, name, info)
             self._respondToClient(name, "add", info)
+        elif name in self.records[srv_type]:
+            self.remove_service(zeroconf, srv_type, name)
         self._resolve_queue.task_done()
 
     def _update_record(self, srv_type, name, info):
@@ -75,3 +77,10 @@ class MDNSListener(object):
             "address": inet_ntoa(info.address),
             "txt": info.properties
         }
+
+    def garbageCollect(self, zeroconf, srv_type):
+        for name in list(self.records[srv_type].keys()):
+            self._resolve_queue.put((srv_type, name, zeroconf))
+            resolveThread = Thread(target=self._resolve_service_details)
+            resolveThread.daemon = True
+            resolveThread.start()

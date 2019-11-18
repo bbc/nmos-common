@@ -16,7 +16,7 @@
 
 import unittest
 from nmoscommon.mdns.mdnsListener import MDNSListener
-from mock import MagicMock
+from mock import MagicMock, patch
 import socket
 
 
@@ -96,6 +96,19 @@ class TestMDNSListener(unittest.TestCase):
         self.dut.records[self.type] = {}
         self.dut.records[self.type][self.name] = self.helper_build_info()
         self.dut.remove_service(None, self.type, self.name)
+
+    def test_garbage_collect(self):
+        with patch('nmoscommon.mdns.mdnsListener.MDNSListener._respondToClient') as respond_method:
+            zeroconf = MagicMock()
+            get_service = zeroconf.get_service_info = MagicMock()
+            get_service.return_value = None
+            srv_info = self.helper_build_info()
+            self.dut.records["garbage_srv"] = {"garbage_name": srv_info}
+            self.dut.records["good_srv"] = {"good_name": srv_info}
+            self.dut.garbageCollect(zeroconf, "garbage_srv")
+            self.assertEqual(len(self.dut.records["garbage_srv"]), 0)
+            self.assertEqual(len(self.dut.records["good_srv"]), 1)
+            respond_method.assert_called_once_with("garbage_name", "remove", srv_info)
 
 
 if __name__ == "__main__":

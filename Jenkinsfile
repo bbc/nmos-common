@@ -152,7 +152,9 @@ pipeline {
                 }
                 stage ("Analyse JUnit files") {
                     steps {
-                        junit 'tests/*.xml'
+                        dir ('nmos-joint-ri') {
+                            junit 'tests/*.xml'
+                        }
                     }
                 }
             }

@@ -81,7 +81,7 @@ class RequiresAuth(object):
                     jwks_keys = jwks
                 return jwks_keys
             except Exception as e:
-                self.logger.writeError("Error: {}. Endpoint contains: {}".format(str(e), jwk_resp.text))
+                self.logger.writeError("Error: {}. JWK endpoint contains: {}".format(str(e), jwk_resp.text))
                 raise
         else:
             self.logger.writeError("Incorrect Content-Type. Expected 'application/json but got {}".format(
@@ -95,7 +95,8 @@ class RequiresAuth(object):
                     cert = myfile.read()
                     return cert
         except OSError:
-            self.logger.writeError("File does not exist or you do not have permission to open it")
+            self.logger.writeError("File {} does not exist or you do not have permission to open it".format(
+                filename))
             raise
 
     def getPublicKeyString(self, key_class):
@@ -137,11 +138,12 @@ class RequiresAuth(object):
             self.logger.writeInfo("Fetching JSON Web Keys...")
             try:
                 self.logger.writeInfo("Trying to fetch keys using mDNS...")
-                key = self.getJwksFromEndpoint()
+                jwks = self.getJwksFromEndpoint()
+                public_key = self.extractPublicKey(jwks)
             except Exception as e:
                 self.logger.writeError("Error: {0!s}. Trying to fetch cert from file...".format(e))
-                key = self.getCertFromFile(CERT_FILE_PATH)
-            public_key = self.extractPublicKey(key)
+                cert = self.getCertFromFile(CERT_FILE_PATH)
+                public_key = self.extractPublicKey(cert)
             self.publicKey = public_key
         return public_key
 

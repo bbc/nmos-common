@@ -145,7 +145,7 @@ class RequiresAuth(object):
                 cert = self.getCertFromFile(CERT_FILE_PATH)
                 public_key = self.extractPublicKey(cert)
             self.publicKey = public_key
-        return public_key
+        return self.publicKey
 
     def processAccessToken(self, auth_string):
         # Auth string is of type 'Bearer xAgy65..'

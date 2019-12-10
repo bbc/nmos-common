@@ -131,7 +131,7 @@ class RequiresAuth(object):
                     return pubkey_string
         except Exception:
             self.logger.writeError("Public Key(s) could not be extracted from JSON Web Keys")
-            raise ValueError
+            raise
 
     def getPublicKey(self):
         if self.publicKey is None:
@@ -180,22 +180,22 @@ class RequiresAuth(object):
         if auth_header is not None:
             self.logger.writeInfo("auth header string is {}".format(auth_header))
             auth_string = auth_header
+            self.processAccessToken(auth_string)
         else:
             self.logger.writeWarning("Websocket does not have auth header, looking in query string..")
             query_string = environment.get('QUERY_STRING', None)
             try:
                 if query_string is not None:
-                    try:
-                        auth_string = parse_qs(query_string)['access_token'][0]
-                    except KeyError:
-                        self.logger.writeError("""
-                            'access_token' URL param doesn't exist. Websocket authentication failed.
-                        """)
-                        raise MissingAuthorizationError()
-                self.processAccessToken(auth_string)
-            except AuthlibBaseError:
+                    auth_string = parse_qs(query_string)['access_token'][0]
+                    self.processAccessToken(auth_string)
+                else:
+                    raise MissingAuthorizationError
+            except (AuthlibBaseError, KeyError):
                 err = {"type": "error", "data": "Socket Authentication Error"}
                 ws.send(json.dumps(err))
+                self.logger.writeError("""
+                    'access_token' URL param doesn't exist. Websocket authentication failed.
+                """)
                 raise
 
     def JWTRequired(self):

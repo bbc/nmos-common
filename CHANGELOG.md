@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.19
+- Update nmos_auth to validate tokens using  JSON Web Keys endpoint
+
 ## 0.19.18
 - Clear mDNS announcements from hosts which have terminated ungracefully
 

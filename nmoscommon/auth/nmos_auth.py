@@ -109,6 +109,16 @@ class RequiresAuth(object):
         )
         return serialised_key.decode('utf-8')
 
+    def findMostRecentJWK(self, jwks):
+        """Finds the JWK with the most recent timestamp inside the 'kid' property"""
+        try:
+            newest_key = reduce(
+                lambda a, b: a if a["kid"].lstrip("x-nmos-") > b["kid"].lstrip("x-nmos-") else b, jwks)
+            return newest_key
+        except KeyError as e:
+            self.logger.writeError("Format of JSON Web Key 'kid' parameter is incorrect. {}".format(e))
+            raise
+
     def extractPublicKey(self, key_containing_object):
         """Extracts a key from the given parameter. A list or a dict object will be treated as a JWK or JWKS structure.
         A string will be treated like a X509 certificate"""
@@ -116,13 +126,10 @@ class RequiresAuth(object):
             if isinstance(key_containing_object, dict):
                 key_class = jwk.loads(key_containing_object)
             elif isinstance(key_containing_object, list):
-                try:  # Finds the JWK with the most recent timestamp inside the 'kid' property
-                    newest_key = reduce(
-                        lambda a, b: a if a["kid"].lstrip("x-nmos-") > b["kid"].lstrip("x-nmos-") else b, key_containing_object)
-                except KeyError as e:
-                    self.logger.writeError("Format of JSON Web Key is incorrect. {}".format(e))
+                newest_key = self.findMostRecentJWK(key_containing_object)
                 key_class = jwk.loads(newest_key)
             elif isinstance(key_containing_object, str):
+                key_containing_object = key_containing_object.encode()
                 crt_obj = x509.load_pem_x509_certificate(key_containing_object, default_backend())
                 key_class = crt_obj.public_key()
             pubkey_string = self.getPublicKeyString(key_class)

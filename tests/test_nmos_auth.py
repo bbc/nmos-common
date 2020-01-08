@@ -24,7 +24,8 @@ from authlib.specs.rfc6749.errors import UnsupportedTokenTypeError, MissingAutho
 from authlib.specs.rfc7519.errors import InvalidClaimError
 from nmoscommon.auth.nmos_auth import RequiresAuth
 from nmoscommon.auth.claims_options import IS_04_REG_CLAIMS, IS_05_CLAIMS
-from nmos_auth_data import BEARER_TOKEN, TEST_JWK, TEST_JWKS, PUB_KEY
+
+from nmos_auth_data import BEARER_TOKEN, TEST_JWK, TEST_JWKS, PUB_KEY, CERT
 
 
 class TestRequiresAuth(unittest.TestCase):
@@ -111,6 +112,10 @@ class TestRequiresAuth(unittest.TestCase):
         self.assertTrue(isinstance(jwks_resp, list))
         self.assertEqual(jwks_resp, TEST_JWKS['keys'])
 
+    def testfindMostRecentJWK(self):
+        self.assertEqual(self.security.findMostRecentJWK(TEST_JWKS["keys"]), TEST_JWKS["keys"][0])
+        self.assertNotEqual(self.security.findMostRecentJWK(TEST_JWKS["keys"]), TEST_JWKS["keys"][1])
+
     def testExtractPublicKeyWithJWK(self):
         self.assertRaises(Exception, self.security.extractPublicKey, "")
         self.assertEqual(self.security.extractPublicKey(TEST_JWK), PUB_KEY)
@@ -118,6 +123,9 @@ class TestRequiresAuth(unittest.TestCase):
     def testExtractPublicKeyWithJWKS(self):
         self.assertRaises(Exception, self.security.extractPublicKey, "")
         self.assertEqual(self.security.extractPublicKey(TEST_JWKS["keys"][0]), PUB_KEY)
+
+    def testExtractPublicKeyWithCert(self):
+        self.assertEqual(self.security.extractPublicKey(CERT), PUB_KEY)
 
     @mock.patch.object(RequiresAuth, "getJwksFromEndpoint")
     @mock.patch("nmoscommon.auth.nmos_auth.request")

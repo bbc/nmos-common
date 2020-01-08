@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from time import time
+
 """
 EQUIVALENT TO:
 {
@@ -133,7 +135,19 @@ TEST_JWKS = {
         {
             "e": "AQAB",
             "use": "sig",
-            "kid": "10-12-19",
+            "kid": "x-nmos-{}".format(int(time())),
+            "n": "yfrMvTGQvkbKvtHZFKONktjJTzaSUzPeTj2E7P_YzLpCyzoJaVKnj6rv_xwwnjtJX7ciNXDU_D_Jwog3nLLB-tWZHGbriNuwynBe\
+keTK7uIzWYYdYntzTBqZNWUsURELru-dcld4gLvrcST5sgMUQbo5uHckHATQaCvRCZJ-HQ9LOXRCg0-PoZaO-mSIhwU48nsY0qZH-qw9W09asY\
+U2aMm6DYOwwsuQPuOcLH9uZtm5HZn68SNo2B8qLwsNTKA8fwB12mUZxXBOCUgOGFzy0d8H1WmyWW64y-x4P5ohWgO9IymUvMy3mdIdyLJXG92yx\
+R63zYXkZHYHly0vgtovZQ",
+            "key_ops": "verify",
+            "alg": "RS512",
+            "kty": "RSA"
+        },
+        {
+            "e": "AQAB",
+            "use": "sig",
+            "kid": "x-nmos-{}".format(int(time()) - 5),
             "n": "yfrMvTGQvkbKvtHZFKONktjJTzaSUzPeTj2E7P_YzLpCyzoJaVKnj6rv_xwwnjtJX7ciNXDU_D_Jwog3nLLB-tWZHGbriNuwynBe\
 keTK7uIzWYYdYntzTBqZNWUsURELru-dcld4gLvrcST5sgMUQbo5uHckHATQaCvRCZJ-HQ9LOXRCg0-PoZaO-mSIhwU48nsY0qZH-qw9W09asY\
 U2aMm6DYOwwsuQPuOcLH9uZtm5HZn68SNo2B8qLwsNTKA8fwB12mUZxXBOCUgOGFzy0d8H1WmyWW64y-x4P5ohWgO9IymUvMy3mdIdyLJXG92yx\

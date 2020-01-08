@@ -17,7 +17,9 @@ import json
 
 from os import path, sep
 from functools import wraps
+from time import time
 from flask import request
+from functools import reduce
 from six.moves.urllib.parse import urljoin, parse_qs
 from requests.exceptions import RequestException
 from authlib.jose import jwt, jwk
@@ -55,6 +57,7 @@ class RequiresAuth(object):
         self.condition = condition
         self.claimsOptions = claimsOptions
         self.publicKey = None
+        self.key_last_accessed_time = 0
 
     def getHrefFromService(self, serviceType):
         return self.bridge.getHref(serviceType)
@@ -88,15 +91,15 @@ class RequiresAuth(object):
                 jwk_resp.headers['content-type']))
             raise ValueError
 
-    def getCertFromFile(self, filename):
+    def getCertFromFile(self, file_path):
         try:
-            if filename is not None:
-                with open(filename, 'r') as myfile:
+            if path.exists(file_path):
+                with open(file_path, 'r') as myfile:
                     cert = myfile.read()
                     return cert
         except OSError:
             self.logger.writeError("File {} does not exist or you do not have permission to open it".format(
-                filename))
+                file_path))
             raise
 
     def getPublicKeyString(self, key_class):
@@ -107,44 +110,42 @@ class RequiresAuth(object):
         return serialised_key.decode('utf-8')
 
     def extractPublicKey(self, key_containing_object):
-        """Extracts a key from the given parameter. A list or a dict object will be treated as a JWK structure.
+        """Extracts a key from the given parameter. A list or a dict object will be treated as a JWK or JWKS structure.
         A string will be treated like a X509 certificate"""
         try:
             if isinstance(key_containing_object, dict):
                 key_class = jwk.loads(key_containing_object)
-                return self.getPublicKeyString(key_class)
             elif isinstance(key_containing_object, list):
-                serialised_keys = []
-                for key in key_containing_object:
-                    key_class = jwk.loads(key)
-                    serialised_keys.append(
-                        self.getPublicKeyString(key_class)
-                    )
-                return serialised_keys[0]  # TODO - manage priority of keys when format is agreed
+                try:  # Finds the JWK with the most recent timestamp inside the 'kid' property
+                    newest_key = reduce(
+                        lambda a, b: a if a["kid"].lstrip("x-nmos-") > b["kid"].lstrip("x-nmos-") else b, key_containing_object)
+                except KeyError as e:
+                    self.logger.writeError("Format of JSON Web Key is incorrect. {}".format(e))
+                key_class = jwk.loads(newest_key)
             elif isinstance(key_containing_object, str):
                 crt_obj = x509.load_pem_x509_certificate(key_containing_object, default_backend())
                 key_class = crt_obj.public_key()
-                pubkey_string = self.getPublicKeyString(key_class)
-                if pubkey_string is None:
-                    self.logger.writeError("Public Key could not be extracted from certificate")
-                else:
-                    return pubkey_string
-        except Exception:
-            self.logger.writeError("Public Key(s) could not be extracted from JSON Web Keys")
+            pubkey_string = self.getPublicKeyString(key_class)
+            if pubkey_string is None:
+                self.logger.writeError("Public Key could not be extracted from certificate")
+            else:
+                return pubkey_string
+        except Exception as e:
+            self.logger.writeError("Public Key(s) could not be extracted from JSON Web Keys. {}".format(e))
             raise
 
     def getPublicKey(self):
-        if self.publicKey is None:
-            self.logger.writeInfo("Fetching JSON Web Keys...")
+        if self.publicKey is None or self.key_last_accessed_time + 3600 < time():
             try:
-                self.logger.writeInfo("Trying to fetch keys using mDNS...")
+                self.logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
                 jwks = self.getJwksFromEndpoint()
                 public_key = self.extractPublicKey(jwks)
             except Exception as e:
-                self.logger.writeError("Error: {0!s}. Trying to fetch cert from file...".format(e))
+                self.logger.writeError("Error: {0!s}. Trying to fetch certificate from file".format(e))
                 cert = self.getCertFromFile(CERT_FILE_PATH)
                 public_key = self.extractPublicKey(cert)
             self.publicKey = public_key
+            self.key_last_accessed_time = time()
         return self.publicKey
 
     def processAccessToken(self, auth_string):

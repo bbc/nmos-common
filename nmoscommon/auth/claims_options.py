@@ -5,7 +5,7 @@ IS_XX_CLAIMS = {
     "iss": {"essential": True},
     "sub": {"essential": True},
     "aud": {"essential": True},
-    "scope": {"essential": True},
+    "scope": {"essential": False},
     "x-nmos-api": {"essential": True}
 }
 
@@ -17,7 +17,7 @@ IS_04_REG_CLAIMS = {
     "sub": {"essential": True},
     "aud": {"essential": True},
     "scope": {
-        "essential": True,
+        "essential": False,
         "value": "is-04"
     },
     "x-nmos-api": {
@@ -37,7 +37,7 @@ IS_04_QUERY_CLAIMS = {
     "sub": {"essential": True},
     "aud": {"essential": True},
     "scope": {
-        "essential": True,
+        "essential": False,
         "value": "is-04"
     },
     "x-nmos-api": {
@@ -57,7 +57,7 @@ IS_04_NODE_CLAIMS = {
     "sub": {"essential": True},
     "aud": {"essential": True},
     "scope": {
-        "essential": True,
+        "essential": False,
         "value": "is-04"
     },
     "x-nmos-api": {
@@ -77,7 +77,7 @@ IS_05_CLAIMS = {
     "sub": {"essential": True},
     "aud": {"essential": True},
     "scope": {
-        "essential": True,
+        "essential": False,
         "value": "is-05"
     },
     "x-nmos-api": {

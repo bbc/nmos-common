@@ -115,7 +115,7 @@ class RequiresAuth(object):
         """Finds the JWK with the most recent timestamp inside the 'kid' property"""
         try:
             newest_key = reduce(
-                lambda a, b: a if a["kid"].lstrip("x-nmos-") > b["kid"].lstrip("x-nmos-") else b, jwks)
+                lambda a, b: a if int(a["kid"].lstrip("x-nmos-")) > int(b["kid"].lstrip("x-nmos-")) else b, jwks)
             return newest_key
         except KeyError as e:
             self.logger.writeError("Format of JSON Web Key 'kid' parameter is incorrect. {}".format(e))

@@ -48,6 +48,8 @@ APIVERSION = "v1.0"
 JWK_ENDPOINT = 'jwks'
 JWK_URL_PATH = '/{}/{}/{}/{}'.format(APINAMESPACE, APINAME, APIVERSION, JWK_ENDPOINT)
 
+REFRESH_KEY_INTERVAL = 3600
+
 
 class RequiresAuth(object):
 
@@ -142,7 +144,7 @@ class RequiresAuth(object):
             raise
 
     def getPublicKey(self):
-        if self.publicKey is None or self.key_last_accessed_time + 3600 < time():
+        if self.publicKey is None or self.key_last_accessed_time + REFRESH_KEY_INTERVAL < time():
             try:
                 self.logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
                 jwks = self.getJwksFromEndpoint()

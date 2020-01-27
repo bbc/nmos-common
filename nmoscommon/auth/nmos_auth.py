@@ -14,21 +14,24 @@
 
 import requests
 import json
+
 from os import path, sep
 from functools import wraps
+from time import time
 from flask import request
-from OpenSSL import crypto
+from functools import reduce
 from six.moves.urllib.parse import urljoin, parse_qs
 from requests.exceptions import RequestException
+from authlib.jose import jwt, jwk
+from authlib.common.errors import AuthlibBaseError
+from authlib.oauth2.rfc6749.errors import MissingAuthorizationError, UnsupportedTokenTypeError
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 
 from ..mdnsbridge import IppmDNSBridge
 from ..nmoscommonconfig import config as _config
 from ..logger import Logger as defaultLogger
-from authlib.jose import jwt
-from authlib.oauth2.rfc6749.errors import MissingAuthorizationError, \
-    UnsupportedTokenTypeError
-from authlib.common.errors import AuthlibBaseError
-
 from .claims_options import IS_XX_CLAIMS
 from .claims_validator import JWTClaimsValidator
 
@@ -42,83 +45,117 @@ CERT_FILE_PATH = path.join(NMOSAUTH_DIR, CERT_FILE)
 APINAMESPACE = "x-nmos"
 APINAME = "auth"
 APIVERSION = "v1.0"
-CERT_ENDPOINT = 'certs'
-CERT_URL_PATH = '/{}/{}/{}/{}'.format(APINAMESPACE, APINAME, APIVERSION, CERT_ENDPOINT)
+JWK_ENDPOINT = 'jwks'
+JWK_URL_PATH = '/{}/{}/{}/{}'.format(APINAMESPACE, APINAME, APIVERSION, JWK_ENDPOINT)
+
+REFRESH_KEY_INTERVAL = 3600
 
 
 class RequiresAuth(object):
 
-    def __init__(self, condition=OAUTH_MODE, claimsOptions=IS_XX_CLAIMS,
-                 certificate=None):
+    def __init__(self, condition=OAUTH_MODE, claimsOptions=IS_XX_CLAIMS):
+        self.logger = defaultLogger("authresource")
+        self.bridge = IppmDNSBridge()
         self.condition = condition
         self.claimsOptions = claimsOptions
-        self.certificate = certificate
-        self.bridge = IppmDNSBridge()
-        self.logger = defaultLogger("authresource")
+        self.publicKey = None
+        self.key_last_accessed_time = 0
 
     def getHrefFromService(self, serviceType):
         return self.bridge.getHref(serviceType)
 
-    def getCertFromEndpoint(self):
+    def getJwksFromEndpoint(self):
         try:
             href = self.getHrefFromService(MDNS_SERVICE_TYPE)
-            certHref = urljoin(href, CERT_URL_PATH)
-            self.logger.writeInfo('cert href is: {}'.format(certHref))
-            cert_resp = requests.get(certHref, timeout=0.5, proxies={'http': ''})
-            cert_resp.raise_for_status()  # Raise error if status !=200
+            jwk_href = urljoin(href, JWK_URL_PATH)
+            self.logger.writeInfo('JWK endpoint is: {}'.format(jwk_href))
+            jwk_resp = requests.get(jwk_href, timeout=0.5, proxies={'http': ''})
+            jwk_resp.raise_for_status()  # Raise error if status !=200
         except RequestException as e:
             self.logger.writeError("Error: {0!s}".format(e))
-            self.logger.writeError("Cannot find certificate at {}. Is the Auth Server Running?".format(certHref))
+            self.logger.writeError("Cannot find certificate at {}. Is the Auth Server Running?".format(jwk_href))
             raise
 
-        contentType = cert_resp.headers['content-type'].split(";")[0]
-        if contentType == "application/json":
-            cert = cert_resp.json()
+        if "application/json" in jwk_resp.headers['content-type']:
             try:
-                if len(cert) > 1:
-                    self.logger.writeWarning("Multiple certificates at Endpoint. Returning First Instance.")
-                cert = cert[0]
-                return cert
+                jwks = jwk_resp.json()
+                if "keys" in jwks:
+                    jwks_keys = jwks["keys"]
+                    self.logger.writeInfo("JSON Web Key Set located at /jwks endpoint.")
+                else:
+                    jwks_keys = jwks
+                return jwks_keys
             except Exception as e:
-                self.logger.writeError("Error: {}. Endpoint contains: {}".format(str(e), cert))
+                self.logger.writeError("Error: {}. JWK endpoint contains: {}".format(str(e), jwk_resp.text))
                 raise
         else:
-            self.logger.writeError("Incorrect Content-Type. Expected 'application/json but got {}".format(contentType))
+            self.logger.writeError("Incorrect Content-Type. Expected 'application/json but got {}".format(
+                jwk_resp.headers['content-type']))
             raise ValueError
 
-    def getCertFromFile(self, filename):
+    def getCertFromFile(self, file_path):
         try:
-            if filename is not None:
-                with open(filename, 'r') as myfile:
-                    cert_data = myfile.read()
-                    self.certificate = cert_data
-                    return cert_data
+            if path.exists(file_path):
+                with open(file_path, 'r') as myfile:
+                    cert = myfile.read()
+                    return cert
         except OSError:
-            self.logger.writeError("File does not exist or you do not have permission to open it")
+            self.logger.writeError("File {} does not exist or you do not have permission to open it".format(
+                file_path))
             raise
 
-    def extractPublicKey(self, certificate):
-        crtObj = crypto.load_certificate(crypto.FILETYPE_PEM, certificate)
-        pubKeyObject = crtObj.get_pubkey()
-        pubKeyString = crypto.dump_publickey(crypto.FILETYPE_PEM, pubKeyObject)
-        if pubKeyString is None:
-            self.logger.writeError("Public Key could not be extracted from certificate")
-            raise ValueError
-        else:
-            return pubKeyString.decode('utf-8')
+    def getPublicKeyString(self, key_class):
+        serialised_key = key_class.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        return serialised_key.decode('utf-8')
+
+    def findMostRecentJWK(self, jwks):
+        """Finds the JWK with the most recent timestamp inside the 'kid' property"""
+        try:
+            newest_key = reduce(
+                lambda a, b: a if int(a["kid"].lstrip("x-nmos-")) > int(b["kid"].lstrip("x-nmos-")) else b, jwks)
+            return newest_key
+        except KeyError as e:
+            self.logger.writeError("Format of JSON Web Key 'kid' parameter is incorrect. {}".format(e))
+            raise
+
+    def extractPublicKey(self, key_containing_object):
+        """Extracts a key from the given parameter. A list or a dict object will be treated as a JWK or JWKS structure.
+        A string will be treated like a X509 certificate"""
+        try:
+            if isinstance(key_containing_object, dict):
+                key_class = jwk.loads(key_containing_object)
+            elif isinstance(key_containing_object, list):
+                newest_key = self.findMostRecentJWK(key_containing_object)
+                key_class = jwk.loads(newest_key)
+            elif isinstance(key_containing_object, str):
+                key_containing_object = key_containing_object.encode()
+                crt_obj = x509.load_pem_x509_certificate(key_containing_object, default_backend())
+                key_class = crt_obj.public_key()
+            pubkey_string = self.getPublicKeyString(key_class)
+            if pubkey_string is None:
+                self.logger.writeError("Public Key could not be extracted from certificate")
+            else:
+                return pubkey_string
+        except Exception as e:
+            self.logger.writeError("Public Key(s) could not be extracted from JSON Web Keys. {}".format(e))
+            raise
 
     def getPublicKey(self):
-        if self.certificate is None:
-            self.logger.writeInfo("Fetching Certificate...")
+        if self.publicKey is None or self.key_last_accessed_time + REFRESH_KEY_INTERVAL < time():
             try:
-                self.logger.writeInfo("Trying to fetch cert using mDNS...")
-                cert = self.getCertFromEndpoint()
+                self.logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
+                jwks = self.getJwksFromEndpoint()
+                public_key = self.extractPublicKey(jwks)
             except Exception as e:
-                self.logger.writeError("Error: {0!s}. Trying to fetch Cert From File...".format(e))
+                self.logger.writeError("Error: {0!s}. Trying to fetch certificate from file".format(e))
                 cert = self.getCertFromFile(CERT_FILE_PATH)
-            self.certificate = cert
-        pubKey = self.extractPublicKey(self.certificate)
-        return pubKey
+                public_key = self.extractPublicKey(cert)
+            self.publicKey = public_key
+            self.key_last_accessed_time = time()
+        return self.publicKey
 
     def processAccessToken(self, auth_string):
         # Auth string is of type 'Bearer xAgy65..'
@@ -153,22 +190,22 @@ class RequiresAuth(object):
         if auth_header is not None:
             self.logger.writeInfo("auth header string is {}".format(auth_header))
             auth_string = auth_header
+            self.processAccessToken(auth_string)
         else:
             self.logger.writeWarning("Websocket does not have auth header, looking in query string..")
             query_string = environment.get('QUERY_STRING', None)
             try:
                 if query_string is not None:
-                    try:
-                        auth_string = parse_qs(query_string)['access_token'][0]
-                    except KeyError:
-                        self.logger.writeError("""
-                            'access_token' URL param doesn't exist. Websocket authentication failed.
-                        """)
-                        raise MissingAuthorizationError()
-                self.processAccessToken(auth_string)
-            except AuthlibBaseError:
+                    auth_string = parse_qs(query_string)['access_token'][0]
+                    self.processAccessToken(auth_string)
+                else:
+                    raise MissingAuthorizationError
+            except (AuthlibBaseError, KeyError):
                 err = {"type": "error", "data": "Socket Authentication Error"}
                 ws.send(json.dumps(err))
+                self.logger.writeError("""
+                    'access_token' URL param doesn't exist. Websocket authentication failed.
+                """)
                 raise
 
     def JWTRequired(self):

@@ -144,6 +144,7 @@ packages_required = [
     "mediajson>=1.0.0",
     "authlib>=0.10",
     "pyopenssl",
+    "cryptography",
     "dnspython>=1.12.0",
     "zeroconf-monkey>=0.1.0"
 ]
@@ -178,7 +179,7 @@ deps_required = []
 
 setup(
     name="nmoscommon",
-    version="0.19.18",
+    version="0.19.19",
     description="Common components for the BBC's NMOS implementations",
     url='https://github.com/bbc/nmos-common',
     author='Peter Brightwell',

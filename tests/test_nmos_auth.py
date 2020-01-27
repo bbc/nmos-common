@@ -16,15 +16,16 @@ from __future__ import print_function
 from __future__ import absolute_import
 import unittest
 import mock
-import requests
-from requests.exceptions import HTTPError
 import json
+import requests
 
+from requests.exceptions import HTTPError
 from authlib.specs.rfc6749.errors import UnsupportedTokenTypeError, MissingAuthorizationError
 from authlib.specs.rfc7519.errors import InvalidClaimError
 from nmoscommon.auth.nmos_auth import RequiresAuth
 from nmoscommon.auth.claims_options import IS_04_REG_CLAIMS, IS_05_CLAIMS
-from nmos_auth_data import BEARER_TOKEN, CERT, PUB_KEY
+
+from nmos_auth_data import BEARER_TOKEN, TEST_JWK, TEST_JWKS, PUB_KEY, CERT
 
 
 class TestRequiresAuth(unittest.TestCase):
@@ -67,53 +68,80 @@ class TestRequiresAuth(unittest.TestCase):
 
     @mock.patch.object(RequiresAuth, "getHrefFromService")
     @mock.patch("nmoscommon.auth.nmos_auth.requests")
-    def testGetCertfromEndpoint(self, mockRequests, mockGetHref):
+    def testgetJwksFromEndpointWithJWK(self, mockRequests, mockGetHref):
 
         mockGetHref.return_value = "http://172.29.80.117:4999"
 
-        cert = self.mockGetResponse(
+        jwk_resp = self.mockGetResponse(
             code=200,
-            content=CERT,
+            content=TEST_JWK,
             headers={'content-type': 'application/json'},
             mockObject=mockRequests,
-            method="getCertFromEndpoint"
+            method="getJwksFromEndpoint"
         )
 
-        self.assertEqual(cert, CERT[0])
+        self.assertTrue(isinstance(jwk_resp, dict))
+        self.assertEqual(jwk_resp, TEST_JWK)
         self.assertRaises(HTTPError, self.mockGetResponse,
                           code=400,
-                          content=CERT,
+                          content=TEST_JWK,
                           headers={'content-type': 'application/json'},
                           mockObject=mockRequests,
-                          method="getCertFromEndpoint"
+                          method="getJwksFromEndpoint"
                           )
         self.assertRaises(ValueError, self.mockGetResponse,
                           code=200,
-                          content=CERT,
+                          content=TEST_JWK,
                           headers={'content-type': 'application/text'},
                           mockObject=mockRequests,
-                          method="getCertFromEndpoint"
+                          method="getJwksFromEndpoint"
                           )
 
-    def testGetPublicKey(self):
+    @mock.patch.object(RequiresAuth, "getHrefFromService")
+    @mock.patch("nmoscommon.auth.nmos_auth.requests")
+    def testgetJwksFromEndpointWithJWKS(self, mockRequests, mockGetHref):
+
+        mockGetHref.return_value = "http://172.29.80.117:4999"
+        jwks_resp = self.mockGetResponse(
+            code=200,
+            content=TEST_JWKS,
+            headers={'content-type': 'application/json'},
+            mockObject=mockRequests,
+            method="getJwksFromEndpoint"
+        )
+        self.assertTrue(isinstance(jwks_resp, list))
+        self.assertEqual(jwks_resp, TEST_JWKS['keys'])
+
+    def testfindMostRecentJWK(self):
+        self.assertEqual(self.security.findMostRecentJWK(TEST_JWKS["keys"]), TEST_JWKS["keys"][0])
+        self.assertNotEqual(self.security.findMostRecentJWK(TEST_JWKS["keys"]), TEST_JWKS["keys"][1])
+
+    def testExtractPublicKeyWithJWK(self):
         self.assertRaises(Exception, self.security.extractPublicKey, "")
-        self.assertEqual(self.security.extractPublicKey(CERT[0]), PUB_KEY)
+        self.assertEqual(self.security.extractPublicKey(TEST_JWK), PUB_KEY)
 
-    @mock.patch.object(RequiresAuth, "getCertFromEndpoint")
+    def testExtractPublicKeyWithJWKS(self):
+        self.assertRaises(Exception, self.security.extractPublicKey, "")
+        self.assertEqual(self.security.extractPublicKey(TEST_JWKS["keys"][0]), PUB_KEY)
+
+    def testExtractPublicKeyWithCert(self):
+        self.assertEqual(self.security.extractPublicKey(CERT), PUB_KEY)
+
+    @mock.patch.object(RequiresAuth, "getJwksFromEndpoint")
     @mock.patch("nmoscommon.auth.nmos_auth.request")
-    def testJWTClaimsValidator(self, mockRequest, mockGetCert):
+    def testJWTClaimsValidator(self, mockRequest, mockGetJwk):
         mockRequest.headers.get.return_value = "Bearer " + BEARER_TOKEN["access_token"]
-        mockGetCert.return_value = CERT[0]
-
-        self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
-        self.assertRaises(InvalidClaimError, self.security(self.dummy))
+        mockGetJwk.return_value = TEST_JWK
 
         self.security = RequiresAuth(condition=True, claimsOptions=IS_05_CLAIMS)
+        self.assertRaises(InvalidClaimError, self.security(self.dummy))
+
+        self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
         self.assertEqual(self.security(self.dummy)(), "SUCCESS")
 
         # NOTE: Assumes Only Write Access is permitted
-        IS_05_CLAIMS["x-nmos-api"]["value"]["access"] = "read"
-        self.security = RequiresAuth(condition=True, claimsOptions=IS_05_CLAIMS)
+        IS_04_REG_CLAIMS["x-nmos-api"]["value"]["access"] = "read"
+        self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
         self.assertRaises(InvalidClaimError, self.security(self.dummy))
 
 

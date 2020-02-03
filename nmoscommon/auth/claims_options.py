@@ -1,90 +1,71 @@
 IS_XX_CLAIMS = {
-    "iat": {"essential": True},
-    "nbf": {"essential": False},
-    "exp": {"essential": True},
     "iss": {"essential": True},
     "sub": {"essential": True},
     "aud": {"essential": True},
-    "scope": {"essential": True},
+    "exp": {"essential": True},
+    "iat": {"essential": False},
+    "nbf": {"essential": False},
+    "client_id": {"essential": True},
+    "scope": {"essential": False},
     "x-nmos-api": {"essential": True}
 }
 
 IS_04_REG_CLAIMS = {
-    "iat": {"essential": True},
-    "nbf": {"essential": False},
-    "exp": {"essential": True},
     "iss": {"essential": True},
     "sub": {"essential": True},
     "aud": {"essential": True},
-    "scope": {
-        "essential": True,
-        "value": "is-04"
-    },
+    "exp": {"essential": True},
+    "iat": {"essential": False},
+    "nbf": {"essential": False},
+    "client_id": {"essential": True},
+    "scope": {"essential": False},
     "x-nmos-api": {
         "essential": True,
-        "value": {
-            "name": "is-04",
-            "access": "write"
-        }
+        "value": "register"
     }
 }
 
 IS_04_QUERY_CLAIMS = {
-    "iat": {"essential": True},
-    "nbf": {"essential": False},
-    "exp": {"essential": True},
     "iss": {"essential": True},
     "sub": {"essential": True},
     "aud": {"essential": True},
-    "scope": {
-        "essential": True,
-        "value": "is-04"
-    },
+    "exp": {"essential": True},
+    "iat": {"essential": False},
+    "nbf": {"essential": False},
+    "client_id": {"essential": True},
+    "scope": {"essential": False},
     "x-nmos-api": {
         "essential": True,
-        "value": {
-            "name": "is-04",
-            "access": "write"
-        }
+        "value": "query"
     }
 }
 
 IS_04_NODE_CLAIMS = {
-    "iat": {"essential": True},
-    "nbf": {"essential": False},
-    "exp": {"essential": True},
     "iss": {"essential": True},
     "sub": {"essential": True},
     "aud": {"essential": True},
-    "scope": {
-        "essential": True,
-        "value": "is-04"
-    },
+    "exp": {"essential": True},
+    "iat": {"essential": False},
+    "nbf": {"essential": False},
+    "client_id": {"essential": True},
+    "scope": {"essential": False},
     "x-nmos-api": {
         "essential": True,
-        "value": {
-            "name": "is-04",
-            "access": "write"
-        }
+        "value": "node"
     }
 }
 
 IS_05_CLAIMS = {
-    "iat": {"essential": True},
-    "nbf": {"essential": False},
-    "exp": {"essential": True},
     "iss": {"essential": True},
     "sub": {"essential": True},
     "aud": {"essential": True},
-    "scope": {
-        "essential": True,
-        "value": "is-05"
-    },
+    "exp": {"essential": True},
+    "iat": {"essential": False},
+    "nbf": {"essential": False},
+    "client_id": {"essential": True},
+    "scope": {"essential": False},
     "x-nmos-api": {
         "essential": True,
-        "value": {
-            "name": "is-05",
-            "access": "write"
-        }
+        "value": "connection"
     }
 }

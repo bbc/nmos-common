@@ -42,11 +42,9 @@ NMOSAUTH_DIR = path.abspath(path.join(sep, 'var', 'nmosauth'))
 CERT_FILE = 'certificate.pem'
 CERT_FILE_PATH = path.join(NMOSAUTH_DIR, CERT_FILE)
 
-APINAMESPACE = "x-nmos"
-APINAME = "auth"
-APIVERSION = "v1.0"
-JWK_ENDPOINT = 'jwks'
-JWK_URL_PATH = '/{}/{}/{}/{}'.format(APINAMESPACE, APINAME, APIVERSION, JWK_ENDPOINT)
+AUTH_APIROOT = 'x-nmos/auth/v1.0/'
+DEFAULT_JWKS_ENDPOINT = urljoin(AUTH_APIROOT, 'jwks')
+SERVER_METADATA_ENDPOINT = '.well-known/oauth-authorization-server/'
 
 REFRESH_KEY_INTERVAL = 3600
 
@@ -60,20 +58,41 @@ class RequiresAuth(object):
         self.claimsOptions = claimsOptions
         self.publicKey = None
         self.key_last_accessed_time = 0
+        self.server_metadata = None
 
     def getHrefFromService(self, serviceType):
         return self.bridge.getHref(serviceType)
 
+    def _get_server_metadata(self, auth_href):
+        try:
+            url = urljoin(auth_href, SERVER_METADATA_ENDPOINT)
+            resp = requests.get(url, timeout=0.5, proxies={'http': ''})
+            resp.raise_for_status()  # Raise exception if not a 2XX status code
+            return resp.json()
+        except Exception as e:
+            self.logger.writeError("Error requesting Server Metadata. {}".format(e))
+
+    def _get_jwk_url(self):
+        try:
+            auth_href = self.getHrefFromService(MDNS_SERVICE_TYPE)
+            metadata = _get_server_metadata(auth_href)
+            if metadata is not None:
+                return metadata.get("jwks_uri")
+            else:
+                # Construct default URI
+                self.logger.writeWarning("Falling back to default value for JWK endpoint.")
+                jwks_endpoint = urljoin(auth_href, DEFAULT_JWKS_ENDPOINT)
+                return jwks_endpoint
+
     def getJwksFromEndpoint(self):
         try:
-            href = self.getHrefFromService(MDNS_SERVICE_TYPE)
-            jwk_href = urljoin(href, JWK_URL_PATH)
+            jwk_href = self._get_jwk_url()
             self.logger.writeInfo('JWK endpoint is: {}'.format(jwk_href))
             jwk_resp = requests.get(jwk_href, timeout=0.5, proxies={'http': ''})
             jwk_resp.raise_for_status()  # Raise error if status !=200
         except RequestException as e:
             self.logger.writeError("Error: {0!s}".format(e))
-            self.logger.writeError("Cannot find certificate at {}. Is the Auth Server Running?".format(jwk_href))
+            self.logger.writeError("Cannot find JSON Web Key Endpoint at {}.".format(jwk_href))
             raise
 
         if "application/json" in jwk_resp.headers['content-type']:

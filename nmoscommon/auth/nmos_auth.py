@@ -73,16 +73,15 @@ class RequiresAuth(object):
             self.logger.writeError("Error requesting Server Metadata. {}".format(e))
 
     def _get_jwk_url(self):
-        try:
-            auth_href = self.getHrefFromService(MDNS_SERVICE_TYPE)
-            metadata = _get_server_metadata(auth_href)
-            if metadata is not None:
-                return metadata.get("jwks_uri")
-            else:
-                # Construct default URI
-                self.logger.writeWarning("Falling back to default value for JWK endpoint.")
-                jwks_endpoint = urljoin(auth_href, DEFAULT_JWKS_ENDPOINT)
-                return jwks_endpoint
+        auth_href = self.getHrefFromService(MDNS_SERVICE_TYPE)
+        metadata = self._get_server_metadata(auth_href)
+        if metadata is not None:
+            return metadata.get("jwks_uri")
+        else:
+            # Construct default URI
+            self.logger.writeWarning("Falling back to default value for JWK endpoint.")
+            jwks_endpoint = urljoin(auth_href, DEFAULT_JWKS_ENDPOINT)
+            return jwks_endpoint
 
     def getJwksFromEndpoint(self):
         try:

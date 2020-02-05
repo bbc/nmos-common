@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from re import compile
 from flask import request
 from fnmatch import fnmatch
 from authlib.jose import JWTClaims
@@ -67,10 +68,8 @@ class JWTClaimsValidator(JWTClaims):
         if not url_access_list:
             raise InvalidClaimError(claim_name)
 
-        request_path = request.path
-
-        # Replace with regex?
-        trimmed_path = request_path.lstrip('x-nmos/{}'.format(valid_api_value)).lstrip('v.0123/')
+        pattern = compile(r'/x-nmos/[a-zA-Z]+/v[0-9]\.[0-9]/(.*)')  # Capture path after namespace
+        trimmed_path = pattern.match(request.path).group(1)
 
         for wildcard_url in url_access_list:
             if fnmatch(trimmed_path, wildcard_url):

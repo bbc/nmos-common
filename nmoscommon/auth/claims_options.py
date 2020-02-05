@@ -7,7 +7,10 @@ IS_XX_CLAIMS = {
     "nbf": {"essential": False},
     "client_id": {"essential": True},
     "scope": {"essential": False},
-    "x-nmos-api": {"essential": True}
+    "x-nmos-api": {
+        "essential": True,
+        "values": ["registration", "query", "node", "connection"]
+    }
 }
 
 IS_04_REG_CLAIMS = {
@@ -21,7 +24,7 @@ IS_04_REG_CLAIMS = {
     "scope": {"essential": False},
     "x-nmos-api": {
         "essential": True,
-        "value": "register"
+        "value": "registration"
     }
 }
 

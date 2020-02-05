@@ -34,19 +34,28 @@ class JWTClaimsValidator(JWTClaims):
 
     def validate_nmos(self):
         claim_name = "x-nmos-api"
-        valid_claim_option = self.options.get(claim_name)
-        valid_api_value = valid_claim_option.get('value')
+        actual_claim_value = self.get(claim_name)  # actual claim value in JWT
+        valid_claim_option = self.options.get(claim_name)  # from `claim_options.py`
 
-        actual_claim_value = self.get(claim_name)
-        if not actual_claim_value:
+        if not actual_claim_value:  # Missing x-nmos-api claim
             raise MissingClaimError(claim_name)
-        if not valid_api_value:
+        if not valid_claim_option:  # No options given for validation
             return
 
-        if valid_api_value not in actual_claim_value.keys():
+        valid_api_value = valid_claim_option.get('value')
+        if valid_api_value and valid_api_value not in actual_claim_value.keys():
             raise InvalidClaimError(claim_name)
 
-        access_permission_object = actual_claim_value[valid_api_value]
+        valid_api_values = valid_claim_option.get('values')
+        if valid_api_values and not any(api_name in actual_claim_value.keys() for api_name in valid_api_values):
+            raise InvalidClaimError(claim_name)
+
+        if not valid_api_value and valid_api_values:
+            # Multiple existing values should only occur in testing scenarios
+            shared_keys = list(set(actual_claim_value.keys()) & set(valid_api_values))  # Find shared keys
+            valid_api_value = shared_keys[0]  # Select first one to validate against
+
+        access_permission_object = actual_claim_value.get(valid_api_value)
         if not access_permission_object:
             raise InvalidClaimError(claim_name)
 
@@ -60,14 +69,14 @@ class JWTClaimsValidator(JWTClaims):
 
         request_path = request.path
 
-        # Replace with regex - re.sub()
-        path_dot_notation = request_path.replace('/', '.').lstrip('x-nmos.').lstrip(valid_api_value).lstrip('v.0123')
+        # Replace with regex?
+        trimmed_path = request_path.lstrip('x-nmos/{}'.format(valid_api_value)).lstrip('v.0123/')
 
-        for wilcard_url in url_access_list:
-            if fnmatch(path_dot_notation, wilcard_url):
+        for wildcard_url in url_access_list:
+            if fnmatch(trimmed_path, wildcard_url):
                 return True
 
-        raise InvalidClaimError
+        raise InvalidClaimError(claim_name)
 
     def validate(self, now=None, leeway=0):
         super(JWTClaimsValidator, self).validate()

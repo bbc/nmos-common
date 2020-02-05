@@ -43,39 +43,42 @@ class JWTClaimsValidator(JWTClaims):
         if not valid_claim_option:  # No options given for validation
             return
 
+        def _validate_permissions_object(valid_api_value):
+            access_permission_object = actual_claim_value.get(valid_api_value)
+            if not access_permission_object:
+                raise InvalidClaimError(claim_name)
+
+            if request.method in ["GET", "OPTIONS", "HEAD"]:
+                access_right = "read"
+            else:
+                access_right = "write"
+            url_access_list = access_permission_object.get(access_right)
+            if not url_access_list:
+                raise InvalidClaimError(claim_name)
+
+            pattern = compile(r'/x-nmos/[a-zA-Z]+/v[0-9]\.[0-9]/(.*)')  # Capture path after namespace
+            trimmed_path = pattern.match(request.path).group(1)
+            for wildcard_url in url_access_list:
+                if fnmatch(trimmed_path, wildcard_url):
+                    return True
+
+            raise InvalidClaimError(claim_name)
+
+        # Single value present in claims options
         valid_api_value = valid_claim_option.get('value')
-        if valid_api_value and valid_api_value not in actual_claim_value.keys():
-            raise InvalidClaimError(claim_name)
+        if valid_api_value:
+            if valid_api_value not in actual_claim_value.keys():
+                raise InvalidClaimError(claim_name)
+            _validate_permissions_object(valid_api_value)
 
+        # Multiple existing values present in claims options
         valid_api_values = valid_claim_option.get('values')
-        if valid_api_values and not any(api_name in actual_claim_value.keys() for api_name in valid_api_values):
-            raise InvalidClaimError(claim_name)
-
-        if not valid_api_value and valid_api_values:
-            # Multiple existing values should only occur in testing scenarios
+        if valid_api_values:
+            if not any(api_name in actual_claim_value.keys() for api_name in valid_api_values):
+                raise InvalidClaimError(claim_name)
             shared_keys = list(set(actual_claim_value.keys()) & set(valid_api_values))  # Find shared keys
-            valid_api_value = shared_keys[0]  # Select first one to validate against
-
-        access_permission_object = actual_claim_value.get(valid_api_value)
-        if not access_permission_object:
-            raise InvalidClaimError(claim_name)
-
-        if request.method in ["GET", "OPTIONS", "HEAD"]:
-            access_right = "read"
-        else:
-            access_right = "write"
-        url_access_list = access_permission_object.get(access_right)
-        if not url_access_list:
-            raise InvalidClaimError(claim_name)
-
-        pattern = compile(r'/x-nmos/[a-zA-Z]+/v[0-9]\.[0-9]/(.*)')  # Capture path after namespace
-        trimmed_path = pattern.match(request.path).group(1)
-
-        for wildcard_url in url_access_list:
-            if fnmatch(trimmed_path, wildcard_url):
-                return True
-
-        raise InvalidClaimError(claim_name)
+            for valid_api_value in shared_keys:
+                _validate_permissions_object(valid_api_value)
 
     def validate(self, now=None, leeway=0):
         super(JWTClaimsValidator, self).validate()

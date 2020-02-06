@@ -826,12 +826,9 @@ class WebAPI(object):
             if isinstance(e, HTTPException):
                 status_code = e.code
                 error_description = e.description
-            elif isinstance(e, AuthlibHTTPError):
-                status_code = e.status_code
-                error_description = e.get_error_description() if e.get_error_description() else e.error
             elif isinstance(e, AuthlibBaseError):
-                status_code = 400
-                error_description = e.message if e.description else e.error  # message = error : description
+                status_code = e.status_code if getattr(e, "status_code", None) else 400
+                error_description = str(e)
             else:
                 status_code = 500
                 error_description = 'Internal Error'

@@ -46,7 +46,7 @@ class JWTClaimsValidator(JWTClaims):
         def _validate_permissions_object(valid_api_value):
             access_permission_object = actual_claim_value.get(valid_api_value)
             if not access_permission_object:
-                raise InvalidClaimError(claim_name)
+                raise InvalidClaimError("{}. No entry in claim for '{}'.".format(claim_name, valid_api_value))
 
             if request.method in ["GET", "OPTIONS", "HEAD"]:
                 access_right = "read"
@@ -54,7 +54,8 @@ class JWTClaimsValidator(JWTClaims):
                 access_right = "write"
             url_access_list = access_permission_object.get(access_right)
             if not url_access_list:
-                raise InvalidClaimError(claim_name)
+                raise InvalidClaimError(
+                    "{}. No entry in permissions object for '{}'.".format(claim_name, access_right))
 
             pattern = compile(r'/x-nmos/[a-zA-Z]+/v[0-9]\.[0-9]/(.*)')  # Capture path after namespace
             trimmed_path = pattern.match(request.path).group(1)
@@ -62,20 +63,20 @@ class JWTClaimsValidator(JWTClaims):
                 if fnmatch(trimmed_path, wildcard_url):
                     return True
 
-            raise InvalidClaimError(claim_name)
+            raise InvalidClaimError("{}. No matching paths in access list for '{}'.".format(claim_name, trimmed_path))
 
         # Single value present in claims options
         valid_api_value = valid_claim_option.get('value')
         if valid_api_value:
             if valid_api_value not in actual_claim_value.keys():
-                raise InvalidClaimError(claim_name)
+                raise InvalidClaimError("{}. No entry in claim for '{}'.".format(claim_name, valid_api_value))
             _validate_permissions_object(valid_api_value)
 
         # Multiple existing values present in claims options
         valid_api_values = valid_claim_option.get('values')
         if valid_api_values:
             if not any(api_name in actual_claim_value.keys() for api_name in valid_api_values):
-                raise InvalidClaimError(claim_name)
+                raise InvalidClaimError("{}. No entry in claim for one of '{}'.".format(claim_name, valid_api_value))
             shared_keys = list(set(actual_claim_value.keys()) & set(valid_api_values))  # Find shared keys
             for valid_api_value in shared_keys:
                 _validate_permissions_object(valid_api_value)

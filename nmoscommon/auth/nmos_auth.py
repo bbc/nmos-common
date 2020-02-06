@@ -22,6 +22,7 @@ from flask import request
 from functools import reduce
 from six.moves.urllib.parse import urljoin, parse_qs
 from requests.exceptions import RequestException
+from werkzeug.exceptions import HTTPException
 from authlib.jose import jwt, jwk
 from authlib.common.errors import AuthlibBaseError
 from authlib.oauth2.rfc6749.errors import MissingAuthorizationError, UnsupportedTokenTypeError
@@ -49,6 +50,11 @@ SERVER_METADATA_ENDPOINT = '.well-known/oauth-authorization-server/'
 REFRESH_KEY_INTERVAL = 3600
 
 
+class UnknownAuthorizationServer(HTTPException):
+    code = 500
+    description = "A valid authorization server could not be found via DNS-SD"
+
+
 class RequiresAuth(object):
 
     def __init__(self, condition=OAUTH_MODE, claimsOptions=IS_XX_CLAIMS):
@@ -57,11 +63,20 @@ class RequiresAuth(object):
         self.condition = condition
         self.claimsOptions = claimsOptions
         self.publicKey = None
+        self.auth_href = None
         self.key_last_accessed_time = 0
-        self.server_metadata = None
 
     def getHrefFromService(self, serviceType):
-        return self.bridge.getHref(serviceType)
+        href = self.bridge.getHref(serviceType)
+        if href:
+            self.auth_href = href
+            return href
+        elif self.auth_href:
+            self.logger("Could not find a service for type: '{}'. Using previously found endpoint.".format(serviceType))
+            return self.auth_href
+        else:
+            self.logger("No services of type '{}' could be found. Cannot validate Authorization token.")
+            raise UnknownAuthorizationServer
 
     def _get_server_metadata(self, auth_href):
         try:

@@ -124,7 +124,7 @@ packages_required = [
     "six>=1.10.0",
     "flask>=0.10.1",
     "jinja2>=2.7.2",
-    "werkzeug>=0.14.1",
+    "werkzeug>=0.14.1,<1.0.0",
     "itsdangerous>=0.24",
     "socketio-client>=0.5.3",
     "flask-sockets>=0.1",
@@ -179,7 +179,7 @@ deps_required = []
 
 setup(
     name="nmoscommon",
-    version="0.19.19",
+    version="0.19.20",
     description="Common components for the BBC's NMOS implementations",
     url='https://github.com/bbc/nmos-common',
     author='Peter Brightwell',

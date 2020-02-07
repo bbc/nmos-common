@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.20
+- Pin back werkzeug dependency to <1.0.0 to avoid downstream issue with flask.
+
 ## 0.19.19
 - Update nmos_auth to validate tokens using  JSON Web Keys endpoint
 

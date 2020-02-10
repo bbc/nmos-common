@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.21
+- Pin back mock <4.0.0 to fix tests.
+
 ## 0.19.20
 - Pin back werkzeug dependency to <1.0.0 to avoid downstream issue with flask.
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from re import compile
-from flask import request
+from flask import request, abort
 from fnmatch import fnmatch
 from authlib.jose import JWTClaims
 from authlib.jose.errors import InvalidClaimError, MissingClaimError
@@ -73,12 +73,13 @@ class JWTClaimsValidator(JWTClaims):
             if not access_permission_object:
                 raise InvalidClaimError("{}. No entry in claim for '{}'.".format(claim_name, valid_api_value))
 
+            print("The method is: {}. The path is {}".format(request.method, request.path))
             if request.method in ["GET", "OPTIONS", "HEAD"]:
                 access_right = "read"
             elif request.method in ["PUT", "POST", "PATCH", "DELETE"]:
                 access_right = "write"
             else:
-                raise(405)
+                abort(405)
             url_access_list = access_permission_object.get(access_right)
             if not url_access_list:
                 raise InvalidClaimError(

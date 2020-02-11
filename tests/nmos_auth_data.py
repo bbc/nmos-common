@@ -14,46 +14,49 @@
 
 from time import time
 
-"""
-EQUIVALENT TO:
-{
-  "sub": "dannym",
-  "exp": 1582136965,
-  "scope": "is-05",
-  "iss": "http://rd.bbc.co.uk/x-nmos/auth/v1.0/",
-  "iat": 1550579365,
-  "x-nmos-api": {
-    "access": "write",
-    "name": "is-05"
-  },
-  "nbf": 1550579365,
-  "aud": [
-    "IS-05",
-    "Write",
-    "Access"
-  ]
-}
-"""
 
 BEARER_TOKEN = {
-    "access_token": '''
-eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzUxMiJ9.eyJuYmYiOjE1NzU5OTUzMzYsI\
-nNjb3BlIjoiaXMtMDQiLCJhdWQiOlsicmVnaXN0cnkiLCJxdWVyeSJdLCJ4LW5\
-tb3MtYXBpIjp7Im5hbWUiOiJpcy0wNCIsImFjY2VzcyI6IndyaXRlIn0sInN1Y\
-iI6ImRhbm55bSIsImV4cCI6MTc3NTk5NTMzNiwiaXNzIjoiYXAtejQyMC01LnJ\
-kLmJiYy5jby51ayIsImlhdCI6MTU3NTk5NTMzNn0.pknqpOOuT6eUHikjUu6b4\
-offQZwYCRTRU_qzXkVxLi-L-wUFL1X3a9Rb2NHFNWXl6i3SVUWl0BQc1Bm3fef\
-HE5HhmmaEbuih4uuP16zxk6i-K6Plh2W2tisjDmGGNILbo2dLfXTN62MMkDL_r\
-YRY5Bv62JrgpE-BPUYLmKSZUqaMp4azgQ_ookuFEj9iyhwoJtxhSZDE9k-Bt1F\
-Roc9qtmiwQHvtXflYobdYtYeDE1u4DMGiyjw-DuPewNMMsqCu53jTQ5rcBDLpu\
-a2a5bQ-rnBupoWZV2JcC3TwgPVgBGwvRHbbAgJkMPbs8XaqOfA3IVsN5R68LYw\
-W72y7jL4XNQ''',
-    "expires_in": "60",
-    "refresh_token": "L1fGpnKBrJoFRLdow4JIHFGOzb8sMjk3O9G1AS2NE3GXFkXx",
-    "scope": "is-04",
+    "access_token": "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhcC16NDIwLTUucmQuYmJjLmNvLnVrIiwic3ViIjoiZGVtbyIs\
+Im5iZiI6MTU4MTQyMDA1MiwiZXhwIjoyNTgxNDIwMDUyLCJhdWQiOiIqLnJkLmJiYy5jby51ayIsImNsaWVudF9pZCI6Im5zenVLWXA5bHQyNVJtY3\
+lRMzUxMDJ2cyIsIngtbm1vcy1hcGkiOnsiY29ubmVjdGlvbiI6eyJyZWFkIjpbIioiXX0sInJlZ2lzdHJhdGlvbiI6eyJyZWFkIjpbIioiXSwid3Jp\
+dGUiOlsiKiJdfX0sInNjb3BlIjoiY29ubmVjdGlvbiByZWdpc3RyYXRpb24iLCJpYXQiOjE1ODE0MjAwNTJ9.ZI72XoHk1kA5vRi6EBqILaWZPBr6t\
+pudGH60j8iNic6otX75GH_1nEItTznP5ibi0LYVTHFh53na040ImVHUmKlme-RyGhcsk-wS39wyFkFs_3ssSfqGmCW9lAz5x3GZonsO5A6G9ehrCh3\
+HFosBvrZjz3jWLWAxJXgjq9Mr9eewOs4S56j0hnt5CtTN8LgvXrwCerIQeQCr8Nde6qn8QC-I00YoWV5NCK-Tk1a66gLbXnTu2ghr2U4pIJ20hOFJM\
+i86V6lQGOHZtVM7_yzkdbma3CRqlzDF_FG87LI9Ds0DDSsQrllw6sMc3TOaQ06REsUTI6ugBWcPpB0ujmcqPw",
+    "expires_in": 1000000000,
+    "refresh_token": "4DB8hZYrJdy1DNoZ1IIvmm4uzX0cfYe1LzZpSi70Om0eADrJ",
+    "scope": "registration connection",
     "token_type": "Bearer"
 }
 
+"""
+EQUIVALENT TO:
+{
+  "iss": "ap-z420-5.rd.bbc.co.uk",
+  "sub": "demo",
+  "nbf": 1581420052,
+  "exp": 2581420052,
+  "aud": "*.rd.bbc.co.uk",
+  "client_id": "nszuKYp9lt25RmcyQ35102vs",
+  "x-nmos-api": {
+    "connection": {
+      "read": [
+        "*"
+      ]
+    },
+    "registration": {
+      "read": [
+        "*"
+      ],
+      "write": [
+        "*"
+      ]
+    }
+  },
+  "scope": "connection registration",
+  "iat": 1581420052
+}
+"""
 
 CERT = '''-----BEGIN CERTIFICATE-----
 MIIDeTCCAmECAgPoMA0GCSqGSIb3DQEBDQUAMIGBMQswCQYDVQQGEwJVSzEPMA0G
@@ -117,44 +120,45 @@ g5op8Z1l9K6Rh54I3Bx2ozemflllnNechWdumm1TeV7B5lIpD5DLZZqITS9ee90V
 zO24ZZX0XksFLTxmcat3CTw=
 -----END PRIVATE KEY-----'''
 
+
 TEST_JWK = {
-    "e": "AQAB",
+    "kid": "x-nmos-{}".format(int(time())),
     "use": "sig",
-    "kid": "10-12-19",
-    "n": "yfrMvTGQvkbKvtHZFKONktjJTzaSUzPeTj2E7P_YzLpCyzoJaVKnj6rv_xwwnjtJX7ciNXDU_D_Jwog3nLLB-tWZHGbriNuwynBe\
-keTK7uIzWYYdYntzTBqZNWUsURELru-dcld4gLvrcST5sgMUQbo5uHckHATQaCvRCZJ-HQ9LOXRCg0-PoZaO-mSIhwU48nsY0qZH-qw9W09asY\
-U2aMm6DYOwwsuQPuOcLH9uZtm5HZn68SNo2B8qLwsNTKA8fwB12mUZxXBOCUgOGFzy0d8H1WmyWW64y-x4P5ohWgO9IymUvMy3mdIdyLJXG92yx\
-R63zYXkZHYHly0vgtovZQ",
     "key_ops": "verify",
+    "kty": "RSA",
     "alg": "RS512",
-    "kty": "RSA"
+    "e": "AQAB",
+    "n": "yfrMvTGQvkbKvtHZFKONktjJTzaSUzPeTj2E7P_YzLpCyzoJaVKnj6rv_xwwnjtJX7ciNXDU_D_Jwog3nLLB-tWZHGbriNuwynBe\
+keTK7uIzWYYdYntzTBqZNWUsURELru-dcld4gLvrcST5sgMUQbo5uHckHATQaCvRCZJ-HQ9LOXRCg0-PoZaO-mSIhwU48nsY0qZH-qw9W09asYU2aMm6DY\
+OwwsuQPuOcLH9uZtm5HZn68SNo2B8qLwsNTKA8fwB12mUZxXBOCUgOGFzy0d8H1WmyWW64y-x4P5ohWgO9IymUvMy3mdIdyLJXG92yxR63zYXkZHYHly0v\
+gtovZQ"
 }
 
 TEST_JWKS = {
     "keys": [
         {
-            "e": "AQAB",
-            "use": "sig",
             "kid": "x-nmos-{}".format(int(time())),
-            "n": "yfrMvTGQvkbKvtHZFKONktjJTzaSUzPeTj2E7P_YzLpCyzoJaVKnj6rv_xwwnjtJX7ciNXDU_D_Jwog3nLLB-tWZHGbriNuwynBe\
-keTK7uIzWYYdYntzTBqZNWUsURELru-dcld4gLvrcST5sgMUQbo5uHckHATQaCvRCZJ-HQ9LOXRCg0-PoZaO-mSIhwU48nsY0qZH-qw9W09asY\
-U2aMm6DYOwwsuQPuOcLH9uZtm5HZn68SNo2B8qLwsNTKA8fwB12mUZxXBOCUgOGFzy0d8H1WmyWW64y-x4P5ohWgO9IymUvMy3mdIdyLJXG92yx\
-R63zYXkZHYHly0vgtovZQ",
+            "use": "sig",
             "key_ops": "verify",
+            "kty": "RSA",
             "alg": "RS512",
-            "kty": "RSA"
+            "e": "AQAB",
+            "n": "yfrMvTGQvkbKvtHZFKONktjJTzaSUzPeTj2E7P_YzLpCyzoJaVKnj6rv_xwwnjtJX7ciNXDU_D_Jwog3nLLB-tWZHGbriNuwynBe\
+keTK7uIzWYYdYntzTBqZNWUsURELru-dcld4gLvrcST5sgMUQbo5uHckHATQaCvRCZJ-HQ9LOXRCg0-PoZaO-mSIhwU48nsY0qZH-qw9W09asYU2aMm6DY\
+OwwsuQPuOcLH9uZtm5HZn68SNo2B8qLwsNTKA8fwB12mUZxXBOCUgOGFzy0d8H1WmyWW64y-x4P5ohWgO9IymUvMy3mdIdyLJXG92yxR63zYXkZHYHly0v\
+gtovZQ"
         },
         {
-            "e": "AQAB",
+            "kid": "x-nmos-{}".format(int(time())-5),
             "use": "sig",
-            "kid": "x-nmos-{}".format(int(time()) - 5),
-            "n": "yfrMvTGQvkbKvtHZFKONktjJTzaSUzPeTj2E7P_YzLpCyzoJaVKnj6rv_xwwnjtJX7ciNXDU_D_Jwog3nLLB-tWZHGbriNuwynBe\
-keTK7uIzWYYdYntzTBqZNWUsURELru-dcld4gLvrcST5sgMUQbo5uHckHATQaCvRCZJ-HQ9LOXRCg0-PoZaO-mSIhwU48nsY0qZH-qw9W09asY\
-U2aMm6DYOwwsuQPuOcLH9uZtm5HZn68SNo2B8qLwsNTKA8fwB12mUZxXBOCUgOGFzy0d8H1WmyWW64y-x4P5ohWgO9IymUvMy3mdIdyLJXG92yx\
-R63zYXkZHYHly0vgtovZQ",
             "key_ops": "verify",
+            "kty": "RSA",
             "alg": "RS512",
-            "kty": "RSA"
+            "e": "AQAB",
+            "n": "yfrMvTGQvkbKvtHZFKONktjJTzaSUzPeTj2E7P_YzLpCyzoJaVKnj6rv_xwwnjtJX7ciNXDU_D_Jwog3nLLB-tWZHGbriNuwynBe\
+        keTK7uIzWYYdYntzTBqZNWUsURELru-dcld4gLvrcST5sgMUQbo5uHckHATQaCvRCZJ-HQ9LOXRCg0-PoZaO-mSIhwU48nsY0qZH-qw9W09asYU2aMm6DY\
+        OwwsuQPuOcLH9uZtm5HZn68SNo2B8qLwsNTKA8fwB12mUZxXBOCUgOGFzy0d8H1WmyWW64y-x4P5ohWgO9IymUvMy3mdIdyLJXG92yxR63zYXkZHYHly0v\
+        gtovZQ"
         }
     ]
 }

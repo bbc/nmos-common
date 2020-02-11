@@ -33,36 +33,39 @@ from ..mdnsbridge import IppmDNSBridge
 from ..nmoscommonconfig import config as _config
 from .claims_validator import JWTClaimsValidator, generate_claims_options, logger
 
-
+# DISCOVERY AND CONFIG
 MDNS_SERVICE_TYPE = "nmos-auth"
 OAUTH_MODE = _config.get('oauth_mode', True)
-BRIDGE = IppmDNSBridge()
 
 # CERTIFICATE FALLBACK PATH
 NMOSAUTH_DIR = path.abspath(path.join(sep, 'var', 'nmosauth'))
-CERT_FILE = 'certificate.pem'
-CERT_FILE_PATH = path.join(NMOSAUTH_DIR, CERT_FILE)
+CERT_FILE_PATH = path.join(NMOSAUTH_DIR, "certificate.pem")
 
 # KEY AND METADATA ENDPOINTS
 AUTH_APIROOT = 'x-nmos/auth/v1.0/'
 DEFAULT_JWKS_ENDPOINT = urljoin(AUTH_APIROOT, 'jwks')
 SERVER_METADATA_ENDPOINT = '.well-known/oauth-authorization-server/'
 
-# TIME IN SECONDS UNTIL PUBLIC KEY IS REFRESHED
-REFRESH_KEY_INTERVAL = 3600
-
 
 class RequiresAuth(object):
+
+    REFRESH_KEY_INTERVAL = 3600  # Time in Seconds until Public_key is refreshed
+    bridge = IppmDNSBridge()  # Shared mDNS client instance
+    public_key = None  # Shared Class Variable to share public key between instances
+    key_last_refreshed = 0  # UTC time the public key was last fetched
 
     def __init__(self, condition=OAUTH_MODE, api_name=""):
         self.condition = condition
         self.api_name = api_name
-        self.publicKey = None
         self.auth_href = None
-        self.key_last_accessed_time = 0
+
+    @classmethod
+    def update_public_key(cls, public_key):
+        cls.public_key = public_key
+        cls.key_last_refreshed = time()
 
     def getHrefFromService(self, serviceType):
-        href = BRIDGE.getHref(serviceType)
+        href = self.bridge.getHref(serviceType)
         if href:
             self.auth_href = href
             return href
@@ -174,7 +177,7 @@ class RequiresAuth(object):
             raise
 
     def getPublicKey(self):
-        if self.publicKey is None or self.key_last_accessed_time + REFRESH_KEY_INTERVAL < time():
+        if self.public_key is None or self.key_last_refreshed + self.REFRESH_KEY_INTERVAL < time():
             try:
                 logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
                 jwks = self.getJwksFromEndpoint()
@@ -183,9 +186,8 @@ class RequiresAuth(object):
                 logger.writeError("Error: {0!s}. Trying to fetch certificate from file".format(e))
                 cert = self.getCertFromFile(CERT_FILE_PATH)
                 public_key = self.extractPublicKey(cert)
-            self.publicKey = public_key
-            self.key_last_accessed_time = time()
-        return self.publicKey
+            self.update_public_key(public_key)
+        return self.public_key
 
     def processAccessToken(self, auth_string):
         # Auth string is of type 'Bearer xAgy65..'

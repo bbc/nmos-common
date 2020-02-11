@@ -66,7 +66,6 @@ class JWTClaimsValidator(JWTClaims):
             actual_claim_value = [actual_claim_value]
 
         for aud in actual_claim_value:
-            print("aud is: {} and fqdn is {}".format(aud, fqdn))
             if fnmatch(fqdn, aud):
                 return True
         raise InvalidClaimError(

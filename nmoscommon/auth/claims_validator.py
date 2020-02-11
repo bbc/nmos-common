@@ -59,7 +59,7 @@ class JWTClaimsValidator(JWTClaims):
 
     def validate_aud(self):  # placeholder
         super(JWTClaimsValidator, self).validate_aud()
-        claim_name = u"aud"
+        claim_name = "aud"
         fqdn = getfqdn()  # Fully qualified domain name of Resource Server
         actual_claim_value = self.get(claim_name)  # actual claim value in JWT
         if isinstance(actual_claim_value, string_types):

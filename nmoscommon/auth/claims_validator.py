@@ -13,7 +13,9 @@
 # limitations under the License.
 
 from re import compile
+from six import string_types
 from flask import request, abort
+from socket import getfqdn
 from fnmatch import fnmatch
 from authlib.jose import JWTClaims
 from authlib.jose.errors import InvalidClaimError, MissingClaimError
@@ -57,6 +59,18 @@ class JWTClaimsValidator(JWTClaims):
 
     def validate_aud(self):  # placeholder
         super(JWTClaimsValidator, self).validate_aud()
+        claim_name = u"aud"
+        fqdn = getfqdn()  # Fully qualified domain name of Resource Server
+        actual_claim_value = self.get(claim_name)  # actual claim value in JWT
+        if isinstance(actual_claim_value, string_types):
+            actual_claim_value = [actual_claim_value]
+
+        for aud in actual_claim_value:
+            print("aud is: {} and fqdn is {}".format(aud, fqdn))
+            if fnmatch(fqdn, aud):
+                return True
+        raise InvalidClaimError(
+            "Hostname '{}' does not match aud claim value of '{}'.".format(fqdn, actual_claim_value))
 
     def validate_nmos(self):
         claim_name = "x-nmos-api"
@@ -73,7 +87,6 @@ class JWTClaimsValidator(JWTClaims):
             if not access_permission_object:
                 raise InvalidClaimError("{}. No entry in claim for '{}'.".format(claim_name, valid_api_value))
 
-            print("The method is: {}. The path is {}".format(request.method, request.path))
             if request.method in ["GET", "OPTIONS", "HEAD"]:
                 access_right = "read"
             elif request.method in ["PUT", "POST", "PATCH", "DELETE"]:

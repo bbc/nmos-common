@@ -268,16 +268,13 @@ def returns_requires_auth(f):
 
         if get_method_self(f)._oauth_config is not None:
             if 'token' not in request.headers:
-                print('Could not find token')
                 return IppResponse(status=401)
 
             token = request.headers.get('token')
             if not get_method_self(f)._authenticate(token):
-                print('Authentication Failed')
                 return IppResponse(status=401)
 
             if not get_method_self(f)._authorize(token):
-                print('Authorization Failed.')
                 return IppResponse(status=401)
 
         status = 200
@@ -873,7 +870,6 @@ class WebAPI(object):
     def default_authorize(self, token):
         if self._oauth_config is not None:
             # Ensure the user is permitted to use function
-            print('authorizing: {}'.format(token))
             loginserver = self._oauth_config['loginserver']
             proxies = self._oauth_config['proxies']
             whitelist = self._oauth_config['access_whitelist']
@@ -890,14 +886,11 @@ class WebAPI(object):
             # Validate the token that the webapp sends
             loginserver = self._oauth_config['loginserver']
             proxies = self._oauth_config['proxies']
-            print('authenticating: {}'.format(token))
             if token is None:
                 return False
             result = proxied_request(
                         uri="{}/check-token".format(loginserver),
                         headers={'token': token}, proxies=proxies)
-            print('token result code: {}'.format(result[0].code))
-            print('result payload: {}'.format(result[1]))
             return result[0].code == 200 and json.loads(result[1])['token'] == token
         else:
             return True

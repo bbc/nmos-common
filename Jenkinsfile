@@ -16,7 +16,7 @@
 
 pipeline {
     agent {
-        label "ubuntu&&apmm-slave"
+        label "ap-r730-5"
     }
     options {
         ansiColor('xterm') // Add support for coloured output
@@ -143,7 +143,7 @@ pipeline {
                     steps {
                         dir ('nmos-joint-ri') {
                             bbcVagrantFindPorts(vagrantDir: "vagrant")
-                            sh 'python3 -m unittest discover'
+                            sh 'python3 -m unittest discover -v'
                         }
                         script {
                             env.int_result = "SUCCESS"

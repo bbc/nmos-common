@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.22
+- Update RequiresAuth and claims validator to validate `aud` and `x-nmos-api` claims
+
 ## 0.19.21
 - Pin back mock <4.0.0 to fix tests.
 

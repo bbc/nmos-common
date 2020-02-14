@@ -19,6 +19,7 @@ import mock
 import json
 import requests
 
+from flask import Flask
 from requests.exceptions import HTTPError
 from authlib.specs.rfc6749.errors import UnsupportedTokenTypeError, MissingAuthorizationError
 from authlib.specs.rfc7519.errors import InvalidClaimError
@@ -31,6 +32,7 @@ from nmos_auth_data import BEARER_TOKEN, TEST_JWK, TEST_JWKS, PUB_KEY, CERT
 class TestRequiresAuth(unittest.TestCase):
 
     def setUp(self):
+        self.app = Flask(__name__)
         self.security = RequiresAuth(condition=True)
 
     def dummy(self):
@@ -46,16 +48,16 @@ class TestRequiresAuth(unittest.TestCase):
         self.security(self.dummy)
         mockJWTRequired.assert_called_once_with()
 
-    @mock.patch("nmoscommon.auth.nmos_auth.request")
-    def testJWTRequiredWithBadRequest(self, mockRequest):
-        mockRequest.headers.get.return_value = None
-        self.assertRaises(MissingAuthorizationError, self.security(self.dummy))
+    def testJWTRequiredWithBadRequest(self):
+        with self.app.test_request_context('/', base_url=None, headers=None):
+            self.assertRaises(MissingAuthorizationError, self.security(self.dummy))
 
-        mockRequest.headers.get.return_value = "barer " + BEARER_TOKEN["access_token"]
-        self.assertRaises(UnsupportedTokenTypeError, self.security(self.dummy))
+        with self.app.test_request_context(
+                '/', base_url=None, headers={"Authorization": "barer " + BEARER_TOKEN["access_token"]}):
+            self.assertRaises(UnsupportedTokenTypeError, self.security(self.dummy))
 
-        mockRequest.headers.get.return_value = "Bearer null"
-        self.assertRaises(MissingAuthorizationError, self.security(self.dummy))
+        with self.app.test_request_context('/', base_url=None, headers={"Authorization": "Bearer null"}):
+            self.assertRaises(MissingAuthorizationError, self.security(self.dummy))
 
     def mockGetResponse(self, code, content, headers, mockObject, method):
         resp = requests.Response()
@@ -128,21 +130,21 @@ class TestRequiresAuth(unittest.TestCase):
         self.assertEqual(self.security.extractPublicKey(CERT), PUB_KEY)
 
     @mock.patch.object(RequiresAuth, "getJwksFromEndpoint")
-    @mock.patch("nmoscommon.auth.nmos_auth.request")
-    def testJWTClaimsValidator(self, mockRequest, mockGetJwk):
-        mockRequest.headers.get.return_value = "Bearer " + BEARER_TOKEN["access_token"]
-        mockGetJwk.return_value = TEST_JWK
+    def testJWTClaimsValidator(self, mockGetJwk):
+        headers = {"Authorization": "Bearer " + BEARER_TOKEN["access_token"]}
+        with self.app.test_request_context('/', base_url=None, headers=headers):
+            mockGetJwk.return_value = TEST_JWK
 
-        self.security = RequiresAuth(condition=True, claimsOptions=IS_05_CLAIMS)
-        self.assertRaises(InvalidClaimError, self.security(self.dummy))
+            self.security = RequiresAuth(condition=True, claimsOptions=IS_05_CLAIMS)
+            self.assertRaises(InvalidClaimError, self.security(self.dummy))
 
-        self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
-        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+            self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
+            self.assertEqual(self.security(self.dummy)(), "SUCCESS")
 
-        # NOTE: Assumes Only Write Access is permitted
-        IS_04_REG_CLAIMS["x-nmos-api"]["value"]["access"] = "read"
-        self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
-        self.assertRaises(InvalidClaimError, self.security(self.dummy))
+            # NOTE: Assumes Only Write Access is permitted
+            IS_04_REG_CLAIMS["x-nmos-api"]["value"]["access"] = "read"
+            self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
+            self.assertRaises(InvalidClaimError, self.security(self.dummy))
 
 
 if __name__ == '__main__':

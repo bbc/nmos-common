@@ -14,25 +14,32 @@
 
 from six import string_types
 from six import PY2
+from flask import Flask
+from datetime import timedelta
 
 import unittest
 import mock
-from nmoscommon.flask_cors import *
+from nmoscommon.flask_cors import crossdomain
+
 
 class TestCrossDomain(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestCrossDomain, self).__init__(*args, **kwargs)
+        self.app = Flask(__name__)
         if PY2:
             self.assertCountEqual = self.assertItemsEqual
 
     def assert_crossdomain_call_correct(self, method, methods=None, headers=None,
                                         max_age=21600, attach_to_all=True,
                                         origin="localhost", automatic_options=True):
-        args = [ mock.sentinel.arg1, mock.sentinel.arg2 ]
-        kwargs = { "kw1" : mock.sentinel.kwarg1,
-                   "kw2" : mock.sentinel.kwarg2 }
+        args = [mock.sentinel.arg1, mock.sentinel.arg2]
+        kwargs = {
+            "kw1": mock.sentinel.kwarg1,
+            "kw2": mock.sentinel.kwarg2
+        }
 
         F = mock.MagicMock()
+
         def test_function(*args, **kwargs):
             return F(*args, **kwargs)
 
@@ -40,27 +47,29 @@ class TestCrossDomain(unittest.TestCase):
                               max_age=max_age, attach_to_all=attach_to_all,
                               origin=origin, automatic_options=automatic_options)(test_function)
 
-        with mock.patch('nmoscommon.flask_cors.current_app') as current_app:
-            with mock.patch('nmoscommon.flask_cors.request') as request:
-                with mock.patch('nmoscommon.flask_cors.make_response') as make_response:
-                    request.method = method
-                    # This makes the headers entry behave like a dict, but returning new MagicMocks whenever an empry entry is needed
+        with self.app.test_request_context('/', base_url=None, headers=headers, method=method):
+            with mock.patch('nmoscommon.flask_cors.make_response') as make_response:
+                with mock.patch.object(self.app, 'make_default_options_response') as mock_default_options_response:
+
+                    # This makes the headers entry behave like a dict, but
+                    # returning new MagicMocks whenever an empry entry is needed
                     resp_headers = {}
                     def_opt_headers = {}
 
                     def getitem(d):
                         def __inner(key):
                             if key not in d:
-                                d.__setitem__(key,mock.MagicMock(name="resp_headers[" + repr(key) + "]"))
+                                d.__setitem__(key, mock.MagicMock(name="resp_headers[" + repr(key) + "]"))
                             return d.__getitem__(key)
                         return __inner
+
                     def setitem(d):
                         def __inner(key, value):
                             d.__setitem__(key, value)
                         return __inner
 
-                    current_app.make_default_options_response.return_value.headers.__getitem__.side_effect = getitem(def_opt_headers)
-                    current_app.make_default_options_response.return_value.headers.__setitem__.side_effect = setitem(def_opt_headers)
+                    mock_default_options_response.return_value.headers.__getitem__.side_effect = getitem(def_opt_headers)
+                    mock_default_options_response.return_value.headers.__setitem__.side_effect = setitem(def_opt_headers)
 
                     make_response.return_value.headers.__getitem__.side_effect = getitem(resp_headers)
                     make_response.return_value.headers.__setitem__.side_effect = setitem(resp_headers)
@@ -77,10 +86,10 @@ class TestCrossDomain(unittest.TestCase):
                         max_age = max_age.total_seconds()
 
                     if methods is None:
-                        methods = current_app.make_default_options_response.return_value.headers["allow"]
+                        methods = mock_default_options_response.return_value.headers["allow"]
 
                     if automatic_options and method == "OPTIONS":
-                        self.assertEqual(resp, current_app.make_default_options_response.return_value)
+                        self.assertEqual(resp, mock_default_options_response.return_value)
                         h = def_opt_headers
                     else:
                         self.assertEqual(resp, make_response.return_value)
@@ -101,10 +110,11 @@ class TestCrossDomain(unittest.TestCase):
         self.assert_crossdomain_call_correct("OPTIONS", automatic_options=True)
 
     def test_methods_overrides_automatic_options(self):
-        self.assert_crossdomain_call_correct("OPTIONS", automatic_options=True, methods=[ "GET", "PUT", "POTATO" ])
+        self.assert_crossdomain_call_correct(
+            "OPTIONS", automatic_options=True, methods=["GET", "PUT", "POTATO"])
 
     def test_headers_passed_through_in_automatic_options(self):
-        self.assert_crossdomain_call_correct("OPTIONS", automatic_options=True, headers=[ "foo", "bar", "baz" ])
+        self.assert_crossdomain_call_correct("OPTIONS", automatic_options=True, headers={"foo": "bar"})
 
     def test_options_without_automatic_options(self):
         self.assert_crossdomain_call_correct("OPTIONS", automatic_options=False)
@@ -113,10 +123,10 @@ class TestCrossDomain(unittest.TestCase):
         self.assert_crossdomain_call_correct("GET")
 
     def test_methods_overrides_get(self):
-        self.assert_crossdomain_call_correct("GET", methods=[ "GET", "PUT", "POTATO" ])
+        self.assert_crossdomain_call_correct("GET", methods=["GET", "PUT", "POTATO"])
 
     def test_headers_passed_through_in_get(self):
-        self.assert_crossdomain_call_correct("GET", headers=[ "foo", "bar", "baz" ])
+        self.assert_crossdomain_call_correct("GET", headers={"foo": "bar"})
 
     def test_get_not_modified_unless_attach_to_all_set(self):
         self.assert_crossdomain_call_correct("GET", attach_to_all=False)

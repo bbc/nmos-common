@@ -36,8 +36,7 @@ EQUIVALENT TO:
 """
 
 BEARER_TOKEN = {
-    "access_token": '''
-eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzUxMiJ9.eyJuYmYiOjE1NzU5OTUzMzYsI\
+    "access_token": '''eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzUxMiJ9.eyJuYmYiOjE1NzU5OTUzMzYsI\
 nNjb3BlIjoiaXMtMDQiLCJhdWQiOlsicmVnaXN0cnkiLCJxdWVyeSJdLCJ4LW5\
 tb3MtYXBpIjp7Im5hbWUiOiJpcy0wNCIsImFjY2VzcyI6IndyaXRlIn0sInN1Y\
 iI6ImRhbm55bSIsImV4cCI6MTc3NTk5NTMzNiwiaXNzIjoiYXAtejQyMC01LnJ\

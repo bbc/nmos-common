@@ -19,13 +19,11 @@ from six import PY2
 
 import unittest
 import mock
-
-from nmoscommon.webapi import *
-
-from datetime import timedelta
 import re
 
-import flask
+from nmoscommon.webapi import secure_route, basic_route, route, resource_route, file_route
+from nmoscommon.webapi import IppResponse, WebAPI, htmlify, on_json, grain_event_wrapper
+
 
 def diff_ippresponse(self, other):
     result = []
@@ -55,6 +53,7 @@ def diff_ippresponse(self, other):
             result.append("PASSTHROUGH DIFFERS")
             result.append("  " + repr(self.direct_passthrough) + " != " + repr(other.direct_passthrough))
         return '\n'.join(result) + '\n'
+
 
 class TestWebAPI(unittest.TestCase):
 

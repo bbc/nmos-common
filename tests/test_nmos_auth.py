@@ -20,10 +20,9 @@ import json
 import requests
 
 from requests.exceptions import HTTPError
-from authlib.specs.rfc6749.errors import UnsupportedTokenTypeError, MissingAuthorizationError
-from authlib.specs.rfc7519.errors import InvalidClaimError
+from authlib.oauth2.rfc6749.errors import UnsupportedTokenTypeError, MissingAuthorizationError
+from authlib.jose.errors import InvalidClaimError
 from nmoscommon.auth.nmos_auth import RequiresAuth
-from nmoscommon.auth.claims_options import IS_04_REG_CLAIMS, IS_05_CLAIMS
 
 from nmos_auth_data import BEARER_TOKEN, TEST_JWK, TEST_JWKS, PUB_KEY, CERT
 
@@ -31,7 +30,7 @@ from nmos_auth_data import BEARER_TOKEN, TEST_JWK, TEST_JWKS, PUB_KEY, CERT
 class TestRequiresAuth(unittest.TestCase):
 
     def setUp(self):
-        self.security = RequiresAuth(condition=True)
+        self.security = RequiresAuth(condition=True)  # API Instance
 
     def dummy(self):
         return "SUCCESS"
@@ -127,21 +126,60 @@ class TestRequiresAuth(unittest.TestCase):
     def testExtractPublicKeyWithCert(self):
         self.assertEqual(self.security.extractPublicKey(CERT), PUB_KEY)
 
+    @mock.patch("nmoscommon.auth.claims_validator.request")
     @mock.patch.object(RequiresAuth, "getJwksFromEndpoint")
     @mock.patch("nmoscommon.auth.nmos_auth.request")
-    def testJWTClaimsValidator(self, mockRequest, mockGetJwk):
+    def testJWTClaimsValidator_x_nmos_api(self, mockRequest, mockGetJwk, mockValidatorRequest):
         mockRequest.headers.get.return_value = "Bearer " + BEARER_TOKEN["access_token"]
         mockGetJwk.return_value = TEST_JWK
+        mockValidatorRequest.path = "/x-nmos/registration/v1.2/health/nodes"
 
-        self.security = RequiresAuth(condition=True, claimsOptions=IS_05_CLAIMS)
+        mockValidatorRequest.method = "GET"
+
+        # Use "query" api that is not included in token
+        self.security = RequiresAuth(condition=True, api_name="query")
         self.assertRaises(InvalidClaimError, self.security(self.dummy))
-
-        self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
+        # Use "connection" which allows READ in token
+        self.security = RequiresAuth(condition=True, api_name="connection")
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        # Use "registration" api which allows READ
+        self.security = RequiresAuth(condition=True, api_name="registration")
         self.assertEqual(self.security(self.dummy)(), "SUCCESS")
 
-        # NOTE: Assumes Only Write Access is permitted
-        IS_04_REG_CLAIMS["x-nmos-api"]["value"]["access"] = "read"
-        self.security = RequiresAuth(condition=True, claimsOptions=IS_04_REG_CLAIMS)
+        mockValidatorRequest.method = "POST"
+
+        # Use "query" api that is not included in token
+        self.security = RequiresAuth(condition=True, api_name="query")
+        self.assertRaises(InvalidClaimError, self.security(self.dummy))
+        # Use "connection" which doesn't allow WRITE in token
+        self.security = RequiresAuth(condition=True, api_name="connection")
+        self.assertRaises(InvalidClaimError, self.security(self.dummy))
+        # Use "registration" api which allows WRITE
+        self.security = RequiresAuth(condition=True, api_name="registration")
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+
+    @mock.patch("nmoscommon.auth.claims_validator.getfqdn")
+    @mock.patch("nmoscommon.auth.claims_validator.request")
+    @mock.patch.object(RequiresAuth, "getJwksFromEndpoint")
+    @mock.patch("nmoscommon.auth.nmos_auth.request")
+    def testJWTClaimsValidator_aud(self, mockRequest, mockGetJwk, mockValidatorRequest, mockGetFQDN):
+        mockRequest.headers.get.return_value = "Bearer " + BEARER_TOKEN["access_token"]
+        mockGetJwk.return_value = TEST_JWK
+        mockValidatorRequest.path = "/x-nmos/registration/v1.2/health/nodes"
+        mockValidatorRequest.method = "GET"
+        self.security = RequiresAuth(condition=True, api_name="registration")
+
+        # Same hostname as auth server succeeds
+        mockGetFQDN.return_value = "ap-z420-5.rd.bbc.co.uk"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        # Different hostname succeeds
+        mockGetFQDN.return_value = "tony_has_massive_halls.rd.bbc.co.uk"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        # Missing sub-domain fails
+        mockGetFQDN.return_value = "something.bbc.co.uk"
+        self.assertRaises(InvalidClaimError, self.security(self.dummy))
+        # Missing domain fails
+        mockGetFQDN.return_value = "malicious-site.co.uk"
         self.assertRaises(InvalidClaimError, self.security(self.dummy))
 
 

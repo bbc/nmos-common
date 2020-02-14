@@ -143,7 +143,7 @@ pipeline {
                     steps {
                         dir ('nmos-joint-ri') {
                             bbcVagrantFindPorts(vagrantDir: "vagrant")
-                            sh 'python3 -m unittest discover'
+                            sh 'python3 -m unittest discover -v'
                         }
                         script {
                             env.int_result = "SUCCESS"

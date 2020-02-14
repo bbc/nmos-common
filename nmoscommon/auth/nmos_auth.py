@@ -18,7 +18,7 @@ import json
 from os import path, sep
 from functools import wraps
 from time import time
-from flask import request
+from flask import request, abort
 from functools import reduce
 from six.moves.urllib.parse import urljoin, parse_qs
 from requests.exceptions import RequestException
@@ -31,49 +31,82 @@ from cryptography.hazmat.primitives import serialization
 
 from ..mdnsbridge import IppmDNSBridge
 from ..nmoscommonconfig import config as _config
-from ..logger import Logger as defaultLogger
-from .claims_options import IS_XX_CLAIMS
-from .claims_validator import JWTClaimsValidator
+from .claims_validator import JWTClaimsValidator, generate_claims_options, logger
 
+# DISCOVERY AND CONFIG
 MDNS_SERVICE_TYPE = "nmos-auth"
 OAUTH_MODE = _config.get('oauth_mode', True)
 
+# CERTIFICATE FALLBACK PATH
 NMOSAUTH_DIR = path.abspath(path.join(sep, 'var', 'nmosauth'))
-CERT_FILE = 'certificate.pem'
-CERT_FILE_PATH = path.join(NMOSAUTH_DIR, CERT_FILE)
+CERT_FILE_PATH = path.join(NMOSAUTH_DIR, "certificate.pem")
 
-APINAMESPACE = "x-nmos"
-APINAME = "auth"
-APIVERSION = "v1.0"
-JWK_ENDPOINT = 'jwks'
-JWK_URL_PATH = '/{}/{}/{}/{}'.format(APINAMESPACE, APINAME, APIVERSION, JWK_ENDPOINT)
-
-REFRESH_KEY_INTERVAL = 3600
+# KEY AND METADATA ENDPOINTS
+AUTH_APIROOT = 'x-nmos/auth/v1.0/'
+DEFAULT_JWKS_ENDPOINT = urljoin(AUTH_APIROOT, 'jwks')
+SERVER_METADATA_ENDPOINT = '.well-known/oauth-authorization-server/'
 
 
 class RequiresAuth(object):
 
-    def __init__(self, condition=OAUTH_MODE, claimsOptions=IS_XX_CLAIMS):
-        self.logger = defaultLogger("authresource")
-        self.bridge = IppmDNSBridge()
+    REFRESH_KEY_INTERVAL = 3600  # Time in Seconds until Public_key is refreshed
+    bridge = IppmDNSBridge()  # Shared mDNS client instance
+    public_key = None  # Shared Class Variable to share public key between instances
+    key_last_refreshed = 0  # UTC time the public key was last fetched
+
+    def __init__(self, condition=OAUTH_MODE, api_name=""):
         self.condition = condition
-        self.claimsOptions = claimsOptions
-        self.publicKey = None
-        self.key_last_accessed_time = 0
+        self.api_name = api_name
+        self.auth_href = None
+
+    @classmethod
+    def update_public_key(cls, public_key):
+        cls.public_key = public_key
+        cls.key_last_refreshed = time()
 
     def getHrefFromService(self, serviceType):
-        return self.bridge.getHref(serviceType)
+        href = self.bridge.getHref(serviceType)
+        if href:
+            self.auth_href = href
+            return href
+        elif self.auth_href:
+            logger.writeWarning(
+                "Could not find service of type: '{}'. Using previously found metadata endpoint.".format(serviceType))
+            return self.auth_href
+        else:
+            logger.writeError(
+                "No services of type '{}' could be found. Cannot validate Authorization token.".format(serviceType))
+            abort(500, "A valid authorization server could not be found via DNS-SD")
+
+    def _get_server_metadata(self, auth_href):
+        try:
+            url = urljoin(auth_href, SERVER_METADATA_ENDPOINT)
+            resp = requests.get(url, timeout=0.5, proxies={'http': ''})
+            resp.raise_for_status()  # Raise exception if not a 2XX status code
+            return resp.json()
+        except RequestException as e:
+            logger.writeError("Error requesting Server Metadata. {}".format(e))
+
+    def _get_jwk_url(self):
+        auth_href = self.getHrefFromService(MDNS_SERVICE_TYPE)
+        metadata = self._get_server_metadata(auth_href)
+        if metadata is not None:
+            return metadata.get("jwks_uri")
+        else:
+            # Construct default URI
+            logger.writeWarning("Falling back to default value for JWK endpoint.")
+            jwks_endpoint = urljoin(auth_href, DEFAULT_JWKS_ENDPOINT)
+            return jwks_endpoint
 
     def getJwksFromEndpoint(self):
         try:
-            href = self.getHrefFromService(MDNS_SERVICE_TYPE)
-            jwk_href = urljoin(href, JWK_URL_PATH)
-            self.logger.writeInfo('JWK endpoint is: {}'.format(jwk_href))
+            jwk_href = self._get_jwk_url()
+            logger.writeInfo('JWK endpoint is: {}'.format(jwk_href))
             jwk_resp = requests.get(jwk_href, timeout=0.5, proxies={'http': ''})
             jwk_resp.raise_for_status()  # Raise error if status !=200
         except RequestException as e:
-            self.logger.writeError("Error: {0!s}".format(e))
-            self.logger.writeError("Cannot find certificate at {}. Is the Auth Server Running?".format(jwk_href))
+            logger.writeError("Error: {0!s}".format(e))
+            logger.writeError("Cannot find JSON Web Key Endpoint at {}.".format(jwk_href))
             raise
 
         if "application/json" in jwk_resp.headers['content-type']:
@@ -81,15 +114,15 @@ class RequiresAuth(object):
                 jwks = jwk_resp.json()
                 if "keys" in jwks:
                     jwks_keys = jwks["keys"]
-                    self.logger.writeInfo("JSON Web Key Set located at /jwks endpoint.")
+                    logger.writeInfo("JSON Web Key Set located at /jwks endpoint.")
                 else:
                     jwks_keys = jwks
                 return jwks_keys
             except Exception as e:
-                self.logger.writeError("Error: {}. JWK endpoint contains: {}".format(str(e), jwk_resp.text))
+                logger.writeError("Error: {}. JWK endpoint contains: {}".format(str(e), jwk_resp.text))
                 raise
         else:
-            self.logger.writeError("Incorrect Content-Type. Expected 'application/json but got {}".format(
+            logger.writeError("Incorrect Content-Type. Expected 'application/json but got {}".format(
                 jwk_resp.headers['content-type']))
             raise ValueError
 
@@ -100,7 +133,7 @@ class RequiresAuth(object):
                     cert = myfile.read()
                     return cert
         except OSError:
-            self.logger.writeError("File {} does not exist or you do not have permission to open it".format(
+            logger.writeError("File {} does not exist or you do not have permission to open it".format(
                 file_path))
             raise
 
@@ -118,7 +151,7 @@ class RequiresAuth(object):
                 lambda a, b: a if int(a["kid"].lstrip("x-nmos-")) > int(b["kid"].lstrip("x-nmos-")) else b, jwks)
             return newest_key
         except KeyError as e:
-            self.logger.writeError("Format of JSON Web Key 'kid' parameter is incorrect. {}".format(e))
+            logger.writeError("JSON Web Key 'kid' parameter is missing or malformed. {}".format(e))
             raise
 
     def extractPublicKey(self, key_containing_object):
@@ -136,26 +169,25 @@ class RequiresAuth(object):
                 key_class = crt_obj.public_key()
             pubkey_string = self.getPublicKeyString(key_class)
             if pubkey_string is None:
-                self.logger.writeError("Public Key could not be extracted from certificate")
+                logger.writeError("Public Key could not be extracted from certificate")
             else:
                 return pubkey_string
         except Exception as e:
-            self.logger.writeError("Public Key(s) could not be extracted from JSON Web Keys. {}".format(e))
+            logger.writeError("Public Key(s) could not be extracted from JSON Web Keys. {}".format(e))
             raise
 
     def getPublicKey(self):
-        if self.publicKey is None or self.key_last_accessed_time + REFRESH_KEY_INTERVAL < time():
+        if self.public_key is None or self.key_last_refreshed + self.REFRESH_KEY_INTERVAL < time():
             try:
-                self.logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
+                logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
                 jwks = self.getJwksFromEndpoint()
                 public_key = self.extractPublicKey(jwks)
-            except Exception as e:
-                self.logger.writeError("Error: {0!s}. Trying to fetch certificate from file".format(e))
+            except RequestException as e:
+                logger.writeError("Error: {0!s}. Trying to fetch certificate from file".format(e))
                 cert = self.getCertFromFile(CERT_FILE_PATH)
                 public_key = self.extractPublicKey(cert)
-            self.publicKey = public_key
-            self.key_last_accessed_time = time()
-        return self.publicKey
+            self.update_public_key(public_key)
+        return self.public_key
 
     def processAccessToken(self, auth_string):
         # Auth string is of type 'Bearer xAgy65..'
@@ -169,9 +201,10 @@ class RequiresAuth(object):
         if token_string == "null" or token_string == "":
             raise MissingAuthorizationError()
         pubKey = self.getPublicKey()
+        claims_options = generate_claims_options(self.api_name)
         claims = jwt.decode(s=token_string, key=pubKey,
                             claims_cls=JWTClaimsValidator,
-                            claims_options=self.claimsOptions,
+                            claims_options=claims_options,
                             claims_params=None)
         claims.validate()
 
@@ -188,11 +221,11 @@ class RequiresAuth(object):
         environment = ws.environ
         auth_header = environment.get('HTTP_AUTHORIZATION', None)
         if auth_header is not None:
-            self.logger.writeInfo("auth header string is {}".format(auth_header))
+            logger.writeInfo("auth header string is {}".format(auth_header))
             auth_string = auth_header
             self.processAccessToken(auth_string)
         else:
-            self.logger.writeWarning("Websocket does not have auth header, looking in query string..")
+            logger.writeWarning("Websocket does not have auth header, looking in query string..")
             query_string = environment.get('QUERY_STRING', None)
             try:
                 if query_string is not None:
@@ -203,7 +236,7 @@ class RequiresAuth(object):
             except (AuthlibBaseError, KeyError):
                 err = {"type": "error", "data": "Socket Authentication Error"}
                 ws.send(json.dumps(err))
-                self.logger.writeError("""
+                logger.writeError("""
                     'access_token' URL param doesn't exist. Websocket authentication failed.
                 """)
                 raise
@@ -215,10 +248,10 @@ class RequiresAuth(object):
                 # Check to see if request is a Websocket upgrade, else treat request as a standard HTTP request
                 headers = request.headers
                 if ('Upgrade' in headers.keys() and headers['Upgrade'].lower() == 'websocket'):
-                    self.logger.writeInfo("Using Socket handler")
+                    logger.writeInfo("Using Socket handler")
                     self.handleSocketAuth(*args, **kwargs)
                 else:
-                    self.logger.writeInfo("Using HTTP handler")
+                    logger.writeInfo("Using HTTP handler")
                     self.handleHttpAuth()
                 return func(*args, **kwargs)
             return processAccessToken

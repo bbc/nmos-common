@@ -140,8 +140,8 @@ packages_required = [
     "netifaces>=0.10.6",
     "websocket-client>=0.18.0",
     "ujson>=1.33",
-    "mediatimestamp>=1.0.1",
-    "mediajson>=1.0.0",
+    "mediatimestamp>=1.0.1,<2.0.0",
+    "mediajson>=1.0.0,<2.0.0",
     "authlib>=0.10",
     "pyopenssl",
     "cryptography",
@@ -179,7 +179,7 @@ deps_required = []
 
 setup(
     name="nmoscommon",
-    version="0.19.22",
+    version="0.19.23",
     description="Common components for the BBC's NMOS implementations",
     url='https://github.com/bbc/nmos-common',
     author='Peter Brightwell',

@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.23
+- Pin back mediatimestamp and mediajson versions.
+
 ## 0.19.22
 - Update RequiresAuth and claims validator to validate `aud` and `x-nmos-api` claims
 

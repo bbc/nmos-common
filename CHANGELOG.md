@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.19.24
+- Pin back zeroconf-monkey version.
+
 ## 0.19.23
 - Pin back mediatimestamp and mediajson versions.
 

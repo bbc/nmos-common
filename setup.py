@@ -145,8 +145,7 @@ packages_required = [
     "authlib>=0.10",
     "pyopenssl",
     "cryptography",
-    "dnspython>=1.12.0",
-    "zeroconf-monkey>=0.1.0"
+    "dnspython>=1.12.0"
 ]
 
 # Check if setuptools is recent enough to recognise python_version syntax
@@ -156,21 +155,25 @@ if int(setuptools.__version__.split(".", 1)[0]) < 18:
     # Check python version using legacy mechanism
     if sys.version_info[0:2] < (3, 0):
         packages_required.extend([
-            "zeroconf<=0.19.1"
+            "zeroconf<=0.19.1",
+            "zeroconf-monkey<=0.1.0"
         ])  # Version locked to preserve Python 2 compatibility
     else:
         packages_required.extend([
-            "zeroconf>=0.21.0"
+            "zeroconf>=0.21.0",
+            "zeroconf-monkey>=0.1.0"
         ])
 
     if sys.version_info[0:2] < (3, 6):
         packages_required.extend([
-            'wsaccel>=0.6.2',
+            'wsaccel>=0.6.2'
         ])
 else:
     packages_required.extend([
         "zeroconf==0.19.1;python_version<'3.0'",
         "zeroconf>=0.21.0;python_version>='3.0'",
+        "zeroconf-monkey==0.1.0;python_version<'3.0'",
+        "zeroconf-monkey>=0.1.0;python_version>='3.0'",
         'wsaccel>=0.6.2;python_version<"3.6"'
     ])
 
@@ -179,7 +182,7 @@ deps_required = []
 
 setup(
     name="nmoscommon",
-    version="0.19.23",
+    version="0.19.24",
     description="Common components for the BBC's NMOS implementations",
     url='https://github.com/bbc/nmos-common',
     author='Peter Brightwell',

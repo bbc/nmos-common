@@ -118,7 +118,7 @@ package_names = packages.keys()
 
 # REMEMBER: If this list is updated, please also update stdeb.cfg
 packages_required = [
-    "gevent>=1.2.2",
+    "gevent>=1.2.2,<=1.4.0",
     "greenlet>=0.4.13",
     "gevent-websocket>=0.9.3",
     "six>=1.10.0",
@@ -160,7 +160,7 @@ if int(setuptools.__version__.split(".", 1)[0]) < 18:
         ])  # Version locked to preserve Python 2 compatibility
     else:
         packages_required.extend([
-            "zeroconf>=0.21.0",
+            "zeroconf>=0.21.0,<0.25.0",
             "zeroconf-monkey>=0.1.0"
         ])
 
@@ -171,7 +171,7 @@ if int(setuptools.__version__.split(".", 1)[0]) < 18:
 else:
     packages_required.extend([
         "zeroconf==0.19.1;python_version<'3.0'",
-        "zeroconf>=0.21.0;python_version>='3.0'",
+        "zeroconf>=0.21.0,<0.25.0;python_version>='3.0'",
         "zeroconf-monkey==0.1.0;python_version<'3.0'",
         "zeroconf-monkey>=0.1.0;python_version>='3.0'",
         'wsaccel>=0.6.2;python_version<"3.6"'

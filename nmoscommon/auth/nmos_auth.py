@@ -49,6 +49,7 @@ SERVER_METADATA_ENDPOINTS = [
     '.well-known/openid-configuration'
 ]
 
+
 class RequiresAuth(object):
 
     refresh_key_interval = 3600  # Time in Seconds until Public_key is refreshed

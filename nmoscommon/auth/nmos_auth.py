@@ -168,15 +168,15 @@ class RequiresAuth(object):
         A string will be treated like a X509 certificate"""
         try:
             if isinstance(key_containing_object, dict):
-                key_class = jwk.loads(key_containing_object)
+                pub_key = jwk.loads(key_containing_object).get_public_key()
             elif isinstance(key_containing_object, list):
                 newest_key = self.findMostRecentJWK(key_containing_object)
-                key_class = jwk.loads(newest_key)
+                pub_key = jwk.loads(newest_key).get_public_key()
             elif isinstance(key_containing_object, str):
                 key_containing_object = key_containing_object.encode()
                 crt_obj = x509.load_pem_x509_certificate(key_containing_object, default_backend())
-                key_class = crt_obj.public_key()
-            pubkey_string = self.getPublicKeyString(key_class)
+                pub_key = crt_obj.public_key()
+            pubkey_string = self.getPublicKeyString(pub_key)
             if pubkey_string is None:
                 logger.writeError("Public Key could not be extracted from certificate")
             else:

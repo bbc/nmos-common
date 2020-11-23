@@ -21,7 +21,7 @@ import requests
 
 from requests.exceptions import HTTPError
 from authlib.oauth2.rfc6749.errors import UnsupportedTokenTypeError, MissingAuthorizationError
-from authlib.jose.errors import InvalidClaimError
+from authlib.jose.errors import InvalidClaimError, MissingClaimError
 from nmoscommon.auth.nmos_auth import RequiresAuth
 
 from nmos_auth_data import BEARER_TOKEN, TEST_JWK, TEST_JWKS, PUB_KEY, CERT
@@ -65,7 +65,7 @@ class TestRequiresAuth(unittest.TestCase):
         res = eval("self.security.{}()".format(method))
         return res
 
-    @mock.patch.object(RequiresAuth, "getHrefFromService")
+    @mock.patch.object(RequiresAuth, "get_service_href")
     @mock.patch("nmoscommon.auth.nmos_auth.requests")
     def testgetJwksFromEndpointWithJWK(self, mockRequests, mockGetHref):
 
@@ -96,7 +96,7 @@ class TestRequiresAuth(unittest.TestCase):
                           method="getJwksFromEndpoint"
                           )
 
-    @mock.patch.object(RequiresAuth, "getHrefFromService")
+    @mock.patch.object(RequiresAuth, "get_service_href")
     @mock.patch("nmoscommon.auth.nmos_auth.requests")
     def testgetJwksFromEndpointWithJWKS(self, mockRequests, mockGetHref):
 
@@ -129,32 +129,67 @@ class TestRequiresAuth(unittest.TestCase):
     @mock.patch("nmoscommon.auth.claims_validator.request")
     @mock.patch.object(RequiresAuth, "getJwksFromEndpoint")
     @mock.patch("nmoscommon.auth.nmos_auth.request")
-    def testJWTClaimsValidator_x_nmos_api(self, mockRequest, mockGetJwk, mockValidatorRequest):
+    def testJWTClaimsValidator_x_nmos(self, mockRequest, mockGetJwk, mockValidatorRequest):
         mockRequest.headers.get.return_value = "Bearer " + BEARER_TOKEN["access_token"]
         mockGetJwk.return_value = TEST_JWK
-        mockValidatorRequest.path = "/x-nmos/registration/v1.2/health/nodes"
+
+        # Example Token:
+        # {
+        # "iss": "ap-z420-5.rd.bbc.co.uk",
+        # "sub": "demo",
+        # "nbf": 1581420052,
+        # "exp": 2581420052,
+        # "aud": "*.rd.bbc.co.uk",
+        # "client_id": "my_client",
+        # "x-nmos-connection": {
+        #     "read": ["*"]
+        # },
+        # "x-nmos-registration": {
+        #     "read": ["*"],
+        #     "write": ["*"]
+        # },
+        # "scope": "connection registration",
+        # "iat": 1581420052
+        # }
 
         mockValidatorRequest.method = "GET"
 
-        # Use "query" api that is not included in token
+        # Any api_name should be permitted for base resources, even when not included in token
+        mockValidatorRequest.path = "/"
         self.security = RequiresAuth(condition=True, api_name="query")
-        self.assertRaises(InvalidClaimError, self.security(self.dummy))
-        # Use "connection" which allows READ in token
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+
+        mockValidatorRequest.path = "/x-nmos"
+        self.security = RequiresAuth(condition=True, api_name="query")
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+
+        mockValidatorRequest.path = "/x-nmos/registration/v1.0/"
+        # "query" should fail as not in token but "connection should pass"
+        self.security = RequiresAuth(condition=True, api_name="query")
+        self.assertRaises(MissingClaimError, self.security(self.dummy))
         self.security = RequiresAuth(condition=True, api_name="connection")
         self.assertEqual(self.security(self.dummy)(), "SUCCESS")
-        # Use "registration" api which allows READ
+
+        mockValidatorRequest.path = "/x-nmos/registration/v1.2/health/nodes"
+        # "query" should fail as not in token
+        self.security = RequiresAuth(condition=True, api_name="query")
+        self.assertRaises(MissingClaimError, self.security(self.dummy))
+        # "connection" should pass as it allows READ in token
+        self.security = RequiresAuth(condition=True, api_name="connection")
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        # "registration" should pass as it allows READ in token
         self.security = RequiresAuth(condition=True, api_name="registration")
         self.assertEqual(self.security(self.dummy)(), "SUCCESS")
 
         mockValidatorRequest.method = "POST"
 
-        # Use "query" api that is not included in token
+        # "query" should fail as not included in token
         self.security = RequiresAuth(condition=True, api_name="query")
-        self.assertRaises(InvalidClaimError, self.security(self.dummy))
-        # Use "connection" which doesn't allow WRITE in token
+        self.assertRaises(MissingClaimError, self.security(self.dummy))
+        # "connection" doesn't allow WRITE in token
         self.security = RequiresAuth(condition=True, api_name="connection")
         self.assertRaises(InvalidClaimError, self.security(self.dummy))
-        # Use "registration" api which allows WRITE
+        # "registration" allows WRITE in token
         self.security = RequiresAuth(condition=True, api_name="registration")
         self.assertEqual(self.security(self.dummy)(), "SUCCESS")
 

@@ -44,12 +44,14 @@ CERT_FILE_PATH = path.join(NMOSAUTH_DIR, "certificate.pem")
 # KEY AND METADATA ENDPOINTS
 AUTH_APIROOT = 'x-nmos/auth/v1.0/'
 DEFAULT_JWKS_ENDPOINT = urljoin(AUTH_APIROOT, 'jwks')
-SERVER_METADATA_ENDPOINT = '.well-known/oauth-authorization-server/'
-
+SERVER_METADATA_ENDPOINTS = [
+    '.well-known/oauth-authorization-server',
+    '.well-known/openid-configuration'
+]
 
 class RequiresAuth(object):
 
-    REFRESH_KEY_INTERVAL = 3600  # Time in Seconds until Public_key is refreshed
+    refresh_key_interval = 3600  # Time in Seconds until Public_key is refreshed
     bridge = IppmDNSBridge()  # Shared mDNS client instance
     public_key = None  # Shared Class Variable to share public key between instances
     key_last_refreshed = 0  # UTC time the public key was last fetched
@@ -64,7 +66,12 @@ class RequiresAuth(object):
         cls.public_key = public_key
         cls.key_last_refreshed = time()
 
-    def getHrefFromService(self, serviceType):
+    def get_service_href(self, serviceType):
+        # Provide an auth_url override option for non DNS-SD setups
+        if _config.get('auth_url', False):
+            self.auth_href = _config.get('auth_url')
+            return self.auth_href
+
         href = self.bridge.getHref(serviceType)
         if href:
             self.auth_href = href
@@ -79,16 +86,17 @@ class RequiresAuth(object):
             abort(500, "A valid authorization server could not be found via DNS-SD")
 
     def _get_server_metadata(self, auth_href):
-        try:
-            url = urljoin(auth_href, SERVER_METADATA_ENDPOINT)
-            resp = requests.get(url, timeout=0.5, proxies={'http': ''})
-            resp.raise_for_status()  # Raise exception if not a 2XX status code
-            return resp.json()
-        except RequestException as e:
-            logger.writeError("Error requesting Server Metadata. {}".format(e))
+        for metadata_endpoint in SERVER_METADATA_ENDPOINTS:
+            try:
+                url = urljoin(auth_href, metadata_endpoint)
+                resp = requests.get(url, timeout=0.5, proxies={'http': ''})
+                resp.raise_for_status()  # Raise exception if not a 2XX status code
+                return resp.json()
+            except RequestException as e:
+                logger.writeError("Error requesting Server Metadata. {}".format(e))
 
     def _get_jwk_url(self):
-        auth_href = self.getHrefFromService(MDNS_SERVICE_TYPE)
+        auth_href = self.get_service_href(MDNS_SERVICE_TYPE)
         metadata = self._get_server_metadata(auth_href)
         if metadata is not None:
             return metadata.get("jwks_uri")
@@ -177,7 +185,7 @@ class RequiresAuth(object):
             raise
 
     def getPublicKey(self):
-        if self.public_key is None or self.key_last_refreshed + self.REFRESH_KEY_INTERVAL < time():
+        if self.public_key is None or self.key_last_refreshed + self.refresh_key_interval < time():
             try:
                 logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
                 jwks = self.getJwksFromEndpoint()

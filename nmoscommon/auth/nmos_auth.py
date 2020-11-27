@@ -50,10 +50,35 @@ SERVER_METADATA_ENDPOINTS = [
 ]
 
 
+def get_auth_server_url(serviceType=MDNS_SERVICE_TYPE):
+
+    bridge = IppmDNSBridge()  # Only instantiated when making request for keys
+    # Look for an auth_url override option in config for non DNS-SD setups
+    if _config.get('auth_server_url', False):
+        auth_href = _config.get('auth_server_url')
+        return auth_href
+    auth_href = bridge.getHref(serviceType)
+    if auth_href:
+        return auth_href
+    else:
+        return None
+
+
+def get_auth_server_metadata(auth_href):
+    for metadata_endpoint in SERVER_METADATA_ENDPOINTS:
+        try:
+            url = urljoin(auth_href, metadata_endpoint)
+            resp = requests.get(url, timeout=0.5, proxies={'http': ''})
+            resp.raise_for_status()  # Raise exception if not a 2XX status code
+            return resp.json()
+        except RequestException as e:
+            pass
+    return None
+
+
 class RequiresAuth(object):
 
     refresh_key_interval = 3600  # Time in Seconds until Public_key is refreshed
-    bridge = IppmDNSBridge()  # Shared mDNS client instance
     public_key = None  # Shared Class Variable to share public key between instances
     key_last_refreshed = 0  # UTC time the public key was last fetched
 
@@ -67,63 +92,41 @@ class RequiresAuth(object):
         cls.public_key = public_key
         cls.key_last_refreshed = time()
 
-    def get_service_href(self, serviceType):
-        # Provide an auth_url override option for non DNS-SD setups
-        if _config.get('auth_url', False):
-            self.auth_href = _config.get('auth_url')
-            return self.auth_href
-
-        href = self.bridge.getHref(serviceType)
-        if href:
-            self.auth_href = href
-            return href
-        elif self.auth_href:
+    def _get_jwk_url(self, service_type):
+        auth_href = get_auth_server_url(service_type)
+        if auth_href:
+            self.auth_href = auth_href
+        elif not auth_href and self.auth_href:
             logger.writeWarning(
-                "Could not find service of type: '{}'. Using previously found metadata endpoint.".format(serviceType))
-            return self.auth_href
+                "Could not find service of type: '{}'. Using previously found metadata endpoint: {}.".format(
+                    service_type, self.auth_href))
         else:
             logger.writeError(
-                "No services of type '{}' could be found. Cannot validate Authorization token.".format(serviceType))
+                "No services of type '{}' could be found. Cannot validate Authorization token.".format(service_type))
             abort(500, "A valid authorization server could not be found via DNS-SD")
-
-    def _get_server_metadata(self, auth_href):
-        for metadata_endpoint in SERVER_METADATA_ENDPOINTS:
-            try:
-                url = urljoin(auth_href, metadata_endpoint)
-                resp = requests.get(url, timeout=0.5, proxies={'http': ''})
-                resp.raise_for_status()  # Raise exception if not a 2XX status code
-                return resp.json()
-            except RequestException as e:
-                logger.writeError("Error requesting Server Metadata. {}".format(e))
-
-    def _get_jwk_url(self):
-        auth_href = self.get_service_href(MDNS_SERVICE_TYPE)
-        metadata = self._get_server_metadata(auth_href)
-        if metadata is not None:
+        metadata = get_auth_server_metadata(self.auth_href)
+        if metadata is not None and "jwks_uri" in metadata:
             return metadata.get("jwks_uri")
         else:
             # Construct default URI
-            logger.writeWarning("Falling back to default value for JWK endpoint.")
-            jwks_endpoint = urljoin(auth_href, DEFAULT_JWKS_ENDPOINT)
-            return jwks_endpoint
+            logger.writeWarning("Could not locate metadata endpoint at {}".format(self.auth_href))
+            abort(500, "A valid authorization server could not be found via DNS-SD")
 
-    def getJwksFromEndpoint(self):
+    def get_jwks(self):
         try:
-            jwk_href = self._get_jwk_url()
+            jwk_href = self._get_jwk_url(MDNS_SERVICE_TYPE)
             logger.writeInfo('JWK endpoint is: {}'.format(jwk_href))
             jwk_resp = requests.get(jwk_href, timeout=0.5, proxies={'http': ''})
             jwk_resp.raise_for_status()  # Raise error if status !=200
         except RequestException as e:
-            logger.writeError("Error: {0!s}".format(e))
-            logger.writeError("Cannot find JSON Web Key Endpoint at {}.".format(jwk_href))
-            raise
+            logger.writeError("Error: {}. Cannot find JSON Web Key Endpoint at {}.".format(e, jwk_href))
+            abort(500, "Could not retrieve the JSON Web Key from: {}".format(jwk_href))
 
         if "application/json" in jwk_resp.headers['content-type']:
             try:
                 jwks = jwk_resp.json()
                 if "keys" in jwks:
                     jwks_keys = jwks["keys"]
-                    logger.writeInfo("JSON Web Key Set located at /jwks endpoint.")
                 else:
                     jwks_keys = jwks
                 return jwks_keys
@@ -189,7 +192,7 @@ class RequiresAuth(object):
         if self.public_key is None or self.key_last_refreshed + self.refresh_key_interval < time():
             try:
                 logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
-                jwks = self.getJwksFromEndpoint()
+                jwks = self.get_jwks()
                 public_key = self.extractPublicKey(jwks)
             except RequestException as e:
                 logger.writeError("Error: {0!s}. Trying to fetch certificate from file".format(e))

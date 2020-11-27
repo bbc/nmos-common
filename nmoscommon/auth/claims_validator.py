@@ -45,6 +45,7 @@ def generate_claims_options(nmos_api):
     elif nmos_api and isinstance(nmos_api, list):
         for api_name in nmos_api:
             claims_options["x-nmos-{}".format(api_name)] = {"essential": False}
+    claims_options["scope"]["value"] = nmos_api
     return claims_options
 
 
@@ -69,7 +70,7 @@ class JWTClaimsValidator(JWTClaims):
 
         for aud in actual_claim_value:
             if fnmatch(fqdn, aud):
-                return True
+                return
         raise InvalidClaimError(
             "Hostname '{}' does not match aud claim value of '{}'".format(fqdn, actual_claim_value))
 
@@ -113,23 +114,31 @@ class JWTClaimsValidator(JWTClaims):
             sub_path = pattern.match(request.path).group(1)
             for wildcard_url in url_access_list:
                 if fnmatch(sub_path, wildcard_url):
-                    return True
+                    return
 
             raise InvalidClaimError("{}. No matching paths in token claim: {} for URL path: '{}'.".format(
                 claim_name, url_access_list, sub_path))
 
         # base resources do not require authorization
         if request.path in ['/', '/x-nmos', '/x-nmos/']:
-            return True
+            return
 
-        # Check that all claims in "actual_claims" are in "valid_claims"
+        # if request path is /x-nmos/api_name[/version/], then permit access, providing claim or scope is present
+        path_regex = re.search(r'^/x-nmos/([a-z]+)/?(v[0-9]+\.[0-9]+)?/?$', request.path)
+        if path_regex:
+            api_name = path_regex.group(1)  # e.g. query, registration, etc.
+            # api_name must be in scope claim in claim_options or x-nmos-<api_name> claim must exist
+            if api_name not in self.options.get("scope").get("value") and \
+                    "x-nmos-{}".format(api_name) not in list(valid_claim_option.keys()):
+                raise MissingClaimError(
+                    "Missing {} from scope claim or 'x-nmos-{}' claim from token".format(api_name, api_name))
+            else:
+                return
+
+        # Check that all x-nmos claims in "actual_claims" are in "valid_claims"
         if not all(claim_name in nmos_token_claims.keys() for claim_name in valid_claim_option.keys()):
             raise MissingClaimError("One of: {} is missing from 'x-nmos' token claims: '{}'.".format(
                 list(valid_claim_option.keys()), list(nmos_token_claims.keys())))
-
-        # if request path is /x-nmos/api_name[/version/], then permit access, providing claim is present
-        if re.search(r'^/x-nmos/[a-z]+/?(v[0-9]+\.[0-9]+)?/?$', request.path):
-            return True
 
         for claim_name in valid_claim_option.keys():
             _validate_permissions_object(claim_name)

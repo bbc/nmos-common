@@ -634,6 +634,7 @@ class WebAPI(object):
                 # The `fix_proxy` option wasn't a number, so leave it off
                 pass
 
+
     def add_routes(self, routesObject, basepath):
 
         assert not basepath.endswith('/'), "basepath must not end with a slash"
@@ -786,6 +787,28 @@ class WebAPI(object):
 
     @errorhandler()
     def error(self, e):
+        (exceptionType, exceptionParam, trace) = sys.exc_info()
+        headers = e.headers if hasattr(e, 'headers') else None
+        if isinstance(e, HTTPException):
+            status_code = e.code
+            error_description = e.description
+        elif isinstance(e, AuthlibBaseError):
+            status_code = e.status_code if getattr(e, "status_code", None) else 400
+            error_description = str(e)
+        else:
+            status_code = 500
+            error_description = 'Internal Error'
+
+        response = {
+            'code': status_code,
+            'error': error_description,
+            'debug': str({
+                'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
+            })
+        }
+        return IppResponse(json.dumps(response), status=status_code, mimetype='application/json', headers=headers)
+
         if request.method == 'HEAD':
             if isinstance(e, HTTPException):
                 return IppResponse('', status=e.code)

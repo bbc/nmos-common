@@ -39,13 +39,14 @@ def generate_claims_options(nmos_api):
         "client_id": {"essential": True},
         "scope": {"essential": False},
     }
-    if nmos_api and isinstance(nmos_api, str):
-        # Essential: False - to prevent JWTClaims Class restricting access to base resources (e.g. /x-nmos)
-        claims_options["x-nmos-{}".format(nmos_api)] = {"essential": False}
-    elif nmos_api and isinstance(nmos_api, list):
-        for api_name in nmos_api:
-            claims_options["x-nmos-{}".format(api_name)] = {"essential": False}
-    claims_options["scope"]["value"] = nmos_api
+    if nmos_api:
+        if isinstance(nmos_api, str):
+            # Essential: False - to prevent JWTClaims Class restricting access to base resources (e.g. /x-nmos)
+            claims_options["x-nmos-{}".format(nmos_api)] = {"essential": False}
+        elif isinstance(nmos_api, list):
+            for api_name in nmos_api:
+                claims_options["x-nmos-{}".format(api_name)] = {"essential": False}
+        claims_options["scope"]["value"] = nmos_api
     return claims_options
 
 

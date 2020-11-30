@@ -71,7 +71,7 @@ def get_auth_server_metadata(auth_href):
             resp = requests.get(url, timeout=0.5, proxies={'http': ''})
             resp.raise_for_status()  # Raise exception if not a 2XX status code
             return resp.json()
-        except RequestException as e:
+        except RequestException:
             pass
     return None
 

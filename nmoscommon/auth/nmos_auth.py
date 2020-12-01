@@ -84,9 +84,9 @@ class AuthMiddleware(object):
     public_key = None  # Shared Class Variable to share public key between instances
     key_last_refreshed = 0  # UTC time the public key was last fetched
 
-    def __init__(self, app, condition=OAUTH_MODE, api_name=""):
+    def __init__(self, app, auth_mode=OAUTH_MODE, api_name=""):
         self.app = app
-        self.condition = condition
+        self.auth_mode = auth_mode
         self.api_name = api_name
         self.auth_href = None
 
@@ -265,12 +265,14 @@ class AuthMiddleware(object):
         return
 
     def __call__(self, environ, start_response):
-        if not self.condition:
+        # Create Request object from WSGI environment
+        req = Request(environ)
+
+        # If not in Auth Mode or at a Base Resource, pass request through to app
+        if not self.auth_mode or req.path in ['/', '/x-nmos', '/x-nmos/']:
             # Pass request through to app unchanged
             return self.app(environ, start_response)
 
-        # Create Request object from WSGI environment
-        req = Request(environ)
         try:
             self.handleAuth(req, environ)
         except Exception as e:
@@ -294,6 +296,5 @@ class AuthMiddleware(object):
 
             response_body["status_code"] = status_code
             resp = Response(json.dumps(response_body), status=status_code, mimetype='application/json', headers=headers)
-            # resp = Response(body, status=status_code, headers=headers)
             return resp(environ, start_response)
         return self.app(environ, start_response)

@@ -14,11 +14,12 @@
 
 import requests
 import json
+import sys
+import traceback
 
 from os import path, sep
-from functools import wraps
 from time import time
-from flask import request, abort
+from flask import abort
 from werkzeug.wrappers import Request, Response
 from functools import reduce
 from six.moves.urllib.parse import urljoin, parse_qs
@@ -222,9 +223,9 @@ class AuthMiddleware(object):
                             claims_params=None)
         claims.validate()
 
-    def handleHttpAuth(self, request):
+    def handleHttpAuth(self, req):
         """Handle bearer token string ("Bearer xAgy65...") in "Authorzation" Request Header"""
-        auth_string = request.headers.get('Authorization', None)
+        auth_string = req.headers.get('Authorization', None)
         if auth_string is None:
             raise MissingAuthorizationError
         self.processAccessToken(auth_string)
@@ -269,17 +270,30 @@ class AuthMiddleware(object):
             return self.app(environ, start_response)
 
         # Create Request object from WSGI environment
-        request = Request(environ)
+        req = Request(environ)
         try:
-            self.handleAuth(request, environ)
+            self.handleAuth(req, environ)
         except Exception as e:
+            (exceptionType, exceptionParam, trace) = sys.exc_info()
+            response_body = {
+                'debug': str({
+                    'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                    'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
+                })
+            }
             if callable(e):
+                # Callable Authlib Exception returns JSON body
                 status_code, body, headers = e()
-                body = json.dumps(body)
+                response_body.update(body)
             else:
+                # Base Authlib Exception returns string __repr__
                 body = repr(e)
-                status_code = 400
-                headers = {}
-            resp = Response(body, status=status_code, headers=headers)
+                status_code = e.status_code if hasattr(e, "status_code") else 400
+                headers = e.headers if hasattr(e, 'headers') else None
+                response_body["error"] = body
+
+            response_body["status_code"] = status_code
+            resp = Response(json.dumps(response_body), status=status_code, mimetype='application/json', headers=headers)
+            # resp = Response(body, status=status_code, headers=headers)
             return resp(environ, start_response)
         return self.app(environ, start_response)

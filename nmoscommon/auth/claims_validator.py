@@ -16,6 +16,7 @@ import re
 
 from six import string_types
 from flask import abort
+from flask import request as flask_request
 from socket import getfqdn
 from fnmatch import fnmatch
 from authlib.jose import JWTClaims
@@ -75,7 +76,10 @@ class JWTClaimsValidator(JWTClaims):
         raise InvalidClaimError(
             "Hostname '{}' does not match aud claim value of '{}'".format(fqdn, actual_claim_value))
 
-    def validate_nmos(self, request):
+    def validate_nmos(self, request=None):
+
+        if not request:
+            request = flask_request
 
         # actual 'x-nmos-*' claims in JWT
         nmos_token_claims = {
@@ -145,6 +149,6 @@ class JWTClaimsValidator(JWTClaims):
         for claim_name in valid_claim_option.keys():
             _validate_permissions_object(claim_name)
 
-    def validate(self, environ, now=None, leeway=0):
+    def validate(self, req=None, now=None, leeway=0):
         super(JWTClaimsValidator, self).validate()
-        self.validate_nmos(environ)
+        self.validate_nmos(req)

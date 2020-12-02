@@ -14,11 +14,14 @@
 
 import requests
 import json
+import sys
+import traceback
 
 from os import path, sep
 from time import time
-from flask import abort, request
-from functools import reduce, wraps
+from flask import abort
+from werkzeug.wrappers import Request, Response
+from functools import reduce
 from six.moves.urllib.parse import urljoin, parse_qs
 from requests.exceptions import RequestException
 from authlib.jose import jwt, jwk
@@ -75,15 +78,15 @@ def get_auth_server_metadata(auth_href):
     return None
 
 
-class RequiresAuth(object):
+class AuthMiddleware(object):
 
     refresh_key_interval = 3600  # Time in Seconds until Public_key is refreshed
     public_key = None  # Shared Class Variable to share public key between instances
     key_last_refreshed = 0  # UTC time the public key was last fetched
 
-    def __init__(self, condition=OAUTH_MODE, api_name=""):
-        logger.writeWarning("The @RequiresAuth decorator is now deprecated in favour of the AuthMiddleware Class")
-        self.condition = condition
+    def __init__(self, app, auth_mode=OAUTH_MODE, api_name=""):
+        self.app = app
+        self.auth_mode = auth_mode
         self.api_name = api_name
         self.auth_href = None
 
@@ -201,44 +204,42 @@ class RequiresAuth(object):
             self.update_public_key(public_key)
         return self.public_key
 
-    def processAccessToken(self, auth_string):
+    def processAccessToken(self, auth_string, req):
         # Auth string is of type 'Bearer xAgy65..'
         if auth_string.find(' ') > -1:
             token_type, token_string = auth_string.split(None, 1)
             if token_type.lower() != "bearer":
-                raise UnsupportedTokenTypeError()
+                raise UnsupportedTokenTypeError
         # Otherwise string is access token 'xAgy65..'
         else:
             token_string = auth_string
         if token_string == "null" or token_string == "":
-            raise MissingAuthorizationError()
+            raise MissingAuthorizationError
         pubKey = self.getPublicKey()
         claims_options = generate_claims_options(self.api_name)
         claims = jwt.decode(s=token_string, key=pubKey,
                             claims_cls=JWTClaimsValidator,
                             claims_options=claims_options,
                             claims_params=None)
-        claims.validate()
+        claims.validate(req)
 
-    def handleHttpAuth(self):
+    def handleHttpAuth(self, req):
         """Handle bearer token string ("Bearer xAgy65...") in "Authorzation" Request Header"""
-        auth_string = request.headers.get('Authorization', None)
+        auth_string = req.headers.get('Authorization', None)
         if auth_string is None:
-            raise MissingAuthorizationError()
-        self.processAccessToken(auth_string)
+            raise MissingAuthorizationError
+        self.processAccessToken(auth_string, req)
 
-    def handleSocketAuth(self, *args, **kwargs):
+    def handleSocketAuth(self, req, environ):
         """Handle bearer token string ("access_token=xAgy65...") in Websocket URL Query Param"""
-        ws = args[0]
-        environment = ws.environ
-        auth_header = environment.get('HTTP_AUTHORIZATION', None)
+        auth_header = req.headers.get('Authorization', None)
         if auth_header is not None:
             logger.writeInfo("auth header string is {}".format(auth_header))
             auth_string = auth_header
             self.processAccessToken(auth_string)
         else:
             logger.writeWarning("Websocket does not have auth header, looking in query string..")
-            query_string = environment.get('QUERY_STRING', None)
+            query_string = environ.get('QUERY_STRING', None)
             try:
                 if query_string is not None:
                     auth_string = parse_qs(query_string)['access_token'][0]
@@ -246,34 +247,54 @@ class RequiresAuth(object):
                 else:
                     raise MissingAuthorizationError
             except (AuthlibBaseError, KeyError):
-                err = {"type": "error", "data": "Socket Authentication Error"}
-                ws.send(json.dumps(err))
                 logger.writeError("""
                     'access_token' URL param doesn't exist. Websocket authentication failed.
                 """)
                 raise
 
-    def JWTRequired(self):
-        def JWTDecorator(func):
-            @wraps(func)
-            def processAccessToken(*args, **kwargs):
-                # Check to see if request is a Websocket upgrade, else treat request as a standard HTTP request
-                headers = request.headers
-                if ('Upgrade' in headers.keys() and headers['Upgrade'].lower() == 'websocket'):
-                    logger.writeInfo("Using Socket handler")
-                    self.handleSocketAuth(*args, **kwargs)
-                else:
-                    logger.writeInfo("Using HTTP handler")
-                    self.handleHttpAuth()
-                return func(*args, **kwargs)
-            return processAccessToken
-        return JWTDecorator
+    def handleAuth(self, req, environ):
+        # Check to see if request is a Websocket upgrade, else treat request as a standard HTTP request
+        headers = req.headers
+        if ('Upgrade' in headers.keys() and headers['Upgrade'].lower() == 'websocket') or \
+                "Sec-Websocket-Key" in headers.keys():
+            logger.writeInfo("Using Socket handler")
+            self.handleSocketAuth(req, environ)
+        else:
+            logger.writeInfo("Using HTTP handler")
+            self.handleHttpAuth(req)
+        return
 
-    def __call__(self, func):
-        if not self.condition:
-            # Return the function unchanged, not decorated.
-            return func
+    def __call__(self, environ, start_response):
+        # Create Request object from WSGI environment
+        req = Request(environ)
 
-        # Return decorated function
-        decorator = self.JWTRequired()
-        return decorator(func)
+        # If not in Auth Mode or at a Base Resource, pass request through to app
+        if not self.auth_mode or req.path in ['/', '/x-nmos', '/x-nmos/']:
+            # Pass request through to app unchanged
+            return self.app(environ, start_response)
+
+        try:
+            self.handleAuth(req, environ)
+        except Exception as e:
+            (exceptionType, exceptionParam, trace) = sys.exc_info()
+            response_body = {
+                'debug': str({
+                    'traceback': [str(x) for x in traceback.extract_tb(trace)],
+                    'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
+                })
+            }
+            if callable(e):
+                # Callable Authlib Exception returns JSON body
+                status_code, body, headers = e()
+                response_body.update(body)
+            else:
+                # Base Authlib Exception returns string __repr__
+                body = repr(e)
+                status_code = e.status_code if hasattr(e, "status_code") else 400
+                headers = e.headers if hasattr(e, 'headers') else None
+                response_body["error"] = body
+
+            response_body["status_code"] = status_code
+            resp = Response(json.dumps(response_body), status=status_code, mimetype='application/json', headers=headers)
+            return resp(environ, start_response)
+        return self.app(environ, start_response)

@@ -21,6 +21,7 @@ from os import path, sep
 from time import time
 from flask import abort
 from werkzeug.wrappers import Request, Response
+from werkzeug.exceptions import HTTPException
 from functools import reduce
 from six.moves.urllib.parse import urljoin, parse_qs
 from requests.exceptions import RequestException
@@ -38,10 +39,6 @@ from .claims_validator import JWTClaimsValidator, generate_claims_options, logge
 # DISCOVERY AND CONFIG
 MDNS_SERVICE_TYPE = "nmos-auth"
 OAUTH_MODE = _config.get('oauth_mode', True)
-
-# CERTIFICATE FALLBACK PATH
-NMOSAUTH_DIR = path.abspath(path.join(sep, 'var', 'nmosauth'))
-CERT_FILE_PATH = path.join(NMOSAUTH_DIR, "certificate.pem")
 
 # KEY AND METADATA ENDPOINTS
 AUTH_APIROOT = 'x-nmos/auth/v1.0/'
@@ -141,17 +138,6 @@ class AuthMiddleware(object):
                 jwk_resp.headers['content-type']))
             raise ValueError
 
-    def getCertFromFile(self, file_path):
-        try:
-            if path.exists(file_path):
-                with open(file_path, 'r') as myfile:
-                    cert = myfile.read()
-                    return cert
-        except OSError:
-            logger.writeError("File {} does not exist or you do not have permission to open it".format(
-                file_path))
-            raise
-
     def getPublicKeyString(self, key_class):
         serialised_key = key_class.public_bytes(
             encoding=serialization.Encoding.PEM,
@@ -188,19 +174,16 @@ class AuthMiddleware(object):
             else:
                 return pubkey_string
         except Exception as e:
-            logger.writeError("Public Key(s) could not be extracted from JSON Web Keys. {}".format(e))
-            raise
+            logger.writeError(
+                "{}. Public Key could not be extracted from JSON Web Keys. Key object: {}".format(
+                    e, key_containing_object))
+            abort(500, "Public Key could not be extracted from JSON Web Keys")
 
     def getPublicKey(self):
         if self.public_key is None or self.key_last_refreshed + self.refresh_key_interval < time():
-            try:
-                logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
-                jwks = self.get_jwks()
-                public_key = self.extractPublicKey(jwks)
-            except RequestException as e:
-                logger.writeError("Error: {0!s}. Trying to fetch certificate from file".format(e))
-                cert = self.getCertFromFile(CERT_FILE_PATH)
-                public_key = self.extractPublicKey(cert)
+            logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
+            jwks = self.get_jwks()
+            public_key = self.extractPublicKey(jwks)
             self.update_public_key(public_key)
         return self.public_key
 
@@ -283,16 +266,20 @@ class AuthMiddleware(object):
                     'exception': [str(x) for x in traceback.format_exception_only(exceptionType, exceptionParam)]
                 })
             }
-            if callable(e):
-                # Callable Authlib Exception returns JSON body
+            if isinstance(e, AuthlibBaseError) and callable(e):
+                # Callable Authlib Exception returns JSON body containing "error" and "error_description"
                 status_code, body, headers = e()
                 response_body.update(body)
+            elif isinstance(e, HTTPException):
+                # HTTP Exception thrown by abort()
+                status_code = e.code
+                response_body["error"] = "{}: {}".format(e.name, e.description)
+                headers = {}
             else:
-                # Base Authlib Exception returns string __repr__
-                body = repr(e)
+                # Any other Exceptions e.g. BaseAuthlib Exception
                 status_code = e.status_code if hasattr(e, "status_code") else 400
+                response_body["error"] = str(e)
                 headers = e.headers if hasattr(e, 'headers') else None
-                response_body["error"] = body
 
             response_body["status_code"] = status_code
             resp = Response(json.dumps(response_body), status=status_code, mimetype='application/json', headers=headers)

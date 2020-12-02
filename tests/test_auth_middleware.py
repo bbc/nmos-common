@@ -39,14 +39,21 @@ class TestAuthMiddleware(unittest.TestCase):
         self.client = self.app.test_client()
         self.create_dummy_routes()  # add test routes to dummy Flask instance
 
+    def tearDown(self):
+        AuthMiddleware.public_key = None
+
     def create_dummy_routes(self):
         self.app.route('/')(self.dummy)
         self.app.route('/x-nmos/')(self.dummy)
         self.app.route('/x-nmos/registration/')(self.dummy)
-        self.app.route('/x-nmos/query/')(self.dummy)
-        self.app.route('/x-nmos/connection/')(self.dummy)
         self.app.route('/x-nmos/registration/v1.1/')(self.dummy)
         self.app.route('/x-nmos/registration/v1.1/health/')(self.dummy)
+        self.app.route('/x-nmos/query/')(self.dummy)
+        self.app.route('/x-nmos/query/v1.1/')(self.dummy)
+        self.app.route('/x-nmos/query/v1.1/senders')(self.dummy)
+        self.app.route('/x-nmos/connection/')(self.dummy)
+        self.app.route('/x-nmos/connection/v1.1/')(self.dummy)
+        self.app.route('/x-nmos/connection/v1.1/senders')(self.dummy)
 
     def dummy(self):
         return "SUCCESS"
@@ -101,10 +108,74 @@ class TestAuthMiddleware(unittest.TestCase):
         self.app.wsgi_app = AuthMiddleware(self.base_wsgi_app, auth_mode=False)
         res = self.client.get('/x-nmos/query/')
         self.assertEqual(200, res.status_code)
+        res = self.client.get('/x-nmos/query/v1.1/')
+        self.assertEqual(200, res.status_code)
+        res = self.client.get('/x-nmos/query/v1.1/senders')
+        self.assertEqual(200, res.status_code)
         # SHOULD RETURN 401 WHEN AUTH TURNED BACK ON
         self.app.wsgi_app = AuthMiddleware(self.base_wsgi_app, auth_mode=True)
         res = self.client.get('/x-nmos/query/')
         self.assertEqual(401, res.status_code)
+        res = self.client.get('/x-nmos/query/v1.1/')
+        self.assertEqual(401, res.status_code)
+        res = self.client.get('/x-nmos/query/v1.1/senders')
+        self.assertEqual(401, res.status_code)
+
+    def test_api_calls(self):
+        mock_headers = {"Authorization": "Bearer " + BEARER_TOKEN["access_token"]}
+
+        with mock.patch.object(AuthMiddleware, "get_jwks") as mock_get_jwks:
+            mock_get_jwks.return_value = TEST_JWK
+
+            # Check that a base request with no api_name succeeds
+            res = self.client.get('/x-nmos/', headers=mock_headers)
+            self.assertEqual(200, res.status_code)
+
+            # Check that a base request with missing x-nmos claim fails
+            self.app.wsgi_app = AuthMiddleware(self.base_wsgi_app, auth_mode=True, api_name="query")
+            res = self.client.get('/x-nmos/query/', headers=mock_headers)
+            self.assertEqual(400, res.status_code)
+            self.assertIn("missing_claim", res.json["error"])
+
+            # Check that a request to an endpoint not specified in constructor parameters fails
+            self.app.wsgi_app = AuthMiddleware(self.base_wsgi_app, auth_mode=True, api_name="query")
+            res = self.client.get('/x-nmos/registration/', headers=mock_headers)
+            self.assertEqual(400, res.status_code)
+            self.assertIn("missing_claim", res.json["error"])
+
+            # Check that a base request with api_name in token succeeds
+            self.app.wsgi_app = AuthMiddleware(self.base_wsgi_app, auth_mode=True, api_name="registration")
+            res = self.client.get('/x-nmos/registration/', headers=mock_headers)
+            self.assertEqual(200, res.status_code)
+
+    def test_api_calls_with_incorrect_service(self):
+        mock_headers = {"Authorization": "Bearer " + BEARER_TOKEN["access_token"]}
+
+        with mock.patch("nmoscommon.auth.auth_middleware.MDNS_SERVICE_TYPE") as mock_service:
+            mock_service = "this_is_definitely_not a service"
+            res = self.client.get('/x-nmos/registration/', headers=mock_headers)
+            self.assertEqual(500, res.status_code)
+            self.assertIn("authorization server could not be found", res.json["error"].lower())
+
+    def test_api_calls_with_bad_jwk_url(self):
+        mock_headers = {"Authorization": "Bearer " + BEARER_TOKEN["access_token"]}
+
+        with mock.patch.object(AuthMiddleware, "_get_jwk_url") as mock_jwk_url:
+            mock_jwk_url.return_value = "http://something_that_should_fail.test"
+
+            res = self.client.get('/x-nmos/registration/', headers=mock_headers)
+            self.assertEqual(500, res.status_code)
+            self.assertIn("could not retrieve the json web key", res.json["error"].lower())
+
+    def test_extract_public_key(self):
+        mock_headers = {"Authorization": "Bearer " + BEARER_TOKEN["access_token"]}
+
+        with mock.patch.object(AuthMiddleware, "get_jwks") as mock_get_jwks:
+            mock_get_jwks.return_value = "I am not a valid JSON Web Key"
+
+            res = self.client.get('/x-nmos/registration/', headers=mock_headers)
+            self.assertEqual(500, res.status_code)
+            self.assertIn("public key could not be extracted from json web key", res.json["error"].lower())
 
     def test_handle_auth(self):
         mock_req = mock.MagicMock()

@@ -15,7 +15,7 @@
 import re
 
 from six import string_types
-from flask import request, abort
+from flask import abort
 from socket import getfqdn
 from fnmatch import fnmatch
 from authlib.jose import JWTClaims
@@ -41,7 +41,7 @@ def generate_claims_options(nmos_api):
     }
     if nmos_api:
         if isinstance(nmos_api, str):
-            # Essential: False - to prevent JWTClaims Class restricting access to base resources (e.g. /x-nmos)
+            # Essential: False - as a scope claim is sufficient to access base resources (e.g. /x-nmos/query)
             claims_options["x-nmos-{}".format(nmos_api)] = {"essential": False}
         elif isinstance(nmos_api, list):
             for api_name in nmos_api:
@@ -61,7 +61,7 @@ class JWTClaimsValidator(JWTClaims):
     def validate_sub(self):  # placeholder
         super(JWTClaimsValidator, self).validate_sub()
 
-    def validate_aud(self):  # placeholder
+    def validate_aud(self):
         super(JWTClaimsValidator, self).validate_aud()
         claim_name = "aud"
         fqdn = getfqdn()  # Fully qualified domain name of Resource Server
@@ -75,7 +75,7 @@ class JWTClaimsValidator(JWTClaims):
         raise InvalidClaimError(
             "Hostname '{}' does not match aud claim value of '{}'".format(fqdn, actual_claim_value))
 
-    def validate_nmos(self):
+    def validate_nmos(self, request):
 
         # actual 'x-nmos-*' claims in JWT
         nmos_token_claims = {
@@ -109,7 +109,7 @@ class JWTClaimsValidator(JWTClaims):
             url_access_list = access_permission_object.get(access_right)
             if not url_access_list:
                 raise InvalidClaimError(
-                    "{}. No entry in permissions object for '{}'.".format(claim_name, access_right))
+                    "{}. No entry in permissions object for '{}'".format(claim_name, access_right))
 
             pattern = re.compile(r'/x-nmos/[a-z]+/v[0-9]+\.[0-9]+/(.*)')  # Capture path after namespace
             sub_path = pattern.match(request.path).group(1)
@@ -117,7 +117,7 @@ class JWTClaimsValidator(JWTClaims):
                 if fnmatch(sub_path, wildcard_url):
                     return
 
-            raise InvalidClaimError("{}. No matching paths in token claim: {} for URL path: '{}'.".format(
+            raise InvalidClaimError("{}. No matching paths in token claim: {} for URL path: '{}'".format(
                 claim_name, url_access_list, sub_path))
 
         # base resources do not require authorization
@@ -127,23 +127,24 @@ class JWTClaimsValidator(JWTClaims):
         # if request path is /x-nmos/api_name[/version/], then permit access, providing claim or scope is present
         path_regex = re.search(r'^/x-nmos/([a-z]+)/?(v[0-9]+\.[0-9]+)?/?$', request.path)
         if path_regex:
-            api_name = path_regex.group(1)  # e.g. query, registration, etc.
-            # api_name must be in scope claim in claim_options or x-nmos-<api_name> claim must exist
-            if api_name not in self.options.get("scope").get("value") and \
-                    "x-nmos-{}".format(api_name) not in list(valid_claim_option.keys()):
+            # api_name = path_regex.group(1)  # e.g. query, registration, etc.
+            scope_option = self.options.get("scope").get("value")
+            # scope in claim_options must be in token or x-nmos-<api_name> claim must exist
+            if scope_option not in self.get("scope") and \
+                    "x-nmos-{}".format(scope_option) not in list(nmos_token_claims.keys()):
                 raise MissingClaimError(
-                    "Missing {} from scope claim or 'x-nmos-{}' claim from token".format(api_name, api_name))
+                    "Missing {} from scope claim or 'x-nmos-{}' claim from token".format(scope_option, scope_option))
             else:
                 return
 
         # Check that all x-nmos claims in "actual_claims" are in "valid_claims"
         if not all(claim_name in nmos_token_claims.keys() for claim_name in valid_claim_option.keys()):
-            raise MissingClaimError("One of: {} is missing from 'x-nmos' token claims: '{}'.".format(
+            raise MissingClaimError("One of: {} is missing from 'x-nmos' token claims: '{}'".format(
                 list(valid_claim_option.keys()), list(nmos_token_claims.keys())))
 
         for claim_name in valid_claim_option.keys():
             _validate_permissions_object(claim_name)
 
-    def validate(self, now=None, leeway=0):
+    def validate(self, environ, now=None, leeway=0):
         super(JWTClaimsValidator, self).validate()
-        self.validate_nmos()
+        self.validate_nmos(environ)

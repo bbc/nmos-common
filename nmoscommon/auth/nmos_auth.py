@@ -204,7 +204,7 @@ class AuthMiddleware(object):
             self.update_public_key(public_key)
         return self.public_key
 
-    def processAccessToken(self, auth_string):
+    def processAccessToken(self, auth_string, req):
         # Auth string is of type 'Bearer xAgy65..'
         if auth_string.find(' ') > -1:
             token_type, token_string = auth_string.split(None, 1)
@@ -221,14 +221,14 @@ class AuthMiddleware(object):
                             claims_cls=JWTClaimsValidator,
                             claims_options=claims_options,
                             claims_params=None)
-        claims.validate()
+        claims.validate(req)
 
     def handleHttpAuth(self, req):
         """Handle bearer token string ("Bearer xAgy65...") in "Authorzation" Request Header"""
         auth_string = req.headers.get('Authorization', None)
         if auth_string is None:
             raise MissingAuthorizationError
-        self.processAccessToken(auth_string)
+        self.processAccessToken(auth_string, req)
 
     def handleSocketAuth(self, req, environ):
         """Handle bearer token string ("access_token=xAgy65...") in Websocket URL Query Param"""

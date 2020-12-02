@@ -218,7 +218,7 @@ class RequiresAuth(object):
                             claims_cls=JWTClaimsValidator,
                             claims_options=claims_options,
                             claims_params=None)
-        claims.validate()
+        claims.validate(req=None)  # Request=None as Flask request proxy object used instead
 
     def handleHttpAuth(self):
         """Handle bearer token string ("Bearer xAgy65...") in "Authorzation" Request Header"""

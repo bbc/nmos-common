@@ -149,6 +149,6 @@ class JWTClaimsValidator(JWTClaims):
         for claim_name in valid_claim_option.keys():
             _validate_permissions_object(claim_name)
 
-    def validate(self, req=None, now=None, leeway=0):
+    def validate(self, req, now=None, leeway=0):
         super(JWTClaimsValidator, self).validate()
         self.validate_nmos(req)

@@ -161,7 +161,7 @@ class TestRequiresAuth(unittest.TestCase):
     def testExtractPublicKeyWithCert(self):
         self.assertEqual(self.security.extractPublicKey(CERT), PUB_KEY)
 
-    @mock.patch("nmoscommon.auth.claims_validator.request")
+    @mock.patch("nmoscommon.auth.claims_validator.flask_request")
     @mock.patch.object(RequiresAuth, "get_jwks")
     @mock.patch("nmoscommon.auth.nmos_auth.request")
     def testJWTClaimsValidator_x_nmos(self, mockRequest, mockGetJwk, mockValidatorRequest):
@@ -187,49 +187,75 @@ class TestRequiresAuth(unittest.TestCase):
         # "iat": 1581420052
         # }
 
+        ############### READ REQUESTS ###################
         mockValidatorRequest.method = "GET"
 
         # Any api_name should be permitted for base resources, even when not included in token
+        self.security = RequiresAuth(condition=True, api_name="query")
         mockValidatorRequest.path = "/"
-        self.security = RequiresAuth(condition=True, api_name="query")
         self.assertEqual(self.security(self.dummy)(), "SUCCESS")
-
         mockValidatorRequest.path = "/x-nmos"
-        self.security = RequiresAuth(condition=True, api_name="query")
-        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
 
-        mockValidatorRequest.path = "/x-nmos/registration/v1.0/"
-        # "query" and "connection should fail
-        self.security = RequiresAuth(condition=True, api_name="query")
+        # "query" should not pass as READ is not in token
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        mockValidatorRequest.path = "/x-nmos/query/"
         self.assertRaises(MissingClaimError, self.security(self.dummy))
-        self.security = RequiresAuth(condition=True, api_name="connection")
+        mockValidatorRequest.path = "/x-nmos/query/v1.1/"
+        self.assertRaises(MissingClaimError, self.security(self.dummy))
+        mockValidatorRequest.path = "/x-nmos/query/v1.1/senders"
         self.assertRaises(MissingClaimError, self.security(self.dummy))
 
-        mockValidatorRequest.path = "/x-nmos/registration/v1.2/health/nodes"
-        # "query" should fail as not in token
-        self.security = RequiresAuth(condition=True, api_name="query")
-        self.assertRaises(MissingClaimError, self.security(self.dummy))
-        # "connection" should pass as it allows READ in token
-        self.security = RequiresAuth(condition=True, api_name="connection")
-        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
         # "registration" should pass as it allows READ in token
         self.security = RequiresAuth(condition=True, api_name="registration")
+        mockValidatorRequest.path = "/x-nmos/registration/"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        mockValidatorRequest.path = "/x-nmos/registration/v1.1/"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        mockValidatorRequest.path = "/x-nmos/registration/v1.1/health"
         self.assertEqual(self.security(self.dummy)(), "SUCCESS")
 
+        # "connection" should pass as it allows READ in token
+        self.security = RequiresAuth(condition=True, api_name="connection")
+        mockValidatorRequest.path = "/x-nmos/connection/"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        mockValidatorRequest.path = "/x-nmos/connection/v1.1/"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        mockValidatorRequest.path = "/x-nmos/connection/v1.1/senders"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+
+
+        ############### WRITE REQUESTS ###################
         mockValidatorRequest.method = "POST"
 
         # "query" should fail as not included in token
         self.security = RequiresAuth(condition=True, api_name="query")
+        mockValidatorRequest.path = "/x-nmos/query/"
         self.assertRaises(MissingClaimError, self.security(self.dummy))
+        mockValidatorRequest.path = "/x-nmos/query/v1.1/"
+        self.assertRaises(MissingClaimError, self.security(self.dummy))
+        mockValidatorRequest.path = "/x-nmos/query/v1.1/senders"
+        self.assertRaises(MissingClaimError, self.security(self.dummy))
+
         # "connection" doesn't allow WRITE in token
         self.security = RequiresAuth(condition=True, api_name="connection")
+        mockValidatorRequest.path = "/x-nmos/connection/"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        mockValidatorRequest.path = "/x-nmos/connection/v1.1/"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        mockValidatorRequest.path = "/x-nmos/connection/v1.1/senders"
         self.assertRaises(InvalidClaimError, self.security(self.dummy))
+
         # "registration" allows WRITE in token
         self.security = RequiresAuth(condition=True, api_name="registration")
+        mockValidatorRequest.path = "/x-nmos/registration/"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        mockValidatorRequest.path = "/x-nmos/registration/v1.1/"
+        self.assertEqual(self.security(self.dummy)(), "SUCCESS")
+        mockValidatorRequest.path = "/x-nmos/registration/v1.1/health"
         self.assertEqual(self.security(self.dummy)(), "SUCCESS")
 
     @mock.patch("nmoscommon.auth.claims_validator.getfqdn")
-    @mock.patch("nmoscommon.auth.claims_validator.request")
+    @mock.patch("nmoscommon.auth.claims_validator.flask_request")
     @mock.patch.object(RequiresAuth, "get_jwks")
     @mock.patch("nmoscommon.auth.nmos_auth.request")
     def testJWTClaimsValidator_aud(self, mockRequest, mockGetJwk, mockValidatorRequest, mockGetFQDN):

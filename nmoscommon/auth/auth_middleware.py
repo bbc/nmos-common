@@ -17,7 +17,6 @@ import json
 import sys
 import traceback
 
-from os import path, sep
 from time import time
 from flask import abort
 from werkzeug.wrappers import Request, Response

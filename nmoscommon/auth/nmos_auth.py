@@ -34,15 +34,12 @@ from .claims_validator import JWTClaimsValidator, generate_claims_options, logge
 
 # DISCOVERY AND CONFIG
 MDNS_SERVICE_TYPE = "nmos-auth"
-OAUTH_MODE = _config.get('oauth_mode', True)
+OAUTH_MODE = _config.get('oauth_mode', False)
 
 # CERTIFICATE FALLBACK PATH
 NMOSAUTH_DIR = path.abspath(path.join(sep, 'var', 'nmosauth'))
 CERT_FILE_PATH = path.join(NMOSAUTH_DIR, "certificate.pem")
 
-# KEY AND METADATA ENDPOINTS
-AUTH_APIROOT = 'x-nmos/auth/v1.0/'
-DEFAULT_JWKS_ENDPOINT = urljoin(AUTH_APIROOT, 'jwks')
 SERVER_METADATA_ENDPOINTS = [
     '.well-known/oauth-authorization-server',
     '.well-known/openid-configuration'
@@ -69,10 +66,10 @@ def get_auth_server_metadata(auth_href):
             url = urljoin(auth_href, metadata_endpoint)
             resp = requests.get(url, timeout=0.5, proxies={'http': ''})
             resp.raise_for_status()  # Raise exception if not a 2XX status code
-            return resp.json()
+            return resp.json(), url
         except RequestException:
             pass
-    return None
+    return (None, None)
 
 
 class RequiresAuth(object):
@@ -104,7 +101,7 @@ class RequiresAuth(object):
             logger.writeError(
                 "No services of type '{}' could be found. Cannot validate Authorization token.".format(service_type))
             abort(500, "A valid authorization server could not be found via DNS-SD")
-        metadata = get_auth_server_metadata(self.auth_href)
+        metadata, metadata_url = get_auth_server_metadata(self.auth_href)
         if metadata is not None and "jwks_uri" in metadata:
             return metadata.get("jwks_uri")
         else:
@@ -150,6 +147,10 @@ class RequiresAuth(object):
             raise
 
     def getPublicKeyString(self, key_class):
+        # authlib v0.15 changes the return value of jwk.loads()
+        if hasattr(key_class, "get_public_key"):
+            key_class = key_class.get_public_key()
+
         serialised_key = key_class.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
@@ -171,10 +172,10 @@ class RequiresAuth(object):
         A string will be treated like a X509 certificate"""
         try:
             if isinstance(key_containing_object, dict):
-                pub_key = jwk.loads(key_containing_object).get_public_key()
+                pub_key = jwk.loads(key_containing_object)
             elif isinstance(key_containing_object, list):
                 newest_key = self.findMostRecentJWK(key_containing_object)
-                pub_key = jwk.loads(newest_key).get_public_key()
+                pub_key = jwk.loads(newest_key)
             elif isinstance(key_containing_object, str):
                 key_containing_object = key_containing_object.encode()
                 crt_obj = x509.load_pem_x509_certificate(key_containing_object, default_backend())

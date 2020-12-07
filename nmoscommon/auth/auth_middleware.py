@@ -33,6 +33,7 @@ from cryptography.hazmat.primitives import serialization
 
 from ..mdnsbridge import IppmDNSBridge
 from ..nmoscommonconfig import config as _config
+from ..logger import Logger
 from .claims_validator import JWTClaimsValidator, generate_claims_options, logger
 
 # DISCOVERY AND CONFIG
@@ -77,11 +78,12 @@ class AuthMiddleware(object):
     public_key = None  # Shared Class Variable to share public key between instances
     key_last_refreshed = 0  # UTC time the public key was last fetched
 
-    def __init__(self, app, auth_mode=OAUTH_MODE, api_name=""):
+    def __init__(self, app, auth_mode=OAUTH_MODE, api_name="", logger=None):
         self.app = app
         self.auth_mode = auth_mode
         self.api_name = api_name
         self.auth_href = None
+        self.logger = Logger("auth_middleware", logger)
 
     @classmethod
     def update_public_key(cls, public_key):
@@ -93,11 +95,11 @@ class AuthMiddleware(object):
         if auth_href:
             self.auth_href = auth_href
         elif not auth_href and self.auth_href:
-            logger.writeWarning(
+            self.logger.writeWarning(
                 "Could not find service of type: '{}'. Using previously found metadata endpoint: {}.".format(
                     service_type, self.auth_href))
         else:
-            logger.writeError(
+            self.logger.writeError(
                 "No services of type '{}' could be found. Cannot validate Authorization token.".format(service_type))
             abort(500, "A valid authorization server could not be found via DNS-SD")
         metadata, metadata_url = get_auth_server_metadata(self.auth_href)
@@ -105,17 +107,17 @@ class AuthMiddleware(object):
             return metadata.get("jwks_uri")
         else:
             # Construct default URI
-            logger.writeWarning("Could not locate metadata endpoint at {}".format(self.auth_href))
+            self.logger.writeWarning("Could not locate metadata endpoint at {}".format(self.auth_href))
             abort(500, "A valid authorization server could not be found via DNS-SD")
 
     def get_jwks(self):
         try:
             jwk_href = self._get_jwk_url(MDNS_SERVICE_TYPE)
-            logger.writeInfo('JWK endpoint is: {}'.format(jwk_href))
+            self.logger.writeInfo('JWK endpoint is: {}'.format(jwk_href))
             jwk_resp = requests.get(jwk_href, timeout=0.5, proxies={'http': ''})
             jwk_resp.raise_for_status()  # Raise error if status !=200
         except RequestException as e:
-            logger.writeError("Error: {}. Cannot find JSON Web Key Endpoint at {}.".format(e, jwk_href))
+            self.logger.writeError("Error: {}. Cannot find JSON Web Key Endpoint at {}.".format(e, jwk_href))
             abort(500, "Could not retrieve the JSON Web Key from: {}".format(jwk_href))
 
         if "application/json" in jwk_resp.headers['content-type']:
@@ -127,10 +129,10 @@ class AuthMiddleware(object):
                     jwks_keys = jwks
                 return jwks_keys
             except Exception as e:
-                logger.writeError("Error: {}. JWK endpoint contains: {}".format(str(e), jwk_resp.text))
+                self.logger.writeError("Error: {}. JWK endpoint contains: {}".format(str(e), jwk_resp.text))
                 raise
         else:
-            logger.writeError("Incorrect Content-Type. Expected 'application/json but got {}".format(
+            self.logger.writeError("Incorrect Content-Type. Expected 'application/json but got {}".format(
                 jwk_resp.headers['content-type']))
             raise ValueError
 
@@ -149,10 +151,10 @@ class AuthMiddleware(object):
         """Finds the JWK with the most recent timestamp inside the 'kid' property"""
         try:
             newest_key = reduce(
-                lambda a, b: a if int(a["kid"].lstrip("x-nmos-")) > int(b["kid"].lstrip("x-nmos-")) else b, jwks)
+                lambda a, b: a if (a["kid"].lstrip("x-nmos-")) > (b["kid"].lstrip("x-nmos-")) else b, jwks)
             return newest_key
         except KeyError as e:
-            logger.writeError("JSON Web Key 'kid' parameter is missing or malformed. {}".format(e))
+            self.logger.writeError("JSON Web Key 'kid' parameter is missing or malformed. {}".format(e))
             raise
 
     def extractPublicKey(self, key_containing_object):
@@ -170,18 +172,18 @@ class AuthMiddleware(object):
                 pub_key = crt_obj.public_key()
             pubkey_string = self.getPublicKeyString(pub_key)
             if pubkey_string is None:
-                logger.writeError("Public Key could not be extracted from certificate")
+                self.logger.writeError("Public Key could not be extracted from certificate")
             else:
                 return pubkey_string
         except Exception as e:
-            logger.writeError(
+            self.logger.writeError(
                 "{}. Public Key could not be extracted from JSON Web Keys. Key object: {}".format(
                     e, key_containing_object))
             abort(500, "Public Key could not be extracted from JSON Web Keys")
 
     def getPublicKey(self):
         if self.public_key is None or self.key_last_refreshed + self.refresh_key_interval < time():
-            logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
+            self.logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
             jwks = self.get_jwks()
             public_key = self.extractPublicKey(jwks)
             self.update_public_key(public_key)
@@ -217,11 +219,11 @@ class AuthMiddleware(object):
         """Handle bearer token string ("access_token=xAgy65...") in Websocket URL Query Param"""
         auth_header = req.headers.get('Authorization', None)
         if auth_header is not None:
-            logger.writeInfo("auth header string is {}".format(auth_header))
+            self.logger.writeInfo("auth header string is {}".format(auth_header))
             auth_string = auth_header
             self.processAccessToken(auth_string)
         else:
-            logger.writeWarning("Websocket does not have auth header, looking in query string..")
+            self.logger.writeWarning("Websocket does not have auth header, looking in query string..")
             query_string = environ.get('QUERY_STRING', None)
             try:
                 if query_string is not None:
@@ -230,7 +232,7 @@ class AuthMiddleware(object):
                 else:
                     raise MissingAuthorizationError
             except (AuthlibBaseError, KeyError):
-                logger.writeError("""
+                self.logger.writeError("""
                     'access_token' URL param doesn't exist. Websocket authentication failed.
                 """)
                 raise
@@ -240,10 +242,10 @@ class AuthMiddleware(object):
         headers = req.headers
         if ('Upgrade' in headers.keys() and headers['Upgrade'].lower() == 'websocket') or \
                 "Sec-Websocket-Key" in headers.keys():
-            logger.writeInfo("Using Socket handler")
+            self.logger.writeInfo("Using Socket handler")
             self.handleSocketAuth(req, environ)
         else:
-            logger.writeInfo("Using HTTP handler")
+            # self.logger.writeInfo("Using HTTP handler")
             self.handleHttpAuth(req)
         return
 
@@ -281,6 +283,7 @@ class AuthMiddleware(object):
                 response_body["error"] = str(e)
                 headers = e.headers if hasattr(e, 'headers') else None
 
+            self.logger.writeError("Status Code: {}. Path: {}. Error: {}".format(status_code, environ["PATH_INFO"], response_body["error"]))
             response_body["status_code"] = status_code
             resp = Response(json.dumps(response_body), status=status_code, mimetype='application/json', headers=headers)
             return resp(environ, start_response)

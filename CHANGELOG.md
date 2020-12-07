@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.20.0
+- Add Auth Middleware for checking incoming JSON Web Tokens (deprecate RequiresAuth Decorator)
+
 ## 0.19.24
 - Pin back zeroconf-monkey version.
 

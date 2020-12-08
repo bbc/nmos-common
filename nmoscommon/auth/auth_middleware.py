@@ -21,7 +21,6 @@ from time import time
 from flask import abort
 from werkzeug.wrappers import Request, Response
 from werkzeug.exceptions import HTTPException
-from functools import reduce
 from six.moves.urllib.parse import urljoin, parse_qs
 from requests.exceptions import RequestException
 from authlib.jose import jwt, jwk
@@ -74,7 +73,8 @@ def get_auth_server_metadata(auth_href):
 
 class AuthMiddleware(object):
 
-    refresh_key_interval = 3600  # Time in Seconds until Public_key is refreshed
+    REFRESH_KEY_INTERVAL = 3600  # Time in Seconds until Public_key is refreshed
+    TOKEN_ALG = "RS512"  # Algorithm to search for within JSON Wek Keys
     public_key = None  # Shared Class Variable to share public key between instances
     key_last_refreshed = 0  # UTC time the public key was last fetched
 
@@ -147,25 +147,23 @@ class AuthMiddleware(object):
         )
         return serialised_key.decode('utf-8')
 
-    def findMostRecentJWK(self, jwks):
+    def findJWKByAlg(self, jwks, alg):
         """Finds the JWK with the most recent timestamp inside the 'kid' property"""
-        try:
-            newest_key = reduce(
-                lambda a, b: a if (a["kid"].lstrip("x-nmos-")) > (b["kid"].lstrip("x-nmos-")) else b, jwks)
-            return newest_key
-        except KeyError as e:
-            self.logger.writeError("JSON Web Key 'kid' parameter is missing or malformed. {}".format(e))
-            raise
+        for key in jwks:
+            if key['alg'] == alg:
+                return key
+        raise ValueError("No JSON Web Key matching algorithm: {}".format(alg))
 
     def extractPublicKey(self, key_containing_object):
         """Extracts a key from the given parameter. A list or a dict object will be treated as a JWK or JWKS structure.
         A string will be treated like a X509 certificate"""
         try:
             if isinstance(key_containing_object, dict):
+                rsa_key = self.findJWKByAlg([key_containing_object], self.TOKEN_ALG)
                 pub_key = jwk.loads(key_containing_object)
             elif isinstance(key_containing_object, list):
-                newest_key = self.findMostRecentJWK(key_containing_object)
-                pub_key = jwk.loads(newest_key)
+                rsa_key = self.findJWKByAlg(key_containing_object, self.TOKEN_ALG)
+                pub_key = jwk.loads(rsa_key)
             elif isinstance(key_containing_object, str):
                 key_containing_object = key_containing_object.encode()
                 crt_obj = x509.load_pem_x509_certificate(key_containing_object, default_backend())
@@ -182,7 +180,7 @@ class AuthMiddleware(object):
             abort(500, "Public Key could not be extracted from JSON Web Keys")
 
     def getPublicKey(self):
-        if self.public_key is None or self.key_last_refreshed + self.refresh_key_interval < time():
+        if self.public_key is None or self.key_last_refreshed + self.REFRESH_KEY_INTERVAL < time():
             self.logger.writeInfo("Fetching JSON Web Keys using DNS Service Discovery")
             jwks = self.get_jwks()
             public_key = self.extractPublicKey(jwks)

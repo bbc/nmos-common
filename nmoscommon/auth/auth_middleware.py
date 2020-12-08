@@ -34,7 +34,7 @@ from cryptography.hazmat.primitives import serialization
 from ..mdnsbridge import IppmDNSBridge
 from ..nmoscommonconfig import config as _config
 from ..logger import Logger
-from .claims_validator import JWTClaimsValidator, generate_claims_options, logger
+from .claims_validator import JWTClaimsValidator, generate_claims_options
 
 # DISCOVERY AND CONFIG
 MDNS_SERVICE_TYPE = "nmos-auth"
@@ -283,7 +283,8 @@ class AuthMiddleware(object):
                 response_body["error"] = str(e)
                 headers = e.headers if hasattr(e, 'headers') else None
 
-            self.logger.writeError("Status Code: {}. Path: {}. Error: {}".format(status_code, environ["PATH_INFO"], response_body["error"]))
+            self.logger.writeError("Status Code: {}. Path: {}. Error: {}".format(
+                status_code, environ["PATH_INFO"], response_body["error"]))
             response_body["status_code"] = status_code
             resp = Response(json.dumps(response_body), status=status_code, mimetype='application/json', headers=headers)
             return resp(environ, start_response)

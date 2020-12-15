@@ -142,7 +142,7 @@ packages_required = [
     "ujson>=1.33",
     "mediatimestamp>=1.0.1,<2.0.0",
     "mediajson>=1.0.0,<2.0.0",
-    "authlib>=0.10",
+    "authlib>=0.13,<1.0",  # Authlib v1.0 alters API of JWK object
     "pyopenssl",
     "cryptography",
     "dnspython>=1.12.0"
@@ -182,7 +182,7 @@ deps_required = []
 
 setup(
     name="nmoscommon",
-    version="0.20.0",
+    version="0.20.1",
     description="Common components for the BBC's NMOS implementations",
     url='https://github.com/bbc/nmos-common',
     author='Peter Brightwell',

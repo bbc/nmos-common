@@ -24,7 +24,7 @@ from authlib.jose.errors import InvalidClaimError, MissingClaimError
 
 from ..logger import Logger as defaultLogger
 
-logger = defaultLogger("authresource")
+logger = defaultLogger("token_validator")
 
 
 def generate_claims_options(nmos_api):

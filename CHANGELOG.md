@@ -1,5 +1,8 @@
 # NMOS Common Library Changelog
 
+## 0.20.1
+- Fix way in which correct JWK is selected when multiple are present at endpoint
+
 ## 0.20.0
 - Add Auth Middleware for checking incoming JSON Web Tokens (deprecate RequiresAuth Decorator)
 

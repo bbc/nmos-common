@@ -246,9 +246,9 @@ class TestAuthMiddleware(unittest.TestCase):
         self.assertTrue(isinstance(jwks_resp, list))
         self.assertEqual(jwks_resp, TEST_JWKS['keys'])
 
-    def testfindMostRecentJWK(self):
-        self.assertEqual(self.middleware.findMostRecentJWK(TEST_JWKS["keys"]), TEST_JWKS["keys"][0])
-        self.assertNotEqual(self.middleware.findMostRecentJWK(TEST_JWKS["keys"]), TEST_JWKS["keys"][1])
+    def testfindJWKByAlg(self):
+        self.assertEqual(self.middleware.findJWKByAlg(TEST_JWKS["keys"], "RS512"), TEST_JWKS["keys"][0])
+        self.assertRaises(ValueError, self.middleware.findJWKByAlg, TEST_JWKS["keys"], "RS256")
 
     def testExtractPublicKeyWithJWK(self):
         self.assertRaises(Exception, self.middleware.extractPublicKey, "")
@@ -256,7 +256,7 @@ class TestAuthMiddleware(unittest.TestCase):
 
     def testExtractPublicKeyWithJWKS(self):
         self.assertRaises(Exception, self.middleware.extractPublicKey, "")
-        self.assertEqual(self.middleware.extractPublicKey(TEST_JWKS["keys"][0]), PUB_KEY)
+        self.assertEqual(self.middleware.extractPublicKey(TEST_JWKS["keys"]), PUB_KEY)
 
     def testExtractPublicKeyWithCert(self):
         self.assertEqual(self.middleware.extractPublicKey(CERT), PUB_KEY)

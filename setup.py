@@ -118,13 +118,13 @@ package_names = packages.keys()
 
 # REMEMBER: If this list is updated, please also update stdeb.cfg
 packages_required = [
-    "gevent>=1.2.2,<=1.4.0",
-    "greenlet>=0.4.13",
+    "gevent>=20.4.0",
+    "greenlet>=0.4.17",
     "gevent-websocket>=0.9.3",
     "six>=1.10.0",
     "flask>=0.10.1",
     "jinja2>=2.7.2",
-    "werkzeug>=0.14.1,<1.0.0",
+    "werkzeug>=2.0.0",
     "itsdangerous>=0.24",
     "socketio-client>=0.5.3",
     "flask-sockets>=0.1",
@@ -145,7 +145,8 @@ packages_required = [
     "authlib>=0.13,<1.0",  # Authlib v1.0 alters API of JWK object
     "pyopenssl",
     "cryptography",
-    "dnspython>=1.12.0"
+    "dnspython>=1.12.0",
+    "cysystemd>=1.5.2"
 ]
 
 # Check if setuptools is recent enough to recognise python_version syntax
